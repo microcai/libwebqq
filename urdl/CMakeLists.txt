@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(urdl)
+add_definitions(-DBOOST_ASIO_DISABLE_THREADS)
 
 find_package(Boost 1.46 REQUIRED COMPONENTS system)
 

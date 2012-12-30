@@ -19,7 +19,6 @@
 
 #ifndef WEBQQ_H
 #define WEBQQ_H
-
 #include <string>
 #include <vector>
 #include <boost/asio.hpp>
