@@ -46,8 +46,10 @@ struct qqBuddy{
 	// 号码，每次登录都变化的.
 	std::wstring uin;
 
-	// 昵称.
+	// qq昵称.
 	std::wstring nick;
+	// 群昵称.
+	std::wstring card;
 
 	// qq号码，不一定有，需要调用 get_qqnumber后才有.
 	std::wstring qqnum;

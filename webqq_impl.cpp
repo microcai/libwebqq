@@ -67,30 +67,13 @@ static void upcase_string(char *str, int len)
 ///low level special char mapping
 static std::string parse_unescape(std::string source)
 {
-	std::string buf;
-    const char* ptr = source.c_str();
-    size_t idx;
-    while(*ptr!='\0'){
-        idx = strcspn(ptr,"\n\t\\;&\"+");
-        if(ptr[idx] == '\0'){
-			return source;
-            break;
-        }
-        buf.append(ptr, idx);
-        switch(ptr[idx]){
-            //note buf point the end position
-            case '\n': buf+="\\\\n";break;
-            case '\t': buf+="\\\\t";break;
-            case '\\': buf+="\\\\\\\\";break;
-            //i dont know why ; is not worked.so we use another expression
-            case ';' : buf+="\\u003B";break;
-            case '&' : buf+="\\u0026";break;
-            case '"' : buf+="\\\\\\\"";break;
-            case '+' : buf+="\\u002B";break;
-        }
-        ptr+=idx+1;
-    }
-	return buf;
+	boost::replace_all(source, "\\", "\\\\\\\\");
+	boost::replace_all(source, "\n", "\\\\n");
+	boost::replace_all(source, "\t", "\\\\t");
+	boost::replace_all(source, ";", "\\\\u003B");
+	boost::replace_all(source, "&", "\\\\u0026");
+	boost::replace_all(source, "+", "\\\\u002B");
+	return source;
 }
 
 static std::string generate_clientid()
@@ -965,6 +948,13 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 
 				group.memberlist.insert(std::make_pair(buddy.uin, buddy));
 				lwqq_log(LOG_DEBUG, "buddy list:: %ls %ls\n", buddy.uin.c_str(), buddy.nick.c_str());
+			}
+			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result").get_child("cards"))
+			{
+				pt::ptree & minfo = v.second;
+				std::wstring muin = utf8_wide(minfo.get<std::string>("muin"));
+				std::wstring card = utf8_wide(minfo.get<std::string>("card"));
+				group.get_Buddy_by_uin(muin)->card = card;
 			}
 		}
 	}catch (const pt::json_parser_error & jserr){
