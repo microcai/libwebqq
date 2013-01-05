@@ -495,6 +495,24 @@ void WebQQ::update_group_detail(qqGroup& group)
 	}
 }
 
+qqGroup* WebQQ::get_Group_by_gid(std::wstring gid)
+{
+	qq::grouplist::iterator it = m_groups.find(gid);
+	if (it != m_groups.end())
+		return & it->second;
+	return NULL;
+}
+
+qqGroup* WebQQ::get_Group_by_qq(std::wstring qq)
+{
+	qq::grouplist::iterator it = m_groups.begin();
+	for(;it != m_groups.end();it ++){
+		if ( it->second.qqnum == qq)
+			return & it->second;
+	}
+	return NULL;
+}
+
 // login to server with vc. called by login code or by user
 // if no verify image needed, then called by login
 // if verify image needed, then the user should listen to signeedvc and call this
@@ -804,13 +822,12 @@ void WebQQ::process_msg(const pt::wptree &jstree)
 		return;
 	BOOST_FOREACH(const pt::wptree::value_type & result, jstree.get_child(L"result"))
 	{
-		if (result.second.get<std::wstring>(L"poll_type") == L"group_message"){
+		if (result.second.get<std::wstring>(L"poll_type") == L"group_message")
+		{
 			std::wstring group_code = result.second.get<std::wstring>(L"value.from_uin");
 			std::wstring who = result.second.get<std::wstring>(L"value.send_uin");
 
 			//parse content
-// 				js::write_json(std::wcout, result.second.get_child(L"value.content"));
-			
 			std::vector<qqMsg>	messagecontent;
 
 			BOOST_FOREACH(const pt::wptree::value_type & content,result.second.get_child(L"value.content"))
@@ -836,6 +853,20 @@ void WebQQ::process_msg(const pt::wptree &jstree)
 				}
 			}
 			siggroupmessage(group_code, who, messagecontent);
+		}else if (result.second.get<std::wstring>(L"poll_type") == L"sys_g_msg")
+		{
+			//群消息.
+			if (result.second.get<std::wstring>(L"value.type") == L"group_join")
+			{
+				//新加列表，reload群列表.
+ 				update_group_list();
+			}
+		}else if (result.second.get<std::wstring>(L"poll_type") == L"buddylist_change")
+		{
+			//群列表变化了，reload列表.
+			js::write_json(std::wcout, result.second);			
+		}else{
+			js::write_json(std::wcout, result.second);
 		}
 	}
 }
