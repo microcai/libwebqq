@@ -50,6 +50,11 @@ void webqq::start()
 	impl->start();
 }
 
+void webqq::login()
+{
+	impl->login();
+}
+
 void webqq::send_group_message(std::wstring group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb)
 {
 	impl->send_group_message(group, msg, donecb);

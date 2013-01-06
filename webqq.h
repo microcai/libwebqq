@@ -97,6 +97,8 @@ public:
 	void on_group_msg(boost::function<void (std::wstring group_code, std::wstring who, const std::vector<qqMsg> & )> cb);
 
 	void start();
+	// not need to call this the first time, but you might need this if you became offline.
+	void login();
 
 	void send_group_message(std::wstring group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb);
 	void send_group_message(qqGroup &  group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb);

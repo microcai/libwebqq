@@ -365,6 +365,20 @@ void qq::WebQQ::start()
 	);
 }
 
+/**login*/
+void WebQQ::login()
+{
+	//获取验证码.
+	std::string url = 
+		boost::str(boost::format("%s%s?uin=%s&appid=%s") % LWQQ_URL_CHECK_HOST % VCCHECKPATH % m_qqnum % APPID);
+	std::string cookie = 
+		boost::str(boost::format("chkuin=%s") % m_qqnum);
+	read_streamptr stream(new urdl::read_stream(m_io_service));
+
+	stream->set_option(urdl::http::cookie(cookie));
+	urdl_download(stream, url, boost::bind(&WebQQ::cb_got_vc,this, boost::asio::placeholders::error, _2, _3));
+}
+
 void WebQQ::send_group_message(qqGroup& group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb)
 {
 	send_group_message(group.gid, msg, donecb);
@@ -425,18 +439,9 @@ void WebQQ::cb_got_version(const boost::system::error_code& ec, read_streamptr s
         memset(v.get(), 0, t - s + 1);
         strncpy(v.get(), s, t - s);
         this->m_version = v.get();
-        //开始真正的登录.
         std::cout << "Get webqq version: " <<  this->m_version <<  std::endl;
-
-        //获取验证码.
-        std::string url = 
-			boost::str(boost::format("%s%s?uin=%s&appid=%s") % LWQQ_URL_CHECK_HOST % VCCHECKPATH % m_qqnum % APPID);
-        std::string cookie = 
-			boost::str(boost::format("chkuin=%s") % m_qqnum);
-		read_streamptr stream(new urdl::read_stream(m_io_service));
-
-		stream->set_option(urdl::http::cookie(cookie));
-		urdl_download(stream, url, boost::bind(&WebQQ::cb_got_vc,this, boost::asio::placeholders::error, _2, _3));
+		//开始真正的登录.
+        login();
 	}
 }
 
