@@ -664,6 +664,7 @@ void WebQQ::cb_done_login(read_streamptr stream, char* response, const boost::sy
 
     switch (status) {
     case 0:
+		m_status = LWQQ_STATUS_ONLINE;
         sava_cookie(&m_cookies, stream->headers());
         lwqq_log(LOG_NOTICE, "login success!\n");
         break;
@@ -813,8 +814,9 @@ void WebQQ::cb_poll_msg(read_streamptr stream, char* response, const boost::syst
 
 	defer(boost::bind(operator delete, response));
 
-	//开启新的 poll	
-	do_poll_one_msg();
+	//开启新的 poll
+	if ( m_status == LWQQ_STATUS_ONLINE )
+		do_poll_one_msg();
 
 	if (ec != boost::asio::error::eof){
 		return;
@@ -840,8 +842,17 @@ void WebQQ::cb_poll_msg(read_streamptr stream, char* response, const boost::syst
 void WebQQ::process_msg(const pt::wptree &jstree)
 {
 	//在这里解析json数据.
-	if (jstree.get<int>(L"retcode"))
+	int retcode = jstree.get<int>(L"retcode");
+	if (retcode == 102)
 		return;
+	if (retcode)
+	{
+		//offline
+		m_status = LWQQ_STATUS_OFFLINE;
+		//强制下线了，重登录.
+		delayedcall(m_io_service, 15, boost::bind(&WebQQ::login, this));
+		return ;
+	}
 	BOOST_FOREACH(const pt::wptree::value_type & result, jstree.get_child(L"result"))
 	{
 		std::string poll_type = wide_utf8(result.second.get<std::wstring>(L"poll_type"));
@@ -890,8 +901,9 @@ void WebQQ::process_msg(const pt::wptree &jstree)
 			js::write_json(std::wcout, result.second);			
 		}else if (poll_type == "kick_message"){
 			js::write_json(std::wcout, result.second);
+			m_status = LWQQ_STATUS_OFFLINE;
 			//强制下线了，重登录.
-			delayedcall(m_io_service, 10, boost::bind(&WebQQ::login, this));
+			delayedcall(m_io_service, 15, boost::bind(&WebQQ::login, this));
 		}
 	}
 }
