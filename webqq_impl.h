@@ -97,7 +97,8 @@ public:
 	void send_group_message(std::wstring group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb);
 	void send_group_message(qqGroup &  group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb);
 	void update_group_list();
-    void update_group_detail(qqGroup &  group);
+	void update_group_qqmember(qqGroup& group);
+    void update_group_member(qqGroup &  group);
 	qqGroup * get_Group_by_gid(std::wstring gid);
 	qqGroup * get_Group_by_qq(std::wstring qq);
 

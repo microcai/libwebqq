@@ -30,9 +30,9 @@ void webqq::on_group_msg(boost::function< void(std::wstring, std::wstring, const
 	this->impl->siggroupmessage.connect(cb);
 }
 
-void webqq::update_group_detail(qqGroup& group)
+void webqq::update_group_member(qqGroup& group)
 {
-	impl->update_group_detail(group);
+	impl->update_group_member(group);
 }
 
 qqGroup * webqq::get_Group_by_gid(std::wstring gid)

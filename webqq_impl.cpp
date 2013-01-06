@@ -337,6 +337,18 @@ static void urdl_download(read_streamptr stream, const urdl::url & url, urdlhand
 	);
 }
 
+static void timeout(boost::asio::deadline_timer *t, boost::function<void()> cb)
+{
+	delete t;
+	cb();
+}
+
+static void delayedcall(boost::asio::io_service &io_service, int sec, boost::function<void()> cb)
+{
+	boost::asio::deadline_timer *t = new boost::asio::deadline_timer(io_service, boost::posix_time::seconds(sec));
+	t->async_wait(boost::bind(&timeout, t, cb));
+}
+
 // build webqq and setup defaults
 qq::WebQQ::WebQQ(boost::asio::io_service& _io_service,
 	std::string _qqnum, std::string _passwd, LWQQ_STATUS _status)
@@ -463,41 +475,46 @@ void WebQQ::update_group_list()
 	);
 }
 
-void WebQQ::update_group_detail(qqGroup& group)
+void WebQQ::update_group_qqmember(qqGroup& group)
 {
 	std::string url;
-	{
-		read_streamptr stream(new urdl::read_stream(m_io_service));
-		stream->set_option(urdl::http::cookie(this->m_cookies.lwcookies));
 
-		url = boost::str(
-			boost::format("%s/api/get_group_info_ext2?gcode=%s&vfwebqq=%s&t=%ld")
-			% "http://s.web2.qq.com"
-			% wide_utf8(group.code)
-			% m_vfwebqq
-			% time(NULL)
-		);
-		stream->set_option(urdl::http::request_referer(LWQQ_URL_REFERER_QUN_DETAIL));
-		urdl_download(stream, url,
-			boost::bind(&WebQQ::cb_group_member, this, boost::asio::placeholders::error, _2, _3, boost::ref(group))
-		);
-	}
-	{
-		url = boost::str(
-			boost::format("%s/api/get_friend_uin2?tuin=%s&verifysession=&type=1&code=&vfwebqq=%s&t=%ld")
-			% "http://s.web2.qq.com"
-			% wide_utf8(group.code)
-			% m_vfwebqq
-			% time(NULL)
-		);
-		read_streamptr stream(new urdl::read_stream(m_io_service));
-		stream->set_option(urdl::http::cookie(this->m_cookies.lwcookies));
-		stream->set_option(urdl::http::request_referer(LWQQ_URL_REFERER_QUN_DETAIL));
-		
-		urdl_download(stream, url,
-			boost::bind(&WebQQ::cb_group_qqnumber, this, boost::asio::placeholders::error, _2, _3, boost::ref(group))
-		);
-	}
+	url = boost::str(
+		boost::format("%s/api/get_friend_uin2?tuin=%s&verifysession=&type=1&code=&vfwebqq=%s&t=%ld")
+		% "http://s.web2.qq.com"
+		% wide_utf8(group.code)
+		% m_vfwebqq
+		% time(NULL)
+	);
+	read_streamptr stream(new urdl::read_stream(m_io_service));
+	stream->set_option(urdl::http::cookie(this->m_cookies.lwcookies));
+	stream->set_option(urdl::http::request_referer(LWQQ_URL_REFERER_QUN_DETAIL));
+	
+	urdl_download(stream, url,
+		boost::bind(&WebQQ::cb_group_qqnumber, this, boost::asio::placeholders::error, _2, _3, boost::ref(group))
+	);
+}
+
+void WebQQ::update_group_member(qqGroup& group)
+{
+	std::string url;
+	if (group.in_update)
+		return;
+	group.in_update = true;
+	read_streamptr stream(new urdl::read_stream(m_io_service));
+	stream->set_option(urdl::http::cookie(this->m_cookies.lwcookies));
+
+	url = boost::str(
+		boost::format("%s/api/get_group_info_ext2?gcode=%s&vfwebqq=%s&t=%ld")
+		% "http://s.web2.qq.com"
+		% wide_utf8(group.code)
+		% m_vfwebqq
+		% time(NULL)
+	);
+	stream->set_option(urdl::http::request_referer(LWQQ_URL_REFERER_QUN_DETAIL));
+	urdl_download(stream, url,
+		boost::bind(&WebQQ::cb_group_member, this, boost::asio::placeholders::error, _2, _3, boost::ref(group))
+	);
 }
 
 qqGroup* WebQQ::get_Group_by_gid(std::wstring gid)
@@ -827,7 +844,8 @@ void WebQQ::process_msg(const pt::wptree &jstree)
 		return;
 	BOOST_FOREACH(const pt::wptree::value_type & result, jstree.get_child(L"result"))
 	{
-		if (result.second.get<std::wstring>(L"poll_type") == L"group_message")
+		std::string poll_type = wide_utf8(result.second.get<std::wstring>(L"poll_type"));
+		if (poll_type == "group_message")
 		{
 			std::wstring group_code = result.second.get<std::wstring>(L"value.from_uin");
 			std::wstring who = result.second.get<std::wstring>(L"value.send_uin");
@@ -858,7 +876,7 @@ void WebQQ::process_msg(const pt::wptree &jstree)
 				}
 			}
 			siggroupmessage(group_code, who, messagecontent);
-		}else if (result.second.get<std::wstring>(L"poll_type") == L"sys_g_msg")
+		}else if (poll_type == "sys_g_msg")
 		{
 			//群消息.
 			if (result.second.get<std::wstring>(L"value.type") == L"group_join")
@@ -866,20 +884,16 @@ void WebQQ::process_msg(const pt::wptree &jstree)
 				//新加列表，reload群列表.
  				update_group_list();
 			}
-		}else if (result.second.get<std::wstring>(L"poll_type") == L"buddylist_change")
+		}else if (poll_type == "buddylist_change")
 		{
 			//群列表变化了，reload列表.
 			js::write_json(std::wcout, result.second);			
-		}else{
+		}else if (poll_type == "kick_message"){
 			js::write_json(std::wcout, result.second);
+			//强制下线了，重登录.
+			delayedcall(m_io_service, 10, boost::bind(&WebQQ::login, this));
 		}
 	}
-}
-
-static void timeout(boost::asio::deadline_timer *t, boost::function<void()> cb)
-{
-	delete t;
-	cb();
 }
 
 void WebQQ::cb_group_list(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer)
@@ -920,13 +934,13 @@ void WebQQ::cb_group_list(const boost::system::error_code& ec, read_streamptr st
 	 	lwqq_log(LOG_ERROR, "bad path error %s\n", badpath.what());
 	}
 	if (retry){
-		boost::asio::deadline_timer *t = new boost::asio::deadline_timer(this->m_io_service, boost::posix_time::seconds(5));
-		t->async_wait(boost::bind(&timeout, t, (boost::function<void()>)(boost::bind(&WebQQ::update_group_list, this))));
+		delayedcall(m_io_service, 5, boost::bind(&WebQQ::update_group_list, this));
 	}else{
 		// fetching more budy info.
 		BOOST_FOREACH(grouplist::value_type & v, m_groups)
 		{
-			update_group_detail(v.second);
+			update_group_qqmember(v.second);
+			update_group_member(v.second);
 		}
 	}
 }
@@ -955,9 +969,7 @@ void WebQQ::cb_group_qqnumber(const boost::system::error_code& ec, read_streampt
 	}catch (const pt::json_parser_error & jserr){
 		lwqq_log(LOG_ERROR, "parse json error : %s\n", jserr.what());
 
-		boost::asio::deadline_timer *t = new boost::asio::deadline_timer(this->m_io_service, boost::posix_time::seconds(5));
-		t->async_wait(boost::bind(&timeout, t, (boost::function<void()>)(boost::bind(&WebQQ::update_group_detail, this, boost::ref(group)))));
-
+		delayedcall(m_io_service, 5, boost::bind(&WebQQ::update_group_member, this, boost::ref(group)));
 	}catch (const pt::ptree_bad_path & badpath){
 	 	lwqq_log(LOG_ERROR, "bad path error %s\n", badpath.what());
 	}
@@ -996,12 +1008,11 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 	}catch (const pt::json_parser_error & jserr){
 		lwqq_log(LOG_ERROR, "parse json error : %s\n", jserr.what());
 
-		boost::asio::deadline_timer *t = new boost::asio::deadline_timer(this->m_io_service, boost::posix_time::seconds(5));
-		t->async_wait(boost::bind(&timeout, t, (boost::function<void()>)(boost::bind(&WebQQ::update_group_detail, this, boost::ref(group)))));
-
+		delayedcall(m_io_service, 5, boost::bind(&WebQQ::update_group_member, this, boost::ref(group)));
 	}catch (const pt::ptree_bad_path & badpath){
 	 	lwqq_log(LOG_ERROR, "bad path error %s\n", badpath.what());
 	}
+	group.in_update = false;
 }
 
 
