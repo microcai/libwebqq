@@ -843,16 +843,9 @@ void WebQQ::process_msg(const pt::wptree &jstree)
 {
 	//在这里解析json数据.
 	int retcode = jstree.get<int>(L"retcode");
-	if (retcode == 102)
-		return;
 	if (retcode)
-	{
-		//offline
-		m_status = LWQQ_STATUS_OFFLINE;
-		//强制下线了，重登录.
-		delayedcall(m_io_service, 15, boost::bind(&WebQQ::login, this));
-		return ;
-	}
+		return;
+
 	BOOST_FOREACH(const pt::wptree::value_type & result, jstree.get_child(L"result"))
 	{
 		std::string poll_type = wide_utf8(result.second.get<std::wstring>(L"poll_type"));
