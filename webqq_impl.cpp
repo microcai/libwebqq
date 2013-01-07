@@ -418,7 +418,7 @@ void WebQQ::send_group_message(std::wstring group, std::string msg, boost::funct
 	stream->set_option(urdl::http::request_method("POST"));
 	stream->set_option(urdl::http::cookie(this->m_cookies.lwcookies));
 	stream->set_option(urdl::http::request_referer("http://d.web2.qq.com/proxy.html?v=20101025002"));
-	stream->set_option(urdl::http::request_content_type("application/x-www-form-urlencoded"));
+	stream->set_option(urdl::http::request_content_type("application/x-www-form-urlencoded; charset=UTF-8"));
 	stream->set_option(urdl::http::request_content(postdata));
 
 	urdl_download(stream, LWQQ_URL_SEND_QUN_MSG, 
@@ -468,7 +468,7 @@ void WebQQ::update_group_list()
 	stream->set_option(urdl::http::request_method("POST"));
 	stream->set_option(urdl::http::cookie(this->m_cookies.lwcookies));
 	stream->set_option(urdl::http::request_referer("http://s.web2.qq.com/proxy.html?v=20101025002"));
-	stream->set_option(urdl::http::request_content_type("application/x-www-form-urlencoded"));
+	stream->set_option(urdl::http::request_content_type("application/x-www-form-urlencoded; charset=UTF-8"));
 	stream->set_option(urdl::http::request_content(posdata));
 
 	urdl_download(stream, url,
@@ -714,7 +714,7 @@ void WebQQ::cb_done_login(read_streamptr stream, char* response, const boost::sy
     }
 
     //set_online_status(lc, lwqq_status_to_str(lc->stat), err);
-    if (status == LWQQ_STATUS_ONLINE){
+    if (m_status == LWQQ_STATUS_ONLINE){
 		siglogin();
 		m_clientid = generate_clientid();
 
@@ -739,11 +739,11 @@ void WebQQ::set_online_status()
 
     read_streamptr stream(new urdl::read_stream(m_io_service));
 	stream->set_option(urdl::http::cookie(m_cookies.lwcookies));
-	stream->set_option(urdl::http::cookie2("$Version=1"));
-	stream->set_option(urdl::http::request_content_type("application/x-www-form-urlencoded"));
-	stream->set_option(urdl::http::request_referer("http://d.web2.qq.com/proxy.html?v=20101025002"));
+	stream->set_option(urdl::http::request_content_type("application/x-www-form-urlencoded; charset=UTF-8"));
+	stream->set_option(urdl::http::request_referer("http://d.web2.qq.com/proxy.html?v=20110331002&callback=1&id=2"));
 	stream->set_option(urdl::http::request_content(msg));
 	stream->set_option(urdl::http::request_method("POST"));
+	stream->set_option(urdl::http::user_agent("Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20100101 Firefox/17.0"));
 
 	stream->async_open(LWQQ_URL_SET_STATUS,boost::bind(&WebQQ::cb_online_status,this, stream, boost::asio::placeholders::error) );
 }
@@ -766,7 +766,7 @@ void WebQQ::do_poll_one_msg()
     read_streamptr pollstream(new urdl::read_stream(m_io_service));
 	pollstream->set_option(urdl::http::cookie(m_cookies.lwcookies));
 	pollstream->set_option(urdl::http::cookie2("$Version=1"));
-	pollstream->set_option(urdl::http::request_content_type("application/x-www-form-urlencoded"));
+	pollstream->set_option(urdl::http::request_content_type("application/x-www-form-urlencoded; charset=UTF-8"));
 	pollstream->set_option(urdl::http::request_referer("http://d.web2.qq.com/proxy.html?v=20101025002"));
 	pollstream->set_option(urdl::http::request_content(msg));
 	pollstream->set_option(urdl::http::request_method("POST"));
