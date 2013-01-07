@@ -991,6 +991,7 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 {
 	pt::ptree	jsonobj;
 	std::istream jsondata(&buffer);
+	group.in_update = false;
 
 	//处理!
 	try{
@@ -1024,7 +1025,6 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 	}catch (const pt::ptree_bad_path & badpath){
 	 	lwqq_log(LOG_ERROR, "bad path error %s\n", badpath.what());
 	}
-	group.in_update = false;
 }
 
 
