@@ -751,10 +751,6 @@ void WebQQ::set_online_status()
 void WebQQ::do_poll_one_msg()
 {
     /* Create a POST request */
-    std::string url = boost::str(
-		boost::format("%s/channel/poll2") % "http://d.web2.qq.com"
-	);
-	
 	std::string msg = boost::str(
 		boost::format("{\"clientid\":\"%s\",\"psessionid\":\"%s\"}")
 		% m_clientid 
@@ -771,7 +767,8 @@ void WebQQ::do_poll_one_msg()
 	pollstream->set_option(urdl::http::request_content(msg));
 	pollstream->set_option(urdl::http::request_method("POST"));
 
-	pollstream->async_open(url,boost::bind(&WebQQ::cb_poll_msg,this, pollstream, boost::asio::placeholders::error) );
+	pollstream->async_open("http://d.web2.qq.com/channel/poll2",
+		boost::bind(&WebQQ::cb_poll_msg,this, pollstream, boost::asio::placeholders::error) );
 }
 
 void WebQQ::cb_online_status(read_streamptr stream, char* response, const boost::system::error_code& ec, std::size_t length)
