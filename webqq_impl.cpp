@@ -459,6 +459,7 @@ void WebQQ::cb_got_version(const boost::system::error_code& ec, read_streamptr s
 
 void WebQQ::update_group_list()
 {
+	lwqq_log(LOG_NOTICE, "getting group list\n");
     /* Create post data: {"h":"hello","vfwebqq":"4354j53h45j34"} */
     std::string posdata = create_post_data(this->m_vfwebqq);
     std::string url = boost::str(boost::format("%s/api/get_group_name_list_mask2") % "http://s.web2.qq.com");
@@ -715,11 +716,11 @@ void WebQQ::cb_done_login(read_streamptr stream, char* response, const boost::sy
     //set_online_status(lc, lwqq_status_to_str(lc->stat), err);
     if (status == LWQQ_STATUS_ONLINE){
 		siglogin();
-	}
-	m_clientid = generate_clientid();
+		m_clientid = generate_clientid();
 
-	//change status,  this is the last step for login
-	set_online_status();
+		//change status,  this is the last step for login
+		set_online_status();
+	}
 }
 
 void WebQQ::set_online_status()
@@ -788,11 +789,6 @@ void WebQQ::cb_online_status(read_streamptr stream, char* response, const boost:
 			m_vfwebqq = json.get_child("result").get<std::string>("vfwebqq");
 			//polling group list
 			update_group_list();
-
-			//start polling messages, 2 connections!
-			lwqq_log(LOG_DEBUG, "start polling messages\n");
-			do_poll_one_msg();
-			do_poll_one_msg();
 		}
 	}catch (const pt::json_parser_error & jserr){
 		printf("parse json error : %s \n\t %s\n", jserr.what(), response);
@@ -947,6 +943,10 @@ void WebQQ::cb_group_list(const boost::system::error_code& ec, read_streamptr st
 			update_group_qqmember(v.second);
 			update_group_member(v.second);
 		}
+		//start polling messages, 2 connections!
+		lwqq_log(LOG_DEBUG, "start polling messages\n");
+		do_poll_one_msg();
+		do_poll_one_msg();
 	}
 }
 
