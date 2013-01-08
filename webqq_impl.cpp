@@ -337,15 +337,14 @@ static void urdl_download(read_streamptr stream, const urdl::url & url, urdlhand
 	);
 }
 
-static void timeout(boost::asio::deadline_timer *t, boost::function<void()> cb)
+static void timeout(boost::shared_ptr<boost::asio::deadline_timer> t, boost::function<void()> cb)
 {
-	delete t;
 	cb();
 }
 
 static void delayedcall(boost::asio::io_service &io_service, int sec, boost::function<void()> cb)
 {
-	boost::asio::deadline_timer *t = new boost::asio::deadline_timer(io_service, boost::posix_time::seconds(sec));
+	boost::shared_ptr<boost::asio::deadline_timer> t( new boost::asio::deadline_timer(io_service, boost::posix_time::seconds(sec)));
 	t->async_wait(boost::bind(&timeout, t, cb));
 }
 
