@@ -320,13 +320,14 @@ static void urdl_cb_reaading(read_streamptr stream,urdlhandler handler,
 
 static void urdl_cb_connected(read_streamptr stream, urdlhandler handler, const boost::system::error_code& ec)
 {
+	boost::shared_ptr<boost::asio::streambuf> sb = boost::make_shared<boost::asio::streambuf>();
 	if (!ec){
-		boost::shared_ptr<boost::asio::streambuf> sb = boost::make_shared<boost::asio::streambuf>();
-
 		stream->async_read_some(
 			sb->prepare(4096),
 			boost::bind(& urdl_cb_reaading,stream, handler, sb, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred, 0)
 		);
+	}else{
+		handler(ec, stream, *sb);
 	}
 }
 
