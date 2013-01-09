@@ -21,6 +21,8 @@
 
 #include <string>
 #include <map>
+#include <queue>
+#include <boost/tuple/tuple.hpp>
 #include <boost/asio.hpp>
 #include <boost/signal.hpp>
 #include <boost/concept_check.hpp>
@@ -94,8 +96,9 @@ public:
 	void login_withvc(std::string vccode);
 
 	void start();
-	void send_group_message(std::wstring group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb);
-	void send_group_message(qqGroup &  group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb);
+	typedef boost::function<void (const boost::system::error_code& ec)> send_group_message_cb;
+	void send_group_message(std::wstring group, std::string msg, send_group_message_cb donecb);
+	void send_group_message(qqGroup &  group, std::string msg, send_group_message_cb donecb);
 	void update_group_list();
 	void update_group_qqmember(qqGroup& group);
     void update_group_member(qqGroup &  group);
@@ -144,6 +147,7 @@ private:
 	void cb_group_member(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, qqGroup &);
 	void cb_group_qqnumber(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, qqGroup &);
 
+	void send_group_message_internal(std::wstring group, std::string msg, send_group_message_cb donecb);
 	void cb_send_msg(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, boost::function<void (const boost::system::error_code& ec)> donecb);
 
 private:
@@ -160,6 +164,9 @@ private:
 	LwqqCookies m_cookies;
 
 	grouplist	m_groups;
+	
+	bool		m_group_msg_insending;
+	std::queue<boost::tuple<std::wstring, std::string, send_group_message_cb> >	m_msg_queue;
 	friend class ::webqq;
 };
 

@@ -391,12 +391,24 @@ void WebQQ::login()
 	urdl_download(stream, url, boost::bind(&WebQQ::cb_got_vc,this, boost::asio::placeholders::error, _2, _3));
 }
 
-void WebQQ::send_group_message(qqGroup& group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb)
+void WebQQ::send_group_message(qqGroup& group, std::string msg, send_group_message_cb donecb)
 {
 	send_group_message(group.gid, msg, donecb);
 }
 
-void WebQQ::send_group_message(std::wstring group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb)
+void WebQQ::send_group_message(std::wstring group, std::string msg, send_group_message_cb donecb)
+{
+	//check if already in sending a message
+	if (m_group_msg_insending){
+		m_msg_queue.push(boost::make_tuple(group, msg, donecb));
+		return;
+	}else{
+		m_group_msg_insending = true;
+		send_group_message_internal(group, msg, donecb);
+	}
+}
+
+void WebQQ::send_group_message_internal(std::wstring group, std::string msg, send_group_message_cb donecb)
 {
 	//unescape for POST
 	std::string postdata = boost::str(
@@ -426,10 +438,18 @@ void WebQQ::send_group_message(std::wstring group, std::string msg, boost::funct
 	);
 }
 
+
 void WebQQ::cb_send_msg(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buffer, boost::function<void (const boost::system::error_code& ec)> donecb)
 {
 	const char* str = boost::asio::buffer_cast<const char *>(buffer.data());
 	std::cout <<  str <<  std::endl;
+	if (m_msg_queue.empty()){
+		m_group_msg_insending = false;
+	}else{
+		boost::tuple<std::wstring, std::string, send_group_message_cb> v = m_msg_queue.front();
+		m_msg_queue.pop();
+		send_group_message_internal(boost::get<0>(v),boost::get<1>(v), boost::get<2>(v));
+	}	
 	donecb(ec);
 }
 
@@ -720,6 +740,7 @@ void WebQQ::cb_done_login(read_streamptr stream, char* response, const boost::sy
 
 		//change status,  this is the last step for login
 		set_online_status();
+		m_group_msg_insending =false;
 	}
 }
 
