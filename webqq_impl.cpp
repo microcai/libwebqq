@@ -349,6 +349,13 @@ static void delayedcall(boost::asio::io_service &io_service, int sec, boost::fun
 	t->async_wait(boost::bind(&timeout, t, cb));
 }
 
+static void delayedcallms(boost::asio::io_service &io_service, int msec, boost::function<void()> cb)
+{
+	boost::shared_ptr<boost::asio::deadline_timer> t( new boost::asio::deadline_timer(io_service, boost::posix_time::milliseconds(msec)));
+	t->async_wait(boost::bind(&timeout, t, cb));
+}
+
+
 // build webqq and setup defaults
 qq::WebQQ::WebQQ(boost::asio::io_service& _io_service,
 	std::string _qqnum, std::string _passwd, LWQQ_STATUS _status)
@@ -448,7 +455,7 @@ void WebQQ::cb_send_msg(const boost::system::error_code& ec, read_streamptr stre
 	}else{
 		boost::tuple<std::wstring, std::string, send_group_message_cb> v = m_msg_queue.front();
 		m_msg_queue.pop();
-		send_group_message_internal(boost::get<0>(v),boost::get<1>(v), boost::get<2>(v));
+		delayedcallms(m_io_service, 500, boost::bind(&WebQQ::send_group_message_internal, this,boost::get<0>(v),boost::get<1>(v), boost::get<2>(v)));
 	}	
 	donecb(ec);
 }
