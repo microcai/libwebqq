@@ -518,14 +518,10 @@ void WebQQ::update_group_qqmember(qqGroup& group)
 
 void WebQQ::update_group_member(qqGroup& group)
 {
-	std::string url;
-	if (group.in_update)
-		return;
-	group.in_update = true;
 	read_streamptr stream(new urdl::read_stream(m_io_service));
 	stream->set_option(urdl::http::cookie(this->m_cookies.lwcookies));
 
-	url = boost::str(
+	std::string url = boost::str(
 		boost::format("%s/api/get_group_info_ext2?gcode=%s&vfwebqq=%s&t=%ld")
 		% "http://s.web2.qq.com"
 		% wide_utf8(group.code)
@@ -1002,7 +998,6 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 {
 	pt::ptree	jsonobj;
 	std::istream jsondata(&buffer);
-	group.in_update = false;
 
 	//处理!
 	try{

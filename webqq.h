@@ -75,10 +75,6 @@ struct qqGroup{
 			return &it->second;
 		return NULL;
 	}
-	qqGroup(){in_update=false;}
-private:
-	bool		in_update;
-	friend class qq::WebQQ;
 };
 
 struct qqMsg{
