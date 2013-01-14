@@ -856,6 +856,41 @@ void WebQQ::cb_poll_msg(read_streamptr stream, char* response, const boost::syst
 	}
 }
 
+void WebQQ::process_group_message ( const boost::property_tree::wptree& jstree )
+{
+	std::wstring group_code = jstree.get<std::wstring> ( L"value.from_uin" );
+	std::wstring who = jstree.get<std::wstring> ( L"value.send_uin" );
+
+	//parse content
+	std::vector<qqMsg>	messagecontent;
+
+	BOOST_FOREACH ( const pt::wptree::value_type & content,jstree.get_child ( L"value.content" ) ) {
+		if ( content.second.count ( L"" ) ) {
+			if ( content.second.begin()->second.data() == L"font" ) {
+				qqMsg msg;
+				msg.type = qqMsg::LWQQ_MSG_FONT;
+				msg.font = content.second.rbegin()->second.get<std::wstring> ( L"name" );
+			} else if ( content.second.begin()->second.data() == L"face" ) {
+				qqMsg msg;
+				msg.type = qqMsg::LWQQ_MSG_FACE;
+				msg.face = content.second.rbegin()->second.get<std::wstring> ( L"name" );
+			} else if ( content.second.begin()->second.data() == L"cface" ) {
+				qqMsg msg;
+				msg.type = qqMsg::LWQQ_MSG_CFACE;
+				msg.cface = content.second.rbegin()->second.get<std::wstring> ( L"name" );
+				messagecontent.push_back ( msg );
+			}
+		} else {
+			//聊天字符串就在这里.
+			qqMsg msg;
+			msg.type = qqMsg::LWQQ_MSG_TEXT;
+			msg.text = content.second.data();
+			messagecontent.push_back ( msg );
+		}
+	}
+	siggroupmessage ( group_code, who, messagecontent );
+}
+
 void WebQQ::process_msg(const pt::wptree &jstree)
 {
 	//在这里解析json数据.
@@ -868,35 +903,7 @@ void WebQQ::process_msg(const pt::wptree &jstree)
 		std::string poll_type = wide_utf8(result.second.get<std::wstring>(L"poll_type"));
 		if (poll_type == "group_message")
 		{
-			std::wstring group_code = result.second.get<std::wstring>(L"value.from_uin");
-			std::wstring who = result.second.get<std::wstring>(L"value.send_uin");
-
-			//parse content
-			std::vector<qqMsg>	messagecontent;
-
-			BOOST_FOREACH(const pt::wptree::value_type & content,result.second.get_child(L"value.content"))
-			{
-				if ( content.second.count(L"")){
-					if (content.second.begin()->second.data() == L"font"){
-						qqMsg msg;
-						msg.type = qqMsg::LWQQ_MSG_FONT;
-						msg.font = content.second.rbegin()->second.get<std::wstring>(L"name");		  
-					}else if (content.second.begin()->second.data() == L"face"){
-					}else if (content.second.begin()->second.data() == L"cface"){
-						qqMsg msg;
-						msg.type = qqMsg::LWQQ_MSG_CFACE;
-						msg.cface = content.second.rbegin()->second.get<std::wstring>(L"name");
-						messagecontent.push_back(msg);							
-					}
-				}else{
-					//聊天字符串就在这里.
-					qqMsg msg;
-					msg.type = qqMsg::LWQQ_MSG_TEXT;
-					msg.text = content.second.data();
-					messagecontent.push_back(msg);
-				}
-			}
-			siggroupmessage(group_code, who, messagecontent);
+			process_group_message(result.second);
 		}else if (poll_type == "sys_g_msg")
 		{
 			//群消息.
