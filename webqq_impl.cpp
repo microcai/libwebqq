@@ -564,7 +564,8 @@ qqGroup* WebQQ::get_Group_by_qq(std::wstring qq)
 // if verify image needed, then the user should listen to signeedvc and call this
 void WebQQ::login_withvc(std::string vccode)
 {
-    std::string md5 = lwqq_enc_pwd(m_passwd.c_str(), m_verifycode.str.c_str(), m_verifycode.uin.c_str());
+	std::cout << "vc code is \"" << vccode << "\"" << std::endl;
+	std::string md5 = lwqq_enc_pwd(m_passwd.c_str(), vccode.c_str(), m_verifycode.uin.c_str());
 
     // do login !
     std::string url = boost::str(
@@ -578,7 +579,7 @@ void WebQQ::login_withvc(std::string vccode)
              % LWQQ_URL_LOGIN_HOST
              % m_qqnum
              % md5
-             % m_verifycode.str
+             % vccode
              % m_status
 	);
 
@@ -625,14 +626,11 @@ void WebQQ::cb_got_vc(const boost::system::error_code& ec, read_streamptr stream
         c = strstr(s, "'");
         *c = '\0';
 
-        m_verifycode.type = "0";
-        m_verifycode.str = s;
-
         /* We need get the ptvfsession from the header "Set-Cookie" */
         update_cookies(&m_cookies, stream->headers(), "ptvfsession", 1);
-        lwqq_log(LOG_NOTICE, "Verify code: %s\n", m_verifycode.str.c_str());
+        lwqq_log(LOG_NOTICE, "Verify code: %s\n", s);
 
-        login_withvc(m_verifycode.str);
+        login_withvc(s);
     } else if (*c == '1') {
         /* We need get the verify image. */
 
@@ -645,18 +643,17 @@ void WebQQ::cb_got_vc(const boost::system::error_code& ec, read_streamptr stream
         s = c + 1;
         c = strstr(s, "'");
         *c = '\0';
-        m_verifycode.type = "1";
-        // ptui_checkVC('1','7ea19f6d3d2794eb4184c9ae860babf3b9c61441520c6df0', '\x00\x00\x00\x00\x04\x7e\x73\xb2');
-        m_verifycode.str = s;
 
-        lwqq_log(LOG_NOTICE, "We need verify code image: %s\n", m_verifycode.str.c_str());
+        // ptui_checkVC('1','7ea19f6d3d2794eb4184c9ae860babf3b9c61441520c6df0', '\x00\x00\x00\x00\x04\x7e\x73\xb2');
+
+        lwqq_log(LOG_NOTICE, "We need verify code image: %s\n", s);
 
         //TODO, get verify image, and call signeedvc
-        get_verify_image();
+        get_verify_image(s);
     }
 }
 
-void WebQQ::get_verify_image()
+void WebQQ::get_verify_image(std::string vcimgid)
 {
 	std::string url = boost::str(
 		boost::format(LWQQ_URL_VERIFY_IMG) % APPID % m_qqnum
@@ -670,6 +667,8 @@ void WebQQ::get_verify_image()
 
 void WebQQ::cb_get_verify_image(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer)
 {
+	update_cookies(&m_cookies, stream->headers() , "verifysession", 1);
+	
 	// verify image is now in response
 	signeedvc(buffer.data());
 }
@@ -677,6 +676,7 @@ void WebQQ::cb_get_verify_image(const boost::system::error_code& ec, read_stream
 void WebQQ::cb_done_login(read_streamptr stream, char* response, const boost::system::error_code& ec, std::size_t length)
 {
 	defer(boost::bind(operator delete, response));
+	std::cout << response << std::endl;
     char *p = strstr(response, "\'");
     if (!p) {
         return;
@@ -697,39 +697,47 @@ void WebQQ::cb_done_login(read_streamptr stream, char* response, const boost::sy
         lwqq_log(LOG_WARNING, "Server busy! Please try again\n");
 
         status = LWQQ_STATUS_OFFLINE;
-    case 2:
+		break;
+	case 2:
         lwqq_log(LOG_ERROR, "Out of date QQ number\n");
         status = LWQQ_STATUS_OFFLINE;
-
+		break;
+		
 
     case 3:
         lwqq_log(LOG_ERROR, "Wrong password\n");
         status = LWQQ_STATUS_OFFLINE;
-
+		break;
+		
 
     case 4:
         lwqq_log(LOG_ERROR, "Wrong verify code\n");
         status = LWQQ_STATUS_OFFLINE;
-
+		break;
+		
 
     case 5:
         lwqq_log(LOG_ERROR, "Verify failed\n");
         status = LWQQ_STATUS_OFFLINE;
-
+		break;
+		
 
     case 6:
         lwqq_log(LOG_WARNING, "You may need to try login again\n");
         status = LWQQ_STATUS_OFFLINE;
-
+		break;
+		
     case 7:
         lwqq_log(LOG_ERROR, "Wrong input\n");
         status = LWQQ_STATUS_OFFLINE;
-
+		break;
+		
 
     case 8:
         lwqq_log(LOG_ERROR, "Too many logins on this IP. Please try again\n");
         status = LWQQ_STATUS_OFFLINE;
-
+		break;
+		
 
     default:
         status = LWQQ_STATUS_OFFLINE;
@@ -737,7 +745,7 @@ void WebQQ::cb_done_login(read_streamptr stream, char* response, const boost::sy
     }
 
     //set_online_status(lc, lwqq_status_to_str(lc->stat), err);
-    if (m_status == LWQQ_STATUS_ONLINE){
+    if (m_status == LWQQ_STATUS_ONLINE && status==0){
 		siglogin();
 		m_clientid = generate_clientid();
 

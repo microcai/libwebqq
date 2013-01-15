@@ -61,8 +61,6 @@ typedef enum {
 }LwqqMsgRetcode;
 
 typedef struct LwqqVerifyCode {
-    std::string str;
-    std::string type;
     std::string img;
     std::string uin;
     std::string data;
@@ -125,7 +123,7 @@ private:
 
 	void cb_got_vc(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&);
 
-	void get_verify_image();
+	void get_verify_image(std::string vcimgid);
 	void cb_get_verify_image(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&);
 
 	void cb_do_login(read_streamptr stream, const boost::system::error_code& ec);
