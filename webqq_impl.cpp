@@ -864,7 +864,8 @@ void WebQQ::process_group_message ( const boost::property_tree::wptree& jstree )
 	//parse content
 	std::vector<qqMsg>	messagecontent;
 
-	BOOST_FOREACH ( const pt::wptree::value_type & content,jstree.get_child ( L"value.content" ) ) {
+	BOOST_FOREACH ( const pt::wptree::value_type & content,jstree.get_child ( L"value.content" ) )
+	{
 		if ( content.second.count ( L"" ) ) {
 			if ( content.second.begin()->second.data() == L"font" ) {
 				qqMsg msg;

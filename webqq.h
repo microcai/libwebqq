@@ -100,6 +100,11 @@ public:
 	// not need to call this the first time, but you might need this if you became offline.
 	void login();
 
+	void on_verify_code(boost::function<void ( const boost::asio::const_buffer &)>);
+	// login with vc, call this if you got signeedvc signal.
+	// in signeedvc signal, you can retreve images from server.
+	void login_withvc(std::string vccode);
+
 	void send_group_message(std::wstring group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb);
 	void send_group_message(qqGroup &  group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb);
 	

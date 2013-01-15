@@ -25,6 +25,12 @@ webqq::webqq(boost::asio::io_service& asioservice, std::string qqnum, std::strin
 	
 }
 
+void webqq::on_verify_code ( boost::function< void ( const boost::asio::const_buffer &) >  cb)
+{
+	impl->signeedvc.connect(cb);
+}
+
+
 void webqq::on_group_msg(boost::function< void(std::wstring, std::wstring, const std::vector<qqMsg>& )> cb)
 {
 	this->impl->siggroupmessage.connect(cb);
@@ -54,6 +60,12 @@ void webqq::login()
 {
 	impl->login();
 }
+
+void webqq::login_withvc ( std::string vccode )
+{
+	impl->login_withvc(vccode);
+}
+
 
 void webqq::send_group_message(std::wstring group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb)
 {
