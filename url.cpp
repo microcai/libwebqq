@@ -40,7 +40,7 @@ std::string url_encode(const char *str)
     if (!str)
         return "";
 	
-	char *buf = new char[strlen(str) * 3 + 1];
+	char buf[strlen(str) * 3 + 1];
     char *pstr = (char*) str, *pbuf = buf;
     
     while (*pstr) {
@@ -51,9 +51,12 @@ std::string url_encode(const char *str)
         pstr++;
     }
     *pbuf = '\0';
-	std::string ret = buf;
-	delete[] buf;
-    return ret;
+    return buf;
+}
+
+std::string url_encode(const std::string str)
+{
+	return url_encode(str.c_str());
 }
 
 std::string url_whole_encode(const char *str)
