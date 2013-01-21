@@ -18,12 +18,14 @@
 #include <string.h>
 #include <iostream>
 #include <boost/bind.hpp>
-#include <urdl/read_stream.hpp>
-#include <urdl/http.hpp>
+
 #include <boost/format.hpp>
 #include <boost/property_tree/json_parser.hpp>
 namespace js = boost::property_tree::json_parser;
 #include <boost/algorithm/string.hpp>
+
+#include <urdl/read_stream.hpp>
+#include <urdl/http.hpp>
 
 #include "webqq.h"
 #include "webqq_impl.h"

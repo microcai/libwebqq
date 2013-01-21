@@ -19,6 +19,17 @@
 #ifndef WEBQQ_IMPL_H
 #define WEBQQ_IMPL_H
 
+#if defined _WIN32 || defined __CYGWIN__
+	#define SYMBOL_HIDDEN
+#else
+	#if __GNUC__ >= 4
+	#define SYMBOL_HIDDEN  __attribute__ ((visibility ("hidden")))
+	#else
+	#define SYMBOL_HIDDEN
+	#endif
+#endif
+
+
 #include <string>
 #include <map>
 #include <queue>
@@ -33,6 +44,8 @@ namespace pt = boost::property_tree;
 typedef boost::shared_ptr<urdl::read_stream> read_streamptr;
 
 #include "webqq.h"
+
+#pragma GCC visibility push(hidden)
 
 namespace qq{
 
@@ -82,7 +95,7 @@ typedef struct LwqqCookies {
 
 typedef std::map<std::wstring, qqGroup>	grouplist;
 
-class WebQQ
+class SYMBOL_HIDDEN WebQQ
 {
 public:
 	WebQQ(boost::asio::io_service & asioservice, std::string qqnum, std::string passwd, LWQQ_STATUS status = LWQQ_STATUS_ONLINE);
@@ -169,4 +182,7 @@ private:
 };
 
 };
+
+#pragma GCC visibility pop
+
 #endif // WEBQQ_H
