@@ -387,6 +387,12 @@ void qq::WebQQ::start()
 /**login*/
 void WebQQ::login()
 {
+	m_clientid.clear();
+	m_cookies.lwcookies.clear();
+	m_groups.clear();
+	m_psessionid.clear();
+	m_vfwebqq.clear();
+	m_status = LWQQ_STATUS_OFFLINE;
 	//获取验证码.
 	std::string url = 
 		boost::str(boost::format("%s%s?uin=%s&appid=%s") % LWQQ_URL_CHECK_HOST % VCCHECKPATH % m_qqnum % APPID);
@@ -445,42 +451,55 @@ void WebQQ::send_group_message_internal(std::wstring group, std::string msg, sen
 	);
 }
 
-
 void WebQQ::cb_send_msg(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buffer, boost::function<void (const boost::system::error_code& ec)> donecb)
 {
-	const char* str = boost::asio::buffer_cast<const char *>(buffer.data());
-	std::cout <<  str <<  std::endl;
+	pt::ptree jstree;
+	std::istream	response(&buffer);
+	try{
+		js::read_json(response, jstree);
+		if( jstree.get<int>("retcode") == 108){
+			// 已经断线，重新登录
+			m_status = LWQQ_STATUS_UNKNOW;
+			delayedcall(m_io_service,10,boost::bind(&WebQQ::login,this));
+		}
+	}catch (const pt::json_parser_error & jserr)
+	{
+		lwqq_log(LOG_ERROR, "parse json error : %s\n=========\n%s\n=========\n",jserr.what(), jserr.message().c_str());
+	}
+
 	if (m_msg_queue.empty()){
 		m_group_msg_insending = false;
 	}else{
 		boost::tuple<std::wstring, std::string, send_group_message_cb> v = m_msg_queue.front();
-		m_msg_queue.pop();
 		delayedcallms(m_io_service, 500, boost::bind(&WebQQ::send_group_message_internal, this,boost::get<0>(v),boost::get<1>(v), boost::get<2>(v)));
-	}	
+		m_msg_queue.pop();
+	}
 	donecb(ec);
 }
 
-void WebQQ::cb_got_version(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buffer)
+void WebQQ::cb_got_version ( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer )
 {
-	const char* response = boost::asio::buffer_cast<const char*>(buffer.data());
-	
-	if (strstr(response, "ptuiV"))
+	const char* response = boost::asio::buffer_cast<const char*> ( buffer.data() );
+
+	if ( strstr ( response, "ptuiV" ) )
 	{
-        char *s, *t;
-        s = (char*)strchr(response, '(');
-        t = (char*)strchr(response, ')');
-        if (!s || !t  ) {
-            sigerror( 0, 0);
-            return ;
-        }
-        s++;
-		boost::shared_array<char> v(new char[t - s + 1]);
-        memset(v.get(), 0, t - s + 1);
-        strncpy(v.get(), s, t - s);
-        this->m_version = v.get();
-        std::cout << "Get webqq version: " <<  this->m_version <<  std::endl;
+		char* s, *t;
+		s = ( char* ) strchr ( response, '(' );
+		t = ( char* ) strchr ( response, ')' );
+
+		if ( !s || !t ) {
+			sigerror ( 0, 0 );
+			return ;
+		}
+
+		s++;
+		char v[t - s + 1];
+		memset ( v, 0, t - s + 1 );
+		strncpy ( v, s, t - s );
+		this->m_version = v;
+		std::cout << "Get webqq version: " <<  this->m_version <<  std::endl;
 		//开始真正的登录.
-        login();
+		login();
 	}
 }
 
@@ -761,7 +780,7 @@ void WebQQ::set_online_status()
 		boost::format("{\"status\":\"%s\",\"ptwebqq\":\"%s\","
              "\"passwd_sig\":""\"\",\"clientid\":\"%s\""
              ", \"psessionid\":null}")
-		% lwqq_status_to_str(m_status)
+		% lwqq_status_to_str(LWQQ_STATUS_ONLINE)
 		% m_cookies.ptwebqq
 		% m_clientid
 	);
@@ -816,6 +835,7 @@ void WebQQ::cb_online_status(read_streamptr stream, char* response, const boost:
 		{
 			m_psessionid = json.get_child("result").get<std::string>("psessionid");
 			m_vfwebqq = json.get_child("result").get<std::string>("vfwebqq");
+			m_status = LWQQ_STATUS_ONLINE;
 			//polling group list
 			update_group_list();
 		}
