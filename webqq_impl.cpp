@@ -916,7 +916,7 @@ void WebQQ::process_group_message ( const boost::property_tree::wptree& jstree )
 			} else if ( content.second.begin()->second.data() == L"face" ) {
 				qqMsg msg;
 				msg.type = qqMsg::LWQQ_MSG_FACE;
-				msg.face = content.second.rbegin()->second.get<std::wstring> ( L"name" );
+				msg.face = content.second.rbegin()->second.get<int> ( L"face" );
 			} else if ( content.second.begin()->second.data() == L"cface" ) {
 				qqMsg msg;
 				msg.type = qqMsg::LWQQ_MSG_CFACE;

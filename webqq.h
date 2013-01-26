@@ -111,7 +111,7 @@ struct qqMsg{
 	}type;
  	std::wstring font;//font name, size color.
 	std::wstring text;
-	std::wstring face;
+	int face;
 	std::wstring cface;
 };
 
