@@ -18,7 +18,6 @@
 #include <string.h>
 #include <iostream>
 #include <boost/bind.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 #include <boost/property_tree/json_parser.hpp>
 namespace js = boost::property_tree::json_parser;
@@ -919,8 +918,7 @@ void WebQQ::process_group_message ( const boost::property_tree::wptree& jstree )
 			} else if ( content.second.begin()->second.data() == L"face" ) {
 				qqMsg msg;
 				msg.type = qqMsg::LWQQ_MSG_FACE;
-				int wface = boost::lexical_cast<int>(content.second.rbegin()->second.data());
-				msg.face = facemap[wface];
+				msg.face = to_face(content.second.rbegin()->second.data());
  				messagecontent.push_back ( msg );
 			} else if ( content.second.begin()->second.data() == L"cface" ) {
 				qqMsg msg;

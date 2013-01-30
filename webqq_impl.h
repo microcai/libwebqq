@@ -133,6 +133,7 @@ public:// signals
 
 private:
 	void init_face_map();
+	int  to_face(std::wstring face);
 
 	void cb_got_version(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&);
 

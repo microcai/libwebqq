@@ -15,6 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include <boost/lexical_cast.hpp>
 
 #include "webqq_impl.h"
 
@@ -117,6 +118,9 @@ void qq::WebQQ::init_face_map()
 
 	for(int i=0;i<=134;i++)
 		facemap.insert(std::make_pair(i,i));
-
 }
 
+int qq::WebQQ::to_face ( std::wstring face )
+{
+	return facemap[boost::lexical_cast<int>(face)];
+}
