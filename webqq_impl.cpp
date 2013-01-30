@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012  微蔡 <microcai@fedoraproject.org>
+ * Copyright (C) 2012 - 2013  微蔡 <microcai@fedoraproject.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 #include <string.h>
 #include <iostream>
 #include <boost/bind.hpp>
-
+#include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 #include <boost/property_tree/json_parser.hpp>
 namespace js = boost::property_tree::json_parser;
@@ -381,6 +381,8 @@ qq::WebQQ::WebQQ(boost::asio::io_service& _io_service,
     v = v % 10000 * 10000;
     m_msg_id = v;
 #endif
+
+	init_face_map();
 }
 
 void qq::WebQQ::start()
@@ -913,10 +915,13 @@ void WebQQ::process_group_message ( const boost::property_tree::wptree& jstree )
 				qqMsg msg;
 				msg.type = qqMsg::LWQQ_MSG_FONT;
 				msg.font = content.second.rbegin()->second.get<std::wstring> ( L"name" );
+				messagecontent.push_back ( msg );
 			} else if ( content.second.begin()->second.data() == L"face" ) {
 				qqMsg msg;
 				msg.type = qqMsg::LWQQ_MSG_FACE;
-				msg.face = content.second.rbegin()->second.get<int> ( L"face" );
+				int wface = boost::lexical_cast<int>(content.second.rbegin()->second.data());
+				msg.face = facemap[wface];
+ 				messagecontent.push_back ( msg );
 			} else if ( content.second.begin()->second.data() == L"cface" ) {
 				qqMsg msg;
 				msg.type = qqMsg::LWQQ_MSG_CFACE;

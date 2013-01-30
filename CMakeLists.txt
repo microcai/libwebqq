@@ -9,6 +9,6 @@ add_definitions(-DURDL_DISABLE_SSL=1)
 
 add_subdirectory(urdl)
 
-add_library(libwebqq STATIC webqq.cpp webqq_impl.cpp url.cpp logger.cpp md5.c)
+add_library(libwebqq STATIC webqq.cpp webqq_impl.cpp webqq_face.cpp url.cpp logger.cpp md5.c)
 
 target_link_libraries(libwebqq urdl ${Boost_LIBRARIES})

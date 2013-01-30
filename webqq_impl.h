@@ -132,6 +132,8 @@ public:// signals
 	static std::string lwqq_status_to_str(LWQQ_STATUS status);
 
 private:
+	void init_face_map();
+
 	void cb_got_version(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&);
 
 	void cb_got_vc(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&);
@@ -179,6 +181,7 @@ private:
 	bool		m_group_msg_insending;
 	std::queue<boost::tuple<std::wstring, std::string, send_group_message_cb> >	m_msg_queue;
 	friend class ::webqq;
+	std::map<int,int> facemap;
 };
 
 };
