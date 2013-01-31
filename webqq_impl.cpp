@@ -1068,7 +1068,7 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 		//TODO, group members
 		if (jsonobj.get<int>("retcode") == 0)
 		{
-			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result").get_child("minfo"))
+			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result.minfo"))
 			{
 				qqBuddy buddy;
 				pt::ptree & minfo = v.second;
@@ -1078,7 +1078,7 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 				group.memberlist.insert(std::make_pair(buddy.uin, buddy));
 				lwqq_log(LOG_DEBUG, "buddy list:: %ls %ls\n", buddy.uin.c_str(), buddy.nick.c_str());
 			}
-			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result").get_child("cards"))
+			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result.cards"))
 			{
 				pt::ptree & minfo = v.second;
 				std::wstring muin = utf8_wide(minfo.get<std::string>("muin"));
