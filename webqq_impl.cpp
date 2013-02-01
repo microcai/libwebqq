@@ -17,6 +17,7 @@
  */
 #include <string.h>
 #include <iostream>
+#include <boost/system/system_error.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>

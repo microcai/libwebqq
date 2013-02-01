@@ -23,9 +23,6 @@
 #include <vector>
 #include <boost/asio.hpp>
 #include <boost/function.hpp>
-#include <boost/property_tree/ptree.hpp>
-
-namespace pt = boost::property_tree;
 
 #if defined _WIN32 || defined __CYGWIN__
   #ifdef BUILDING_DLL

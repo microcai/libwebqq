@@ -34,12 +34,15 @@
 #include <map>
 #include <queue>
 #include <boost/tuple/tuple.hpp>
+#include <boost/circular_buffer.hpp>
 #include <boost/asio.hpp>
 #include <boost/signal.hpp>
 #include <boost/concept_check.hpp>
-#include <urdl/read_stream.hpp>
+#include <boost/system/system_error.hpp>
 #include <boost/property_tree/ptree.hpp>
 namespace pt = boost::property_tree;
+
+#include <urdl/read_stream.hpp>
 
 typedef boost::shared_ptr<urdl::read_stream> read_streamptr;
 
