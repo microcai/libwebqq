@@ -370,7 +370,8 @@ static void delayedcallms(boost::asio::io_service &io_service, int msec, boost::
 // build webqq and setup defaults
 qq::WebQQ::WebQQ(boost::asio::io_service& _io_service,
 	std::string _qqnum, std::string _passwd, LWQQ_STATUS _status)
-	:m_io_service(_io_service), m_qqnum(_qqnum), m_passwd(_passwd), m_status(_status)
+	:m_io_service(_io_service), m_qqnum(_qqnum), m_passwd(_passwd), m_status(_status),
+	m_msg_queue(20) //　最多保留最后的20条未发送消息.
 {
 #ifndef _WIN32
 	/* Set msg_id */
@@ -426,7 +427,7 @@ void WebQQ::send_group_message(std::wstring group, std::string msg, send_group_m
 {
 	//check if already in sending a message
 	if (m_group_msg_insending){
-		m_msg_queue.push(boost::make_tuple(group, msg, donecb));
+		m_msg_queue.push_back(boost::make_tuple(group, msg, donecb));
 		return;
 	}else{
 		m_group_msg_insending = true;
@@ -489,7 +490,7 @@ void WebQQ::cb_send_msg(const boost::system::error_code& ec, read_streamptr stre
 	}else{
 		boost::tuple<std::wstring, std::string, send_group_message_cb> v = m_msg_queue.front();
 		delayedcallms(m_io_service, 500, boost::bind(&WebQQ::send_group_message_internal, this,boost::get<0>(v),boost::get<1>(v), boost::get<2>(v)));
-		m_msg_queue.pop();
+		m_msg_queue.pop_front();
 	}
 	donecb(ec);
 }

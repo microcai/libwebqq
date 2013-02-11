@@ -182,7 +182,7 @@ private:
 	grouplist	m_groups;
 	
 	bool		m_group_msg_insending;
-	std::queue<boost::tuple<std::wstring, std::string, send_group_message_cb> >	m_msg_queue;
+	boost::circular_buffer<boost::tuple<std::wstring, std::string, send_group_message_cb> >	m_msg_queue;
 	friend class ::webqq;
 	std::map<int,int> facemap;
 };
