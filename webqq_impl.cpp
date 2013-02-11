@@ -450,14 +450,15 @@ void WebQQ::send_group_message_internal(std::wstring group, std::string msg, sen
 		% m_clientid
 		% m_psessionid
 	);
-	lwqq_puts(postdata.c_str());
+	std::string postdataencoded = url_whole_encode(postdata);
+	lwqq_puts(postdataencoded.c_str());
 
 	read_streamptr stream(new urdl::read_stream(m_io_service));
 	stream->set_option(urdl::http::request_method("POST"));
 	stream->set_option(urdl::http::cookie(this->m_cookies.lwcookies));
 	stream->set_option(urdl::http::request_referer("http://d.web2.qq.com/proxy.html?v=20101025002"));
 	stream->set_option(urdl::http::request_content_type("application/x-www-form-urlencoded; charset=UTF-8"));
-	stream->set_option(urdl::http::request_content(postdata));
+	stream->set_option(urdl::http::request_content(postdataencoded));
 
 	urdl_download(stream, LWQQ_URL_SEND_QUN_MSG, 
 		boost::bind(&WebQQ::cb_send_msg, this, boost::asio::placeholders::error, _2, _3, donecb)
