@@ -4,6 +4,7 @@ find_package(Boost 1.48 REQUIRED COMPONENTS signals system thread)
 
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(urdl/include/)
+include_directories(avhttp/include/)
 include_directories(..)
 add_definitions(-DURDL_DISABLE_SSL=1)
 
