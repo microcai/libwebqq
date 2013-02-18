@@ -42,9 +42,9 @@
 #include <boost/property_tree/ptree.hpp>
 namespace pt = boost::property_tree;
 
-#include <urdl/read_stream.hpp>
+#include <avhttp.hpp>
 
-typedef boost::shared_ptr<urdl::read_stream> read_streamptr;
+typedef boost::shared_ptr<avhttp::http_stream> read_streamptr;
 
 #include "webqq.h"
 
