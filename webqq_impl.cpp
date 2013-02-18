@@ -124,10 +124,8 @@ static std::string parse_verify_uin(const char *str)
     return std::string(start, end - start);
 }
 
-static std::string get_cookie(const avhttp::response_opts& responseheader, std::string key)
+static std::string get_cookie(const std::string & cookie, std::string key)
 {
-	std::string cookie;
-	responseheader.find(avhttp::httpoptions::cookie, cookie);
  	std::string searchkey = key + "=";
  	std::string::size_type keyindex = cookie.find(searchkey);
  	if (keyindex == std::string::npos)
@@ -137,7 +135,7 @@ static std::string get_cookie(const avhttp::response_opts& responseheader, std::
  	return cookie.substr(keyindex , valend-keyindex);
 }
 
-static void update_cookies(LwqqCookies *cookies, const avhttp::response_opts& httpheader,
+static void update_cookies(LwqqCookies *cookies, const std::string & httpheader,
                            std::string key, int update_cache)
 {
 	std::string value = get_cookie(httpheader, key);
@@ -203,7 +201,7 @@ static void update_cookies(LwqqCookies *cookies, const avhttp::response_opts& ht
     }
 }
 
-static void sava_cookie(LwqqCookies * cookies,const avhttp::response_opts & httpheader)
+static void sava_cookie(LwqqCookies * cookies, const std::string & httpheader)
 {
 	update_cookies(cookies, httpheader, "ptcz", 0);
     update_cookies(cookies, httpheader, "skey",  0);
@@ -415,7 +413,11 @@ void WebQQ::login()
 
 	avhttp::option opt;
 	opt.insert("Cookie", cookie);
-	stream.get()->request_options(opt);
+	stream.get()->request_options(
+		avhttp::request_opts()
+			(avhttp::httpoptions::cookie, cookie)
+			(avhttp::httpoptions::connection, "close")
+	);
 	http_download(stream, url, boost::bind(&WebQQ::cb_got_vc,this, boost::asio::placeholders::error, _2, _3));
 }
 
@@ -680,7 +682,7 @@ void WebQQ::cb_got_vc(const boost::system::error_code& ec, read_streamptr stream
         *c = '\0';
 
         /* We need get the ptvfsession from the header "Set-Cookie" */
-        update_cookies(&m_cookies, stream->response_options(), "ptvfsession", 1);
+        update_cookies(&m_cookies, stream->response_options().header_string(), "ptvfsession", 1);
         lwqq_log(LOG_NOTICE, "Verify code: %s\n", s);
 
         login_withvc(s);
@@ -720,7 +722,7 @@ void WebQQ::get_verify_image(std::string vcimgid)
 
 void WebQQ::cb_get_verify_image(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer)
 {
-	update_cookies(&m_cookies, stream->response_options() , "verifysession", 1);
+	update_cookies(&m_cookies, stream->response_options().header_string() , "verifysession", 1);
 	
 	// verify image is now in response
 	signeedvc(buffer.data());
@@ -742,7 +744,7 @@ void WebQQ::cb_done_login(read_streamptr stream, char* response, const boost::sy
     switch (status) {
     case 0:
 		m_status = LWQQ_STATUS_ONLINE;
-        sava_cookie(&m_cookies, stream->response_options());
+        sava_cookie(&m_cookies, stream->response_options().header_string());
         lwqq_log(LOG_NOTICE, "login success!\n");
         break;
         
@@ -830,6 +832,7 @@ void WebQQ::set_online_status()
 			(avhttp::httpoptions::referer, "http://d.web2.qq.com/proxy.html?v=20110331002&callback=1&id=2")
 			(avhttp::httpoptions::content_type, "application/x-www-form-urlencoded; charset=UTF-8")
 			(avhttp::httpoptions::request_body, msg)
+			(avhttp::httpoptions::connection, "close")
 	);
 
 	stream->async_open(LWQQ_URL_SET_STATUS,boost::bind(&WebQQ::cb_online_status,this, stream, boost::asio::placeholders::error) );
@@ -855,6 +858,7 @@ void WebQQ::do_poll_one_msg()
 			(avhttp::httpoptions::referer, "http://d.web2.qq.com/proxy.html?v=20101025002")
 			(avhttp::httpoptions::request_body, msg)
 			(avhttp::httpoptions::content_type, "application/x-www-form-urlencoded; charset=UTF-8")
+			(avhttp::httpoptions::connection, "close")
 			
 	);
 
