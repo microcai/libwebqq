@@ -411,9 +411,7 @@ void WebQQ::login()
 		boost::str(boost::format("chkuin=%s") % m_qqnum);
 	read_streamptr stream(new avhttp::http_stream(m_io_service));
 
-	avhttp::option opt;
-	opt.insert("Cookie", cookie);
-	stream.get()->request_options(
+	stream->request_options(
 		avhttp::request_opts()
 			(avhttp::httpoptions::cookie, cookie)
 			(avhttp::httpoptions::connection, "close")
