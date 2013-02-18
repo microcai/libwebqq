@@ -464,6 +464,8 @@ void WebQQ::send_group_message_internal(std::wstring group, std::string msg, sen
 			(avhttp::httpoptions::referer, "http://d.web2.qq.com/proxy.html?v=20101025002")
 			(avhttp::httpoptions::content_type, "application/x-www-form-urlencoded; charset=UTF-8")
 			(avhttp::httpoptions::request_body, postdata)
+			(avhttp::httpoptions::content_length, boost::lexical_cast<std::string>(postdata.length()))
+			(avhttp::httpoptions::connection, "close")
 	);
 
 	http_download(stream, LWQQ_URL_SEND_QUN_MSG, 
@@ -544,6 +546,8 @@ void WebQQ::update_group_list()
 			(avhttp::httpoptions::referer, "http://s.web2.qq.com/proxy.html?v=20101025002")
 			(avhttp::httpoptions::content_type, "application/x-www-form-urlencoded; charset=UTF-8")
 			(avhttp::httpoptions::request_body, postdata)
+			(avhttp::httpoptions::content_length, boost::lexical_cast<std::string>(postdata.length()))
+			(avhttp::httpoptions::connection, "close")
 	);
 
 	http_download(stream, url,
@@ -567,6 +571,7 @@ void WebQQ::update_group_qqmember(qqGroup& group)
 		avhttp::request_opts()
 			(avhttp::httpoptions::cookie, m_cookies.lwcookies)
 			(avhttp::httpoptions::referer, LWQQ_URL_REFERER_QUN_DETAIL)
+			(avhttp::httpoptions::connection, "close")
 	);
 
 	http_download(stream, url,
@@ -589,6 +594,7 @@ void WebQQ::update_group_member(qqGroup& group)
 		avhttp::request_opts()
 			(avhttp::httpoptions::cookie, m_cookies.lwcookies)
 			(avhttp::httpoptions::referer, LWQQ_URL_REFERER_QUN_DETAIL)
+			(avhttp::httpoptions::connection, "close")
 	);
 
 	http_download(stream, url,
@@ -639,7 +645,11 @@ void WebQQ::login_withvc(std::string vccode)
 	);
 
 	read_streamptr loginstream(new avhttp::http_stream(m_io_service));
-	loginstream->request_options(avhttp::request_opts()(avhttp::httpoptions::cookie, m_cookies.lwcookies));
+	loginstream->request_options(
+		avhttp::request_opts()
+			(avhttp::httpoptions::cookie, m_cookies.lwcookies)
+			(avhttp::httpoptions::connection, "close")
+	);
 	loginstream->async_open(url,boost::bind(&WebQQ::cb_do_login,this, loginstream, boost::asio::placeholders::error) );
 }
 
@@ -715,7 +725,11 @@ void WebQQ::get_verify_image(std::string vcimgid)
 	);
 
 	read_streamptr stream(new avhttp::http_stream(m_io_service));
-	stream->request_options(avhttp::request_opts()(avhttp::httpoptions::cookie, std::string("chkuin=") + m_qqnum));
+	stream->request_options(
+		avhttp::request_opts()
+			(avhttp::httpoptions::cookie, std::string("chkuin=") + m_qqnum)
+			(avhttp::httpoptions::connection, "close")
+	);
 	http_download(stream, url,
 		boost::bind(&WebQQ::cb_get_verify_image,this, boost::asio::placeholders::error, _2, _3));
 }
@@ -832,6 +846,7 @@ void WebQQ::set_online_status()
 			(avhttp::httpoptions::referer, "http://d.web2.qq.com/proxy.html?v=20110331002&callback=1&id=2")
 			(avhttp::httpoptions::content_type, "application/x-www-form-urlencoded; charset=UTF-8")
 			(avhttp::httpoptions::request_body, msg)
+			(avhttp::httpoptions::content_length, boost::lexical_cast<std::string>(msg.length()))
 			(avhttp::httpoptions::connection, "close")
 	);
 
@@ -858,8 +873,8 @@ void WebQQ::do_poll_one_msg()
 			(avhttp::httpoptions::referer, "http://d.web2.qq.com/proxy.html?v=20101025002")
 			(avhttp::httpoptions::request_body, msg)
 			(avhttp::httpoptions::content_type, "application/x-www-form-urlencoded; charset=UTF-8")
+			(avhttp::httpoptions::content_length, boost::lexical_cast<std::string>(msg.length()))
 			(avhttp::httpoptions::connection, "close")
-			
 	);
 
 	pollstream->async_open("http://d.web2.qq.com/channel/poll2",
