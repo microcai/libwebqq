@@ -375,7 +375,6 @@ static void delayedcallms(boost::asio::io_service &io_service, int msec, boost::
 	t->async_wait(boost::bind(&timeout, t, cb));
 }
 
-
 // build webqq and setup defaults
 qq::WebQQ::WebQQ(boost::asio::io_service& _io_service,
 	std::string _qqnum, std::string _passwd, LWQQ_STATUS _status)
@@ -391,6 +390,8 @@ qq::WebQQ::WebQQ(boost::asio::io_service& _io_service,
     v = (v - v % 1000) / 1000;
     v = v % 10000 * 10000;
     m_msg_id = v;
+#else
+	m_msg_id = std::rand();
 #endif
 
 	init_face_map();
@@ -872,9 +873,10 @@ void WebQQ::do_poll_one_msg()
 		% m_psessionid		
 	);
 
-	avhttp::request_opts requestopts;
+	msg = boost::str(boost::format("r=%s") %  url_encode(msg.c_str()));
 
-	boost::assign::insert(requestopts)
+    read_streamptr pollstream(new avhttp::http_stream(m_io_service));
+	pollstream->request_options(avhttp::request_opts()
 		(avhttp::httpoptions::request_method, "POST")
 		(avhttp::httpoptions::cookie, m_cookies.lwcookies)
 		("cookie2", "$Version=1")
@@ -882,28 +884,20 @@ void WebQQ::do_poll_one_msg()
 		(avhttp::httpoptions::request_body, msg)
 		(avhttp::httpoptions::content_type, "application/x-www-form-urlencoded; charset=UTF-8")
 		(avhttp::httpoptions::content_length, boost::lexical_cast<std::string>(msg.length()))
-		(avhttp::httpoptions::connection, "keep-alive");
-
-	msg = boost::str(boost::format("r=%s") %  url_encode(msg.c_str()));
-
-    read_streamptr pollstream(new avhttp::http_stream(m_io_service));
-	pollstream->request_options(requestopts);
+ 		(avhttp::httpoptions::connection, "close")
+	);
 
 	http_download(pollstream, "http://d.web2.qq.com/channel/poll2",
 		boost::bind(&WebQQ::cb_poll_msg,this, _1, _2, _3)
 	);
 }
 
-void WebQQ::cb_poll_msg (const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf)
+void WebQQ::cb_poll_msg(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf)
 {
 	//开启新的 poll
-	if ( m_status == LWQQ_STATUS_ONLINE )
-		do_poll_one_msg();
+ 	if ( m_status == LWQQ_STATUS_ONLINE )
+ 		do_poll_one_msg();
 
-	if (ec){
-		return;
-	}
-	
 	std::wstring response = utf8_wide(std::string(boost::asio::buffer_cast<const char*>(buf.data()) , buf.size()));
 	
 	pt::wptree	jsonobj;
