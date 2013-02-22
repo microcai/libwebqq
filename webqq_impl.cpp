@@ -318,11 +318,9 @@ static void http_stream_cb_reading(read_streamptr stream,httpstreamhandler handl
 		std::string content_length = stream->response_options().find(avhttp::httpoptions::content_length);
 
 		if(content_length.length()){
-			if(sb->size() ==  boost::lexical_cast<std::size_t>(content_length))
+			if(readed ==  boost::lexical_cast<std::size_t>(content_length))
 			{
-				stream->get_io_service().post(
-					boost::asio::detail::bind_handler(handler,boost::cref(boost::system::error_code(boost::asio::error::eof)),stream, boost::ref(*sb))
-				);
+				handler(boost::system::error_code(boost::asio::error::eof), stream, *sb);
 				return ;
 			}
 		}
@@ -337,12 +335,10 @@ static void http_stream_cb_reading(read_streamptr stream,httpstreamhandler handl
 		return ;
 	}
 	//	real callback
-	stream->get_io_service().post(
-		boost::asio::detail::bind_handler(handler,boost::cref(ec),stream, boost::ref(*sb))
-	);
+	handler(ec, stream, *sb);
 }
 
-static void urdl_cb_connected(read_streamptr stream, httpstreamhandler handler, const boost::system::error_code& ec)
+static void http_cb_connected(read_streamptr stream, httpstreamhandler handler, const boost::system::error_code& ec)
 {
 	boost::shared_ptr<boost::asio::streambuf> sb = boost::make_shared<boost::asio::streambuf>();
 	if (!ec){
@@ -358,13 +354,13 @@ static void urdl_cb_connected(read_streamptr stream, httpstreamhandler handler, 
 static void http_download(read_streamptr stream, const avhttp::url & url, httpstreamhandler handler)
 {
 	stream->async_open(url,
-			boost::bind(& urdl_cb_connected, stream, handler, boost::asio::placeholders::error) 
+			boost::bind(& http_cb_connected, stream, handler, boost::asio::placeholders::error) 
 	);
 }
 
 static void timeout(boost::shared_ptr<boost::asio::deadline_timer> t, boost::function<void()> cb)
 {
-	cb();
+	t->get_io_service().post(cb);
 }
 
 static void delayedcall(boost::asio::io_service &io_service, int sec, boost::function<void()> cb)
