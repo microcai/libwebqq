@@ -76,3 +76,8 @@ void webqq::send_group_message(qqGroup& group, std::string msg, boost::function<
 {
 	impl->send_group_message(group, msg, donecb);
 }
+
+boost::asio::io_service& webqq::get_ioservice()
+{
+	return impl->get_ioservice();
+}

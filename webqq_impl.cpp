@@ -465,6 +465,7 @@ void WebQQ::send_group_message_internal(std::wstring group, std::string msg, sen
 		% m_clientid
 		% m_psessionid
 	);
+
 	lwqq_puts(postdata.c_str());
 
 	read_streamptr stream(new avhttp::http_stream(m_io_service));
@@ -864,7 +865,7 @@ void WebQQ::set_online_status()
 	stream->async_open(LWQQ_URL_SET_STATUS,boost::bind(&WebQQ::cb_online_status,this, stream, boost::asio::placeholders::error) );
 }
 
-void WebQQ::do_poll_one_msg()
+void WebQQ::do_poll_one_msg(std::string cookie)
 {
     /* Create a POST request */
 	std::string msg = boost::str(
@@ -878,7 +879,7 @@ void WebQQ::do_poll_one_msg()
     read_streamptr pollstream(new avhttp::http_stream(m_io_service));
 	pollstream->request_options(avhttp::request_opts()
 		(avhttp::httpoptions::request_method, "POST")
-		(avhttp::httpoptions::cookie, m_cookies.lwcookies)
+		(avhttp::httpoptions::cookie, cookie)
 		("cookie2", "$Version=1")
 		(avhttp::httpoptions::referer, "http://d.web2.qq.com/proxy.html?v=20101025002")
 		(avhttp::httpoptions::request_body, msg)
@@ -888,15 +889,19 @@ void WebQQ::do_poll_one_msg()
 	);
 
 	http_download(pollstream, "http://d.web2.qq.com/channel/poll2",
-		boost::bind(&WebQQ::cb_poll_msg,this, _1, _2, _3)
+		boost::bind(&WebQQ::cb_poll_msg,this, _1, _2, _3, cookie)
 	);
 }
 
-void WebQQ::cb_poll_msg(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf)
+void WebQQ::cb_poll_msg(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf, std::string cookie)
 {
+	if(cookie != m_cookies.lwcookies)
+	{
+		return ;
+	}
+
 	//开启新的 poll
- 	if ( m_status == LWQQ_STATUS_ONLINE )
- 		do_poll_one_msg();
+	do_poll_one_msg(cookie);
 
 	std::wstring response = utf8_wide(std::string(boost::asio::buffer_cast<const char*>(buf.data()) , buf.size()));
 	
@@ -986,8 +991,12 @@ void WebQQ::process_msg(const pt::wptree &jstree)
 {
 	//在这里解析json数据.
 	int retcode = jstree.get<int>(L"retcode");
-	if (retcode)
+	if (retcode){
+		if(retcode != 102){
+			delayedcall(m_io_service, 15, boost::bind(&WebQQ::login, this));
+		}
 		return;
+	}
 
 	BOOST_FOREACH(const pt::wptree::value_type & result, jstree.get_child(L"result"))
 	{
@@ -1064,8 +1073,8 @@ void WebQQ::cb_group_list(const boost::system::error_code& ec, read_streamptr st
 		}
 		//start polling messages, 2 connections!
 		lwqq_log(LOG_DEBUG, "start polling messages\n");
-		do_poll_one_msg();
-		do_poll_one_msg();
+		do_poll_one_msg(m_cookies.lwcookies);
+		do_poll_one_msg(m_cookies.lwcookies);
 	}
 }
 
@@ -1111,6 +1120,8 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 		//TODO, group members
 		if (jsonobj.get<int>("retcode") == 0)
 		{
+			group.owner = utf8_wide(jsonobj.get<std::string>("result.ginfo.owner"));
+
 			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result.minfo"))
 			{
 				qqBuddy buddy;
@@ -1120,6 +1131,15 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 
 				group.memberlist.insert(std::make_pair(buddy.uin, buddy));
 				lwqq_log(LOG_DEBUG, "buddy list:: %ls %ls\n", buddy.uin.c_str(), buddy.nick.c_str());
+			}
+			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result.ginfo.members"))
+			{
+				pt::ptree & minfo = v.second;
+				std::wstring muin = utf8_wide(minfo.get<std::string>("muin"));
+				std::wstring mflag = utf8_wide(minfo.get<std::string>("mflag"));
+				try{
+				group.get_Buddy_by_uin(muin)->mflag = boost::lexical_cast<unsigned int>(mflag);
+				}catch(boost::bad_lexical_cast & e){}
 			}
 			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result.cards"))
 			{

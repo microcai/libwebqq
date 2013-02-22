@@ -72,6 +72,9 @@ struct qqBuddy{
 	std::wstring nick;
 	// 群昵称.
 	std::wstring card;
+	
+	// 成员类型. 21/20/85 是管理员.
+	unsigned int mflag;
 
 	// qq号码，不一定有，需要调用 get_qqnumber后才有.
 	std::wstring qqnum;
@@ -88,6 +91,8 @@ struct qqGroup{
 	std::wstring code;
 	// 群QQ号.
 	std::wstring qqnum;
+	
+	std::wstring owner;
 
 	std::map<std::wstring, qqBuddy>	memberlist;
 
@@ -134,6 +139,7 @@ public:
 
 	qqGroup * get_Group_by_gid(std::wstring);
 	qqGroup * get_Group_by_qq(std::wstring qq);
+	boost::asio::io_service	&get_ioservice();
 private:
     class qq::WebQQ * const impl;
 };
