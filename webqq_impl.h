@@ -154,8 +154,7 @@ private:
 
 
 	void do_poll_one_msg();
-	void cb_poll_msg(read_streamptr stream, const boost::system::error_code& ec);
-	void cb_poll_msg(read_streamptr stream, char * response, const boost::system::error_code& ec, std::size_t length, size_t goten);
+	void cb_poll_msg(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf);
 
 	void process_msg(const pt::wptree & jstree);
 	void process_group_message(const pt::wptree & jstree);

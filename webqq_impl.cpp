@@ -24,6 +24,8 @@
 #include <boost/property_tree/json_parser.hpp>
 namespace js = boost::property_tree::json_parser;
 #include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
+#include <boost/assign.hpp>
 
 #include "webqq.h"
 #include "webqq_impl.h"
@@ -36,7 +38,7 @@ extern "C"{
 #include "md5.h"
 };
 
-#include <boost/foreach.hpp>
+
 
 using namespace qq;
 
@@ -313,6 +315,18 @@ static void http_stream_cb_reading(read_streamptr stream,httpstreamhandler handl
 		readed += length;
 		sb->commit(length);
 
+		std::string content_length = stream->response_options().find(avhttp::httpoptions::content_length);
+
+		if(content_length.length()){
+			if(sb->size() ==  boost::lexical_cast<std::size_t>(content_length))
+			{
+				stream->get_io_service().post(
+					boost::asio::detail::bind_handler(handler,boost::cref(boost::system::error_code(boost::asio::error::eof)),stream, boost::ref(*sb))
+				);
+				return ;
+			}
+		}
+
 		stream->async_read_some(
 			sb->prepare(4096),
 			boost::bind(&http_stream_cb_reading, stream, handler, sb,
@@ -323,7 +337,9 @@ static void http_stream_cb_reading(read_streamptr stream,httpstreamhandler handl
 		return ;
 	}
 	//	real callback
-	handler(ec,stream,*sb);
+	stream->get_io_service().post(
+		boost::asio::detail::bind_handler(handler,boost::cref(ec),stream, boost::ref(*sb))
+	);
 }
 
 static void urdl_cb_connected(read_streamptr stream, httpstreamhandler handler, const boost::system::error_code& ec)
@@ -860,24 +876,58 @@ void WebQQ::do_poll_one_msg()
 		% m_psessionid		
 	);
 
+	avhttp::request_opts requestopts;
+
+	boost::assign::insert(requestopts)
+		(avhttp::httpoptions::request_method, "POST")
+		(avhttp::httpoptions::cookie, m_cookies.lwcookies)
+		("cookie2", "$Version=1")
+		(avhttp::httpoptions::referer, "http://d.web2.qq.com/proxy.html?v=20101025002")
+		(avhttp::httpoptions::request_body, msg)
+		(avhttp::httpoptions::content_type, "application/x-www-form-urlencoded; charset=UTF-8")
+		(avhttp::httpoptions::content_length, boost::lexical_cast<std::string>(msg.length()))
+		(avhttp::httpoptions::connection, "keep-alive");
+
 	msg = boost::str(boost::format("r=%s") %  url_encode(msg.c_str()));
 
     read_streamptr pollstream(new avhttp::http_stream(m_io_service));
-	pollstream->request_options(
-		avhttp::request_opts()
-			(avhttp::httpoptions::request_method, "POST")
-			(avhttp::httpoptions::cookie, m_cookies.lwcookies)
-			("cookie2", "$Version=1")
-			(avhttp::httpoptions::referer, "http://d.web2.qq.com/proxy.html?v=20101025002")
-			(avhttp::httpoptions::request_body, msg)
-			(avhttp::httpoptions::content_type, "application/x-www-form-urlencoded; charset=UTF-8")
-			(avhttp::httpoptions::content_length, boost::lexical_cast<std::string>(msg.length()))
-			(avhttp::httpoptions::connection, "close")
-	);
+	pollstream->request_options(requestopts);
 
-	pollstream->async_open("http://d.web2.qq.com/channel/poll2",
-		boost::bind(&WebQQ::cb_poll_msg,this, pollstream, boost::asio::placeholders::error) );
+	http_download(pollstream, "http://d.web2.qq.com/channel/poll2",
+		boost::bind(&WebQQ::cb_poll_msg,this, _1, _2, _3)
+	);
 }
+
+void WebQQ::cb_poll_msg (const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf)
+{
+	//开启新的 poll
+	if ( m_status == LWQQ_STATUS_ONLINE )
+		do_poll_one_msg();
+
+	if (ec){
+		return;
+	}
+	
+	std::wstring response = utf8_wide(std::string(boost::asio::buffer_cast<const char*>(buf.data()) , buf.size()));
+	
+	pt::wptree	jsonobj;
+	
+	std::wstringstream jsondata;
+	jsondata << response;
+
+	//处理!
+	try{
+ 		pt::json_parser::read_json(jsondata, jsonobj);
+		process_msg(jsonobj);
+	}catch (const pt::json_parser_error & jserr){
+		lwqq_log(LOG_ERROR, "parse json error : %s\n",jserr.what());
+	}
+	catch (const pt::ptree_bad_path & badpath){
+		lwqq_log(LOG_ERROR, "bad path %s\n", badpath.what());
+		js::write_json(std::wcout, jsonobj);
+	}
+}
+
 
 void WebQQ::cb_online_status(read_streamptr stream, char* response, const boost::system::error_code& ec, std::size_t length)
 {
@@ -900,44 +950,6 @@ void WebQQ::cb_online_status(read_streamptr stream, char* response, const boost:
 		printf("parse json error : %s \n\t %s\n", jserr.what(), response);
 	}catch (const pt::ptree_bad_path & jserr){
 		printf("parse bad path error :  %s\n", jserr.what());
-	}
-}
-
-void WebQQ::cb_poll_msg(read_streamptr stream, char* response, const boost::system::error_code& ec, std::size_t length, size_t goten)
-{
-	if (!ec)
-	{
-		goten += length;
-		stream->async_read_some(
-			boost::asio::buffer(response + goten, 16384 - goten),
-			boost::bind(&WebQQ::cb_poll_msg, this, stream, response, boost::asio::placeholders::error,boost::asio::placeholders::bytes_transferred, goten));
-		return ;
-	}
-
-	defer(boost::bind(operator delete, response));
-
-	//开启新的 poll
-	if ( m_status == LWQQ_STATUS_ONLINE )
-		do_poll_one_msg();
-
-	if (ec != boost::asio::error::eof){
-		return;
-	}
-
-	std::wstringstream jsondata;
-	jsondata << std::string(response).c_str();
-	pt::wptree	jsonobj;
-
-	//处理!
-	try{
-		pt::json_parser::read_json(jsondata, jsonobj);
-		process_msg(jsonobj);
-	}catch (const pt::json_parser_error & jserr){
-		lwqq_log(LOG_ERROR, "parse json error : %s\n=========\n%s\n=========\n",jserr.what(), response);
-	}
-	catch (const pt::ptree_bad_path & badpath){
-		lwqq_log(LOG_ERROR, "bad path %s\n", badpath.what());
-		js::write_json(std::wcout, jsonobj);
 	}
 }
 
@@ -1150,14 +1162,6 @@ void WebQQ::cb_online_status(read_streamptr stream, const boost::system::error_c
 	memset(data, 0, 8192);
 	boost::asio::async_read(*stream, boost::asio::buffer(data, 8192),
 		boost::bind(&WebQQ::cb_online_status, this, stream, data, boost::asio::placeholders::error,  boost::asio::placeholders::bytes_transferred) );
-}
-
-void WebQQ::cb_poll_msg(read_streamptr stream, const boost::system::error_code& ec)
-{
-	char * data = new char[16384];
-	memset(data, 0, 16384);
-	boost::asio::async_read(*stream, boost::asio::buffer(data, 16384),
-		boost::bind(&WebQQ::cb_poll_msg, this, stream, data, boost::asio::placeholders::error,  boost::asio::placeholders::bytes_transferred, 0) );
 }
 
 std::string WebQQ::lwqq_status_to_str(LWQQ_STATUS status)
