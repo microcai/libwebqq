@@ -514,7 +514,7 @@ void WebQQ::cb_send_msg(const boost::system::error_code& ec, read_streamptr stre
 		delayedcallms(m_io_service, 500, boost::bind(&WebQQ::send_group_message_internal, this,boost::get<0>(v),boost::get<1>(v), boost::get<2>(v)));
 		m_msg_queue.pop_front();
 	}
-	donecb(ec);
+	m_io_service.post( boost::asio::detail::bind_handler(donecb,ec));
 }
 
 void WebQQ::cb_got_version ( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer )
