@@ -466,7 +466,7 @@ void WebQQ::send_group_message_internal(std::wstring group, std::string msg, sen
 		% m_psessionid
 	);
 
-	lwqq_puts(postdata.c_str());
+// 	lwqq_puts(postdata.c_str());
 
 	read_streamptr stream(new avhttp::http_stream(m_io_service));
 	stream->request_options(
