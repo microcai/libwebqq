@@ -26,10 +26,10 @@ namespace js = boost::property_tree::json_parser;
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 #include <boost/assign.hpp>
+#include <boost/scope_exit.hpp>
 
 #include "webqq.h"
 #include "webqq_impl.h"
-#include "defer.hpp"
 #include "url.hpp"
 #include "logger.h"
 #include "utf8/utf8.h"
@@ -756,7 +756,11 @@ void WebQQ::cb_get_verify_image(const boost::system::error_code& ec, read_stream
 
 void WebQQ::cb_done_login(read_streamptr stream, char* response, const boost::system::error_code& ec, std::size_t length)
 {
-	defer(boost::bind(operator delete, response));
+    BOOST_SCOPE_EXIT( (&response) )
+    {
+		delete response;
+    } BOOST_SCOPE_EXIT_END
+	
 	std::cout << response << std::endl;
     char *p = strstr(response, "\'");
     if (!p) {
@@ -926,8 +930,12 @@ void WebQQ::cb_poll_msg(const boost::system::error_code& ec, read_streamptr stre
 
 void WebQQ::cb_online_status(read_streamptr stream, char* response, const boost::system::error_code& ec, std::size_t length)
 {
-	defer(boost::bind(operator delete, response));
-	//处理!
+    BOOST_SCOPE_EXIT( (&response) )
+    {
+		delete response;
+    } BOOST_SCOPE_EXIT_END
+    
+    //处理!
 	try{
 		pt::ptree json = json_parse(response);
 		js::write_json(std::cout, json);
