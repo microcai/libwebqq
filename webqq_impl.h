@@ -94,6 +94,18 @@ typedef struct LwqqCookies {
     std::string pt2gguin;
     std::string verifysession;
     std::string lwcookies;
+	void clear(){
+		ptvfsession.clear();          /**< ptvfsession */
+		ptcz.clear();
+		skey.clear();
+		ptwebqq.clear();
+		ptuserinfo.clear();
+		uin.clear();
+		ptisp.clear();
+		pt2gguin.clear();
+		verifysession.clear();
+		lwcookies.clear();
+	}
 } LwqqCookies;
 
 typedef std::map<std::wstring, qqGroup>	grouplist;

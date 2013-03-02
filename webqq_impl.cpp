@@ -412,9 +412,7 @@ void qq::WebQQ::start()
 void WebQQ::login()
 {
 	m_clientid.clear();
-	m_cookies.lwcookies.clear();
-	m_cookies.verifysession.clear();
-	m_cookies.ptwebqq.clear();
+	m_cookies.clear();
 	m_groups.clear();
 	m_psessionid.clear();
 	m_vfwebqq.clear();
