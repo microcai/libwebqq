@@ -732,6 +732,11 @@ void WebQQ::cb_got_vc(const boost::system::error_code& ec, read_streamptr stream
 
 void WebQQ::get_verify_image(std::string vcimgid)
 {
+	if( vcimgid.length() < 8){
+		delayedcall(m_io_service, 10,boost::bind(&WebQQ::login, this));
+		return ;
+	}
+
 	std::string url = boost::str(
 		boost::format(LWQQ_URL_VERIFY_IMG) % APPID % m_qqnum
 	);
