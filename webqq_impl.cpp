@@ -19,6 +19,7 @@
 #include <iostream>
 #include <boost/system/system_error.hpp>
 #include <boost/bind.hpp>
+#include <boost/bind/protect.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -360,19 +361,21 @@ static void http_download(read_streamptr stream, const avhttp::url & url, httpst
 
 static void timeout(boost::shared_ptr<boost::asio::deadline_timer> t, boost::function<void()> cb)
 {
-	t->get_io_service().post(cb);
+	t->get_io_service().post(boost::protect(cb));
 }
 
-static void delayedcall(boost::asio::io_service &io_service, int sec, boost::function<void()> cb)
+template<class handler>
+void delayedcall(boost::asio::io_service &io_service, int sec, handler cb)
 {
 	boost::shared_ptr<boost::asio::deadline_timer> t( new boost::asio::deadline_timer(io_service, boost::posix_time::seconds(sec)));
-	t->async_wait(boost::bind(&timeout, t, cb));
+	t->async_wait(boost::bind(&timeout, t, boost::protect(cb)));
 }
 
-static void delayedcallms(boost::asio::io_service &io_service, int msec, boost::function<void()> cb)
+template<class handler>
+void delayedcallms(boost::asio::io_service &io_service, int msec, handler cb)
 {
 	boost::shared_ptr<boost::asio::deadline_timer> t( new boost::asio::deadline_timer(io_service, boost::posix_time::milliseconds(msec)));
-	t->async_wait(boost::bind(&timeout, t, cb));
+	t->async_wait(boost::bind(&timeout, t, boost::protect(cb)));
 }
 
 // build webqq and setup defaults
