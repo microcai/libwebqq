@@ -31,7 +31,7 @@ void webqq::on_verify_code ( boost::function< void ( const boost::asio::const_bu
 }
 
 
-void webqq::on_group_msg(boost::function< void(std::wstring, std::wstring, const std::vector<qqMsg>& )> cb)
+void webqq::on_group_msg(boost::function< void(std::string, std::string, const std::vector<qqMsg>& )> cb)
 {
 	this->impl->siggroupmessage.connect(cb);
 }
@@ -41,12 +41,12 @@ void webqq::update_group_member(qqGroup& group)
 	impl->update_group_member(group);
 }
 
-qqGroup * webqq::get_Group_by_gid(std::wstring gid)
+qqGroup * webqq::get_Group_by_gid(std::string gid)
 {
 	return impl->get_Group_by_gid(gid);
 }
 
-qqGroup* webqq::get_Group_by_qq(std::wstring qq)
+qqGroup* webqq::get_Group_by_qq(std::string qq)
 {
 	return impl->get_Group_by_qq(qq);
 }
@@ -67,7 +67,7 @@ void webqq::login_withvc ( std::string vccode )
 }
 
 
-void webqq::send_group_message(std::wstring group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb)
+void webqq::send_group_message(std::string group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb)
 {
 	impl->send_group_message(group, msg, donecb);
 }

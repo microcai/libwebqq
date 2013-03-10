@@ -108,7 +108,7 @@ typedef struct LwqqCookies {
 	}
 } LwqqCookies;
 
-typedef std::map<std::wstring, qqGroup>	grouplist;
+typedef std::map<std::string, qqGroup>	grouplist;
 
 class SYMBOL_HIDDEN WebQQ
 {
@@ -123,13 +123,13 @@ public:
 
 	void start();
 	typedef boost::function<void (const boost::system::error_code& ec)> send_group_message_cb;
-	void send_group_message(std::wstring group, std::string msg, send_group_message_cb donecb);
+	void send_group_message(std::string group, std::string msg, send_group_message_cb donecb);
 	void send_group_message(qqGroup &  group, std::string msg, send_group_message_cb donecb);
 	void update_group_list();
 	void update_group_qqmember(qqGroup& group);
     void update_group_member(qqGroup &  group);
-	qqGroup * get_Group_by_gid(std::wstring gid);
-	qqGroup * get_Group_by_qq(std::wstring qq);
+	qqGroup * get_Group_by_gid(std::string gid);
+	qqGroup * get_Group_by_qq(std::string qq);
 	boost::asio::io_service	&get_ioservice(){
 		return m_io_service;
 	};
@@ -146,7 +146,7 @@ public:// signals
 	boost::signal< bool (int stage, int why)> sigerror;
 	
 	// 有群消息的时候激发.
-	boost::signal< void (std::wstring group, std::wstring who, const std::vector<qqMsg> & )> siggroupmessage;
+	boost::signal< void (std::string group, std::string who, const std::vector<qqMsg> & )> siggroupmessage;
 	static std::string lwqq_status_to_str(LWQQ_STATUS status);
 
 private:
@@ -177,7 +177,7 @@ private:
 	void cb_group_member(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, qqGroup &);
 	void cb_group_qqnumber(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, qqGroup &);
 
-	void send_group_message_internal(std::wstring group, std::string msg, send_group_message_cb donecb);
+	void send_group_message_internal(std::string group, std::string msg, send_group_message_cb donecb);
 	void cb_send_msg(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, boost::function<void (const boost::system::error_code& ec)> donecb);
 
 private:
@@ -196,7 +196,7 @@ private:
 	grouplist	m_groups;
 	
 	bool		m_group_msg_insending;
-	boost::circular_buffer<boost::tuple<std::wstring, std::string, send_group_message_cb> >	m_msg_queue;
+	boost::circular_buffer<boost::tuple<std::string, std::string, send_group_message_cb> >	m_msg_queue;
 	friend class ::webqq;
 	std::map<int,int> facemap;
 };

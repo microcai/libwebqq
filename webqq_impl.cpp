@@ -34,8 +34,7 @@ namespace js = boost::property_tree::json_parser;
 #include "md5.hpp"
 #include "url.hpp"
 #include "logger.h"
-
-#include "utf8/utf8.h"
+#include "utf8.hpp"
 
 using namespace qq;
 
@@ -436,7 +435,7 @@ void WebQQ::send_group_message(qqGroup& group, std::string msg, send_group_messa
 	send_group_message(group.gid, msg, donecb);
 }
 
-void WebQQ::send_group_message(std::wstring group, std::string msg, send_group_message_cb donecb)
+void WebQQ::send_group_message(std::string group, std::string msg, send_group_message_cb donecb)
 {
 	//check if already in sending a message
 	if (m_group_msg_insending){
@@ -448,7 +447,7 @@ void WebQQ::send_group_message(std::wstring group, std::string msg, send_group_m
 	}
 }
 
-void WebQQ::send_group_message_internal(std::wstring group, std::string msg, send_group_message_cb donecb)
+void WebQQ::send_group_message_internal(std::string group, std::string msg, send_group_message_cb donecb)
 {
 	//unescape for POST
 	std::string postdata = boost::str(
@@ -460,7 +459,7 @@ void WebQQ::send_group_message_internal(std::wstring group, std::string msg, sen
 				"\"msg_id\":%ld,"
 				"\"clientid\":\"%s\","
 				"\"psessionid\":\"%s\"}&clientid=%s&psessionid=%s")
-		% wide_utf8(group) % parse_unescape(msg) % m_msg_id % m_clientid % m_psessionid 
+		% group % parse_unescape(msg) % m_msg_id % m_clientid % m_psessionid 
 		% m_clientid
 		% m_psessionid
 	);
@@ -509,7 +508,7 @@ void WebQQ::cb_send_msg(const boost::system::error_code& ec, read_streamptr stre
 	if (m_msg_queue.empty()){
 		m_group_msg_insending = false;
 	}else{
-		boost::tuple<std::wstring, std::string, send_group_message_cb> v = m_msg_queue.front();
+		boost::tuple<std::string, std::string, send_group_message_cb> v = m_msg_queue.front();
 		delayedcallms(m_io_service, 500, boost::bind(&WebQQ::send_group_message_internal, this,boost::get<0>(v),boost::get<1>(v), boost::get<2>(v)));
 		m_msg_queue.pop_front();
 	}
@@ -573,7 +572,7 @@ void WebQQ::update_group_qqmember(qqGroup& group)
 	url = boost::str(
 		boost::format("%s/api/get_friend_uin2?tuin=%s&verifysession=&type=1&code=&vfwebqq=%s&t=%ld")
 		% "http://s.web2.qq.com"
-		% wide_utf8(group.code)
+		% group.code
 		% m_vfwebqq
 		% time(NULL)
 	);
@@ -597,7 +596,7 @@ void WebQQ::update_group_member(qqGroup& group)
 	std::string url = boost::str(
 		boost::format("%s/api/get_group_info_ext2?gcode=%s&vfwebqq=%s&t=%ld")
 		% "http://s.web2.qq.com"
-		% wide_utf8(group.code)
+		% group.code
 		% m_vfwebqq
 		% time(NULL)
 	);
@@ -613,7 +612,7 @@ void WebQQ::update_group_member(qqGroup& group)
 	);
 }
 
-qqGroup* WebQQ::get_Group_by_gid(std::wstring gid)
+qqGroup* WebQQ::get_Group_by_gid(std::string gid)
 {
 	qq::grouplist::iterator it = m_groups.find(gid);
 	if (it != m_groups.end())
@@ -621,7 +620,7 @@ qqGroup* WebQQ::get_Group_by_gid(std::wstring gid)
 	return NULL;
 }
 
-qqGroup* WebQQ::get_Group_by_qq(std::wstring qq)
+qqGroup* WebQQ::get_Group_by_qq(std::string qq)
 {
 	qq::grouplist::iterator it = m_groups.begin();
 	for(;it != m_groups.end();it ++){
@@ -962,8 +961,8 @@ void WebQQ::cb_online_status(read_streamptr stream, char* response, const boost:
 
 void WebQQ::process_group_message ( const boost::property_tree::wptree& jstree )
 {
-	std::wstring group_code = jstree.get<std::wstring> ( L"value.from_uin" );
-	std::wstring who = jstree.get<std::wstring> ( L"value.send_uin" );
+	std::string group_code = wide_utf8( jstree.get<std::wstring>(L"value.from_uin") );
+	std::string who = wide_utf8( jstree.get<std::wstring>(L"value.send_uin") );
 
 	//parse content
 	std::vector<qqMsg>	messagecontent;
@@ -974,7 +973,7 @@ void WebQQ::process_group_message ( const boost::property_tree::wptree& jstree )
 			if ( content.second.begin()->second.data() == L"font" ) {
 				qqMsg msg;
 				msg.type = qqMsg::LWQQ_MSG_FONT;
-				msg.font = content.second.rbegin()->second.get<std::wstring> ( L"name" );
+				msg.font = wide_utf8(content.second.rbegin()->second.get<std::wstring> ( L"name" ));
 				messagecontent.push_back ( msg );
 			} else if ( content.second.begin()->second.data() == L"face" ) {
 				qqMsg msg;
@@ -985,14 +984,14 @@ void WebQQ::process_group_message ( const boost::property_tree::wptree& jstree )
 			} else if ( content.second.begin()->second.data() == L"cface" ) {
 				qqMsg msg;
 				msg.type = qqMsg::LWQQ_MSG_CFACE;
-				msg.cface = content.second.rbegin()->second.get<std::wstring> ( L"name" );
+				msg.cface = wide_utf8(content.second.rbegin()->second.get<std::wstring> ( L"name" ));
 				messagecontent.push_back ( msg );
 			}
 		} else {
 			//聊天字符串就在这里.
 			qqMsg msg;
 			msg.type = qqMsg::LWQQ_MSG_TEXT;
-			msg.text = content.second.data();
+			msg.text = wide_utf8(content.second.data());
 			messagecontent.push_back ( msg );
 		}
 	}
@@ -1054,10 +1053,10 @@ void WebQQ::cb_group_list(const boost::system::error_code& ec, read_streamptr st
 							jsonobj.get_child("result").get_child("gnamelist"))
 			{
 				qqGroup	newgroup;
- 				newgroup.gid = utf8_wide(result.second.get<std::string>("gid"));
- 				newgroup.name = utf8_wide(result.second.get<std::string>("name"));
- 				newgroup.code = utf8_wide(result.second.get<std::string>("code"));
- 				if (newgroup.gid[0]==L'-'){
+ 				newgroup.gid = result.second.get<std::string>("gid");
+ 				newgroup.name = result.second.get<std::string>("name");
+ 				newgroup.code = result.second.get<std::string>("code");
+ 				if (newgroup.gid[0]=='-'){
 					retry = true;
 					lwqq_log(LOG_ERROR, "qqGroup get error \n");
 					continue;
@@ -1108,7 +1107,7 @@ void WebQQ::cb_group_qqnumber(const boost::system::error_code& ec, read_streampt
 		//TODO, group members
 		if (jsonobj.get<int>("retcode") == 0)
 		{
-			group.qqnum = utf8_wide(jsonobj.get<std::string>("result.account"));
+			group.qqnum = jsonobj.get<std::string>("result.account");
 			lwqq_log(LOG_NOTICE, "qq number of group %ls is %ls\n", group.name.c_str(), group.qqnum.c_str());
 		}
 	}catch (const pt::json_parser_error & jserr){
@@ -1132,14 +1131,14 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 		//TODO, group members
 		if (jsonobj.get<int>("retcode") == 0)
 		{
-			group.owner = utf8_wide(jsonobj.get<std::string>("result.ginfo.owner"));
+			group.owner = jsonobj.get<std::string>("result.ginfo.owner");
 
 			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result.minfo"))
 			{
 				qqBuddy buddy;
 				pt::ptree & minfo = v.second;
-				buddy.nick = utf8_wide(minfo.get<std::string>("nick"));
-				buddy.uin = utf8_wide(minfo.get<std::string>("uin"));
+				buddy.nick = minfo.get<std::string>("nick");
+				buddy.uin = minfo.get<std::string>("uin");
 
 				group.memberlist.insert(std::make_pair(buddy.uin, buddy));
 				lwqq_log(LOG_DEBUG, "buddy list:: %ls %ls\n", buddy.uin.c_str(), buddy.nick.c_str());
@@ -1147,8 +1146,8 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result.ginfo.members"))
 			{
 				pt::ptree & minfo = v.second;
-				std::wstring muin = utf8_wide(minfo.get<std::string>("muin"));
-				std::wstring mflag = utf8_wide(minfo.get<std::string>("mflag"));
+				std::string muin = minfo.get<std::string>("muin");
+				std::string mflag = minfo.get<std::string>("mflag");
 				try{
 				group.get_Buddy_by_uin(muin)->mflag = boost::lexical_cast<unsigned int>(mflag);
 				}catch(boost::bad_lexical_cast & e){}
@@ -1156,8 +1155,8 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result.cards"))
 			{
 				pt::ptree & minfo = v.second;
-				std::wstring muin = utf8_wide(minfo.get<std::string>("muin"));
-				std::wstring card = utf8_wide(minfo.get<std::string>("card"));
+				std::string muin = minfo.get<std::string>("muin");
+				std::string card = minfo.get<std::string>("card");
 				group.get_Buddy_by_uin(muin)->card = card;
 			}
 		}
