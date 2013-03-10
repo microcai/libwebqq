@@ -200,7 +200,7 @@ static void update_cookies(LwqqCookies *cookies, const std::string & httpheader,
     }
 }
 
-static void sava_cookie(LwqqCookies * cookies, const std::string & httpheader)
+static void save_cookie(LwqqCookies * cookies, const std::string & httpheader)
 {
 	update_cookies(cookies, httpheader, "ptcz", 0);
     update_cookies(cookies, httpheader, "skey",  0);
@@ -778,7 +778,7 @@ void WebQQ::cb_done_login(read_streamptr stream, char* response, const boost::sy
     switch (status) {
     case 0:
 		m_status = LWQQ_STATUS_ONLINE;
-        sava_cookie(&m_cookies, stream->response_options().header_string());
+        save_cookie(&m_cookies, stream->response_options().header_string());
         lwqq_log(LOG_NOTICE, "login success!\n");
         break;
         
