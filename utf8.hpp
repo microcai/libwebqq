@@ -29,71 +29,50 @@ DEALINGS IN THE SOFTWARE.
 #define UTF8_FOR_CPP_2675DCD0_9480_4C0C_B92A_CC14C027B731
 
 #include <string>
+#include <boost/version.hpp>
+
+#if BOOST_VERSION >= 104800
 
 #include <boost/locale.hpp>
 #include <boost/locale/utf.hpp>
 
-inline std::string wide_utf8(const std::wstring &source);
-inline std::wstring utf8_wide(std::string const &source);
-inline std::string ansi_utf8(std::string const &source, const std::string &characters = "GB2312");
-inline std::string utf8_ansi(std::string const &source, const std::string &characters = "GB2312");
-inline std::string wide_ansi(std::wstring const &source, const std::string &characters = "GB2312");
-inline std::wstring ansi_wide(const std::string &source, const std::string &characters = "GB2312");
-
-inline std::wstring ansi_wide(const std::string &source, const std::string &characters/* = "GB2312"*/)
-{
-	std::wstring destination;
-
-	std::string s = ansi_utf8(source, characters);
-	destination = boost::locale::conv::utf_to_utf<wchar_t>(s);
-
-	return destination;
-}
-
-inline std::string ansi_utf8(std::string const &source, const std::string &characters/* = "GB2312"*/)
-{
-	std::string destination;
-
-	destination = boost::locale::conv::between(source, "UTF-8", characters);
-
-	return destination;
-}
-
 inline std::string wide_utf8(const std::wstring &source)
 {
-	std::string destination;
-
-	destination = boost::locale::conv::utf_to_utf<char>(source);
-
-	return destination;
+	return boost::locale::conv::utf_to_utf<char>(source);
 }
 
 inline std::wstring utf8_wide(std::string const &source)
 {
-	std::wstring destination;
-
-	destination = boost::locale::conv::utf_to_utf<wchar_t>(source);
-
-	return destination;
+	return boost::locale::conv::utf_to_utf<wchar_t>(source);
 }
 
-inline std::string utf8_ansi(std::string const &source, const std::string &characters/* = "GB2312"*/)
+#else
+
+#include <stdint.h>
+#include <wchar.h>
+
+#include "./utf/unchecked.h"
+
+inline std::string wide_utf8(const std::wstring &source)
 {
-	std::string destination;
-
-	destination = boost::locale::conv::between(source, characters, "UTF-8");
-
-	return destination;
+	std::string result;
+	if(sizeof(wchar_t) == 32)
+		utf8::unchecked::utf32to8<>(source.begin(),source.end(),result.begin());
+	else if (sizeof(wchar_t) == 16)
+		utf8::unchecked::utf16to8(source.begin(),source.end(),result.begin());
+	return result;
 }
 
-inline std::string wide_ansi(std::wstring const &source, const std::string &characters/* = "GB2312"*/)
+inline std::wstring utf8_wide(std::string const &source)
 {
-	std::string destination;
-
-	destination = wide_utf8(source);
-	destination = utf8_ansi(destination, characters);
-
-	return destination;
+	std::wstring result;
+	if(sizeof(wchar_t) == 32)
+		utf8::unchecked::utf8to32(source.begin(),source.end(),result.begin());
+	else if (sizeof(wchar_t) == 16)
+		utf8::unchecked::utf8to16(source.begin(),source.end(),result.begin());
+	return result;
 }
+
+#endif
 
 #endif // UTF8_FOR_CPP_2675DCD0_9480_4C0C_B92A_CC14C027B731
