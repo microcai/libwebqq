@@ -347,7 +347,7 @@ static void http_cb_connected(read_streamptr stream, httpstreamhandler handler, 
 	}
 }
 
-static void http_download(read_streamptr stream, const avhttp::url & url, httpstreamhandler handler)
+static void async_http_download(read_streamptr stream, const avhttp::url & url, httpstreamhandler handler)
 {
 	stream->async_open(url,
 			boost::bind(& http_cb_connected, stream, handler, boost::asio::placeholders::error) 
@@ -401,7 +401,7 @@ void qq::WebQQ::start()
 	read_streamptr stream(new avhttp::http_stream(m_io_service));
 	lwqq_log(LOG_DEBUG, "Get webqq version from %s\n", LWQQ_URL_VERSION);
 	
-	http_download(stream, LWQQ_URL_VERSION,
+	async_http_download(stream, LWQQ_URL_VERSION,
 		boost::bind(&WebQQ::cb_got_version, this, boost::asio::placeholders::error, _2, _3)
 	);
 }
@@ -427,7 +427,7 @@ void WebQQ::login()
 			(avhttp::http_options::cookie, cookie)
 			(avhttp::http_options::connection, "close")
 	);
-	http_download(stream, url, boost::bind(&WebQQ::cb_got_vc,this, boost::asio::placeholders::error, _2, _3));
+	async_http_download(stream, url, boost::bind(&WebQQ::cb_got_vc,this, boost::asio::placeholders::error, _2, _3));
 }
 
 void WebQQ::send_group_message(qqGroup& group, std::string msg, send_group_message_cb donecb)
@@ -464,8 +464,6 @@ void WebQQ::send_group_message_internal(std::string group, std::string msg, send
 		% m_psessionid
 	);
 
-// 	lwqq_puts(postdata.c_str());
-
 	read_streamptr stream(new avhttp::http_stream(m_io_service));
 	stream->request_options(
 		avhttp::request_opts()
@@ -478,7 +476,7 @@ void WebQQ::send_group_message_internal(std::string group, std::string msg, send
 			(avhttp::http_options::connection, "close")
 	);
 
-	http_download(stream, LWQQ_URL_SEND_QUN_MSG, 
+	async_http_download(stream, LWQQ_URL_SEND_QUN_MSG, 
 		boost::bind(&WebQQ::cb_send_msg, this, boost::asio::placeholders::error, _2, _3, donecb)
 	);
 }
@@ -537,7 +535,7 @@ void WebQQ::cb_got_version ( const boost::system::error_code& ec, read_streamptr
 		this->m_version = v;
 		std::cout << "Get webqq version: " <<  this->m_version <<  std::endl;
 		//开始真正的登录.
-		login();
+		m_io_service.post(boost::bind(&WebQQ::login, this));
 	}
 }
 
@@ -560,7 +558,7 @@ void WebQQ::update_group_list()
 			(avhttp::http_options::connection, "close")
 	);
 
-	http_download(stream, url,
+	async_http_download(stream, url,
 		boost::bind(&WebQQ::cb_group_list, this, boost::asio::placeholders::error, _2, _3)
 	);
 }
@@ -584,7 +582,7 @@ void WebQQ::update_group_qqmember(qqGroup& group)
 			(avhttp::http_options::connection, "close")
 	);
 
-	http_download(stream, url,
+	async_http_download(stream, url,
 		boost::bind(&WebQQ::cb_group_qqnumber, this, boost::asio::placeholders::error, _2, _3, boost::ref(group))
 	);
 }
@@ -607,7 +605,7 @@ void WebQQ::update_group_member(qqGroup& group)
 			(avhttp::http_options::connection, "close")
 	);
 
-	http_download(stream, url,
+	async_http_download(stream, url,
 		boost::bind(&WebQQ::cb_group_member, this, boost::asio::placeholders::error, _2, _3, boost::ref(group))
 	);
 }
@@ -745,7 +743,7 @@ void WebQQ::get_verify_image(std::string vcimgid)
 			(avhttp::http_options::cookie, std::string("chkuin=") + m_qqnum)
 			(avhttp::http_options::connection, "close")
 	);
-	http_download(stream, url,
+	async_http_download(stream, url,
 		boost::bind(&WebQQ::cb_get_verify_image,this, boost::asio::placeholders::error, _2, _3));
 }
 
@@ -895,7 +893,7 @@ void WebQQ::do_poll_one_msg(std::string cookie)
  		(avhttp::http_options::connection, "close")
 	);
 
-	http_download(pollstream, "http://d.web2.qq.com/channel/poll2",
+	async_http_download(pollstream, "http://d.web2.qq.com/channel/poll2",
 		boost::bind(&WebQQ::cb_poll_msg,this, _1, _2, _3, cookie)
 	);
 }
