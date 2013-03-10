@@ -31,15 +31,11 @@ namespace js = boost::property_tree::json_parser;
 
 #include "webqq.h"
 #include "webqq_impl.h"
+#include "md5.hpp"
 #include "url.hpp"
 #include "logger.h"
+
 #include "utf8/utf8.h"
-
-extern "C"{
-#include "md5.h"
-};
-
-
 
 using namespace qq;
 

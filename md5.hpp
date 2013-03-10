@@ -58,7 +58,6 @@ typedef struct MD5Context {
     unsigned char in[64];
 } MD5_CTX;
 
-char* lutil_md5_file(const char *filename, char *buf);
 char * lutil_md5_digest(const unsigned char * data, unsigned int len , char *buf);
 char* lutil_md5_data(const unsigned char *data, unsigned int len, char *buf);
 

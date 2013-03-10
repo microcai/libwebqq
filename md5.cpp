@@ -52,7 +52,7 @@
 #endif
 #include <string.h>
 #include <stdio.h>
-#include "md5.h"
+#include "md5.hpp"
  
 static void MD5Init(MD5_CTX *context);
 static void MD5Update(MD5_CTX *context, unsigned char const *buf, unsigned len);
@@ -80,27 +80,6 @@ void byteReverse(unsigned char *buf, unsigned longs)
     } while (--longs);
 }
 #endif /* ! __BYTE_ORDER == 1234 */
- 
- 
- 
- 
-char *
-lutil_md5_file (const char *filename, char *buf)
-{
-    unsigned char buffer[1024]; 
-    MD5_CTX ctx;
-    int i,j;
-	FILE * f;
- 
-    MD5Init(&ctx);
-    f = fopen(filename,"rb");
-    if (!f) return 0;
-    while ((i = fread(buffer,1,sizeof buffer,f)) > 0) {
-        MD5Update(&ctx,buffer,i);
-    }
-    fclose(f);
-    return MD5End(&ctx, buf);
-}
  
 char *
 lutil_md5_data (const unsigned char *data, unsigned int len, char *buf)
