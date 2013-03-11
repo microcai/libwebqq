@@ -57,74 +57,14 @@ using namespace qq;
 
 #define LWQQ_URL_SEND_QUN_MSG "http://d.web2.qq.com/channel/send_qun_msg2"
 
-static void upcase_string(char *str, int len)
-{
-    int i;
-    for (i = 0; i < len; ++i) {
-        if (islower(str[i]))
-            str[i]= toupper(str[i]);
-    }
-}
+static std::string generate_clientid();
 
+static void upcase_string(char *str, int len);
 ///low level special char mapping
-static std::string parse_unescape(std::string source)
-{
-	boost::replace_all(source, "\\", "\\\\\\\\");
-	boost::replace_all(source, "\n", "\\\\n");
-	boost::replace_all(source, "\t", "\\\\t");
-	boost::replace_all(source, ":", "\\\\u003A");
-	boost::replace_all(source, ";", "\\\\u003B");
-	boost::replace_all(source, "&", "\\\\u0026");
-	boost::replace_all(source, "+", "\\\\u002B");
-	boost::replace_all(source, "%", "\\\\u0025");
-	boost::replace_all(source, "`", "\\\\u0060");
-	boost::replace_all(source, "[`", "\\\\u005B");
-	boost::replace_all(source, "]", "\\\\u005D");
-	boost::replace_all(source, ",", "\\\\u002C");
-	boost::replace_all(source, "{", "\\\\u007B");
-	boost::replace_all(source, "}", "\\\\u007D");
-	return source;
-}
-
-static std::string generate_clientid()
-{
-    int r;
-    struct timeval tv;
-    long t;
-    char buf[20] = {0};
-    
-    srand(time(NULL));
-    r = rand() % 90 + 10;
-
-#ifdef WIN32
-	sprintf(buf, "%d%d%d%d", r, r, r);
-#else
-	if (gettimeofday(&tv, NULL)) {
-		return NULL;
-	}
-	t = tv.tv_usec % 1000000;
-	snprintf(buf, sizeof(buf), "%d%ld", r, t);
-#endif
-
-	return buf;
-}
+static std::string parse_unescape(std::string source);
 
 // ptui_checkVC('0','!IJG, ptui_checkVC('0','!IJG', '\x00\x00\x00\x00\x54\xb3\x3c\x53');
-static std::string parse_verify_uin(const char *str)
-{
-    const char *start;
-    const char *end;
-
-    start = strchr(str, '\\');
-    if (!start)
-        return "";
-
-    end = strchr(start,'\'');
-    if (!end)
-        return "";
-
-    return std::string(start, end - start);
-}
+static std::string parse_verify_uin(const char *str);
 
 static std::string get_cookie(const std::string & cookie, std::string key)
 {
@@ -214,6 +154,7 @@ static void save_cookie(LwqqCookies * cookies, const std::string & httpheader)
     update_cookies(cookies, httpheader, "pt2gguin", 1);
 }
 
+static std::string lwqq_status_to_str(LWQQ_STATUS status);
 
 /**
  * I hacked the javascript file named comm.js, which received from tencent
@@ -232,7 +173,7 @@ static void save_cookie(LwqqCookies * cookies, const std::string & httpheader)
  * 
  * @return Encoded password on success, else NULL on failed
  */
-static std::string lwqq_enc_pwd(const char *pwd, const char *vc, const char *uin)
+static std::string lwqq_enc_pwd(const std::string & pwd, const std::string & vc, const std::string &uin)
 {
     int i;
     int uin_byte_length;
@@ -240,7 +181,7 @@ static std::string lwqq_enc_pwd(const char *pwd, const char *vc, const char *uin
     char _uin[9] = {0};
 
     /* Calculate the length of uin (it must be 8?) */
-    uin_byte_length = strlen(uin) / 4;
+    uin_byte_length = uin.length() / 4;
 
     /**
      * Ok, parse uin from string format.
@@ -249,7 +190,7 @@ static std::string lwqq_enc_pwd(const char *pwd, const char *vc, const char *uin
     for (i = 0; i < uin_byte_length ; i++) {
         char u[5] = {0};
         char tmp;
-        strncpy(u, uin + i * 4 + 2, 2);
+        strncpy(u, & uin [  i * 4 + 2 ] , 2);
 
         errno = 0;
         tmp = strtol(u, NULL, 16);
@@ -260,14 +201,14 @@ static std::string lwqq_enc_pwd(const char *pwd, const char *vc, const char *uin
     }
 
     /* Equal to "var I=hexchar2bin(md5(M));" */
-    lutil_md5_digest((unsigned char *)pwd, strlen(pwd), (char *)buf);
+    lutil_md5_digest((unsigned char *)pwd.c_str(), pwd.length(), (char *)buf);
 
     /* Equal to "var H=md5(I+pt.uin);" */
     memcpy(buf + 16, _uin, uin_byte_length);
     lutil_md5_data((unsigned char *)buf, 16 + uin_byte_length, (char *)buf);
     
     /* Equal to var G=md5(H+C.verifycode.value.toUpperCase()); */
-    sprintf(buf + strlen(buf), /*sizeof(buf) - strlen(buf),*/ "%s", vc);
+    std::sprintf(buf + strlen(buf), /*sizeof(buf) - strlen(buf),*/ "%s", vc.c_str());
     upcase_string(buf, strlen(buf));
 
     lutil_md5_data((unsigned char *)buf, strlen(buf), (char *)buf);
@@ -1166,7 +1107,7 @@ void WebQQ::cb_online_status(read_streamptr stream, const boost::system::error_c
 		boost::bind(&WebQQ::cb_online_status, this, stream, data, boost::asio::placeholders::error,  boost::asio::placeholders::bytes_transferred) );
 }
 
-std::string WebQQ::lwqq_status_to_str(LWQQ_STATUS status)
+static std::string lwqq_status_to_str(LWQQ_STATUS status)
 {
     switch(status){
         case LWQQ_STATUS_ONLINE: return "online";break;
@@ -1178,4 +1119,71 @@ std::string WebQQ::lwqq_status_to_str(LWQQ_STATUS status)
         case LWQQ_STATUS_SLIENT: return "slient";break;
         default: return "unknow";break;
     }
+}
+
+static void upcase_string(char *str, int len)
+{
+    int i;
+    for (i = 0; i < len; ++i) {
+        if (islower(str[i]))
+            str[i]= toupper(str[i]);
+    }
+}
+
+static std::string parse_unescape(std::string source)
+{
+	boost::replace_all(source, "\\", "\\\\\\\\");
+	boost::replace_all(source, "\n", "\\\\n");
+	boost::replace_all(source, "\t", "\\\\t");
+	boost::replace_all(source, ":", "\\\\u003A");
+	boost::replace_all(source, ";", "\\\\u003B");
+	boost::replace_all(source, "&", "\\\\u0026");
+	boost::replace_all(source, "+", "\\\\u002B");
+	boost::replace_all(source, "%", "\\\\u0025");
+	boost::replace_all(source, "`", "\\\\u0060");
+	boost::replace_all(source, "[`", "\\\\u005B");
+	boost::replace_all(source, "]", "\\\\u005D");
+	boost::replace_all(source, ",", "\\\\u002C");
+	boost::replace_all(source, "{", "\\\\u007B");
+	boost::replace_all(source, "}", "\\\\u007D");
+	return source;
+}
+
+static std::string generate_clientid()
+{
+    int r;
+    struct timeval tv;
+    long t;
+    char buf[20] = {0};
+
+    srand(time(NULL));
+    r = rand() % 90 + 10;
+
+#ifdef WIN32
+	sprintf(buf, "%d%d%d%d", r, r, r);
+#else
+	if (gettimeofday(&tv, NULL)) {
+		return NULL;
+	}
+	t = tv.tv_usec % 1000000;
+	snprintf(buf, sizeof(buf), "%d%ld", r, t);
+#endif
+
+	return buf;
+}
+
+static std::string parse_verify_uin(const char *str)
+{
+    const char *start;
+    const char *end;
+
+    start = strchr(str, '\\');
+    if (!start)
+        return "";
+
+    end = strchr(start,'\'');
+    if (!end)
+        return "";
+
+    return std::string(start, end - start);
 }

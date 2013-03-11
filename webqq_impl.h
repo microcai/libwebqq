@@ -147,7 +147,6 @@ public:// signals
 	
 	// 有群消息的时候激发.
 	boost::signal< void (std::string group, std::string who, const std::vector<qqMsg> & )> siggroupmessage;
-	static std::string lwqq_status_to_str(LWQQ_STATUS status);
 
 private:
 	void init_face_map();
