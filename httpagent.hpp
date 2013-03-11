@@ -18,6 +18,7 @@
  */
 
 #pragma once
+#include <boost/function.hpp>
 #include <boost/asio.hpp>
 #include <avhttp.hpp>
 
