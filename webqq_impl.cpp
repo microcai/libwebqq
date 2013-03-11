@@ -31,126 +31,22 @@ namespace js = boost::property_tree::json_parser;
 
 #include "boost/timedcall.hpp"
 
+#include "constant.hpp"
 #include "webqq.h"
 #include "webqq_impl.h"
 #include "md5.hpp"
 #include "url.hpp"
 #include "logger.h"
 #include "utf8.hpp"
+#include "webqq_login.hpp"
 
 using namespace qq;
-
-/* URL for webqq login */
-#define LWQQ_URL_LOGIN_HOST "http://ptlogin2.qq.com"
-#define LWQQ_URL_CHECK_HOST "http://check.ptlogin2.qq.com"
-#define LWQQ_URL_VERIFY_IMG "http://captcha.qq.com/getimage?aid=%s&uin=%s"
-#define VCCHECKPATH "/check"
-#define APPID "1003903"
-#define LWQQ_URL_SET_STATUS "http://d.web2.qq.com/channel/login2"
-/* URL for get webqq version */
-#define LWQQ_URL_VERSION "http://ui.ptlogin2.qq.com/cgi-bin/ver"
-
-#define LWQQ_URL_REFERER_QUN_DETAIL "http://s.web2.qq.com/proxy.html?v=20110412001&id=3"
-#define LWQQ_URL_REFERER_DISCU_DETAIL "http://d.web2.qq.com/proxy.html?v=20110331002&id=2"
-
-#define LWQQ_URL_SEND_QUN_MSG "http://d.web2.qq.com/channel/send_qun_msg2"
 
 static std::string generate_clientid();
 
 static void upcase_string(char *str, int len);
 ///low level special char mapping
 static std::string parse_unescape(std::string source);
-
-// ptui_checkVC('0','!IJG, ptui_checkVC('0','!IJG', '\x00\x00\x00\x00\x54\xb3\x3c\x53');
-static std::string parse_verify_uin(const char *str);
-
-static std::string get_cookie(const std::string & cookie, std::string key)
-{
- 	std::string searchkey = key + "=";
- 	std::string::size_type keyindex = cookie.find(searchkey);
- 	if (keyindex == std::string::npos)
- 		return "";
- 	keyindex +=searchkey.length();
- 	std::string::size_type valend = cookie.find("; ", keyindex);
- 	return cookie.substr(keyindex , valend-keyindex);
-}
-
-static void update_cookies(LwqqCookies *cookies, const std::string & httpheader,
-                           std::string key, int update_cache)
-{
-	std::string value = get_cookie(httpheader, key);
-    if (value.empty())
-        return ;
-    
-#define FREE_AND_STRDUP(a, b)    a = b
-    
-    if (key ==  "ptvfsession") {
-        FREE_AND_STRDUP(cookies->ptvfsession, value);
-    } else if ((key== "ptcz")) {
-        FREE_AND_STRDUP(cookies->ptcz, value);
-    } else if ((key== "skey")) {
-        FREE_AND_STRDUP(cookies->skey, value);
-    } else if ((key== "ptwebqq")) {
-        FREE_AND_STRDUP(cookies->ptwebqq, value);
-    } else if ((key== "ptuserinfo")) {
-        FREE_AND_STRDUP(cookies->ptuserinfo, value);
-    } else if ((key== "uin")) {
-        FREE_AND_STRDUP(cookies->uin, value);
-    } else if ((key== "ptisp")) {
-        FREE_AND_STRDUP(cookies->ptisp, value);
-    } else if ((key== "pt2gguin")) {
-        FREE_AND_STRDUP(cookies->pt2gguin, value);
-    } else if ((key== "verifysession")) {
-        FREE_AND_STRDUP(cookies->verifysession, value);
-    } else {
-        lwqq_log(LOG_WARNING, "No this cookie: %s\n", key.c_str());
-    }
-#undef FREE_AND_STRDUP
-
-    if (update_cache) {
-		
-		cookies->lwcookies.clear();
-
-        if (cookies->ptvfsession.length()) {
-            cookies->lwcookies += "ptvfsession="+cookies->ptvfsession+"; ";
-        }
-        if (cookies->ptcz.length()) {
-			cookies->lwcookies += "ptcz="+cookies->ptcz+"; ";
-        }
-        if (cookies->skey.length()) {
-            cookies->lwcookies += "skey="+cookies->skey+"; ";
-        }
-        if (cookies->ptwebqq.length()) {
-            cookies->lwcookies += "ptwebqq="+cookies->ptwebqq+"; ";
-        }
-        if (cookies->ptuserinfo.length()) {
-			cookies->lwcookies += "ptuserinfo="+cookies->ptuserinfo+"; ";
-        }
-        if (cookies->uin.length()) {
-            cookies->lwcookies += "uin="+cookies->uin+"; ";
-        }
-        if (cookies->ptisp.length()) {
-            cookies->lwcookies += "ptisp="+cookies->ptisp+"; ";
-        }
-        if (cookies->pt2gguin.length()) {
-			cookies->lwcookies += "pt2gguin="+cookies->pt2gguin+"; ";
-        }
-        if (cookies->verifysession.length()) {
-			cookies->lwcookies += "verifysession="+cookies->verifysession+"; ";
-        }
-    }
-}
-
-static void save_cookie(LwqqCookies * cookies, const std::string & httpheader)
-{
-	update_cookies(cookies, httpheader, "ptcz", 0);
-    update_cookies(cookies, httpheader, "skey",  0);
-    update_cookies(cookies, httpheader, "ptwebqq", 0);
-    update_cookies(cookies, httpheader, "ptuserinfo", 0);
-    update_cookies(cookies, httpheader, "uin", 0);
-    update_cookies(cookies, httpheader, "ptisp", 0);
-    update_cookies(cookies, httpheader, "pt2gguin", 1);
-}
 
 static std::string lwqq_status_to_str(LWQQ_STATUS status);
 
@@ -232,8 +128,38 @@ static pt::wptree json_parse(const wchar_t * doc)
 	return jstree;
 }
 
+namespace qq {
+namespace detail {
+
+// qq 登录办法-验证码登录
+class corologin_vc : boost::coro::coroutine {
+public:
+	corologin_vc(WebQQ & webqq )
+		:m_webqq(webqq)
+	{
+
+		
+	}
+
+	// 在这里实现　QQ 的登录.
+	void operator()(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buf)
+	{
+		//　登录步骤.
+		reenter(this)
+		{
+
+		}
+	}
+private:
+	WebQQ & m_webqq;
+};
+
+
+}
+}
+
 // build webqq and setup defaults
-qq::WebQQ::WebQQ(boost::asio::io_service& _io_service,
+WebQQ::WebQQ(boost::asio::io_service& _io_service,
 	std::string _qqnum, std::string _passwd, LWQQ_STATUS _status)
 	:m_io_service(_io_service), m_qqnum(_qqnum), m_passwd(_passwd), m_status(_status),
 	m_msg_queue(20) //　最多保留最后的20条未发送消息.
@@ -254,55 +180,10 @@ qq::WebQQ::WebQQ(boost::asio::io_service& _io_service,
 	init_face_map();
 }
 
-void qq::WebQQ::start()
-{
-	//首先获得版本.
-	read_streamptr stream(new avhttp::http_stream(m_io_service));
-	lwqq_log(LOG_DEBUG, "Get webqq version from %s\n", LWQQ_URL_VERSION);
-	
-	async_http_download(stream, LWQQ_URL_VERSION,
-		boost::bind(&WebQQ::cb_got_version, this, boost::asio::placeholders::error, _2, _3)
-	);
-}
-
-class corologin : boost::coro::coroutine {
-public:
-	corologin(WebQQ & webqq )
-		:m_webqq(webqq)
-	{
-		
-	}
-
-	void operator()(const boost::system::error_code& ec , read_streamptr stream, boost::asio::streambuf = boost::asio::streambuf())
-	{
-		
-	}
-private:
-	WebQQ & m_webqq;
-};
-
 /**login*/
 void WebQQ::login()
 {
-	m_clientid.clear();
-	m_cookies.clear();
-	m_groups.clear();
-	m_psessionid.clear();
-	m_vfwebqq.clear();
-	m_status = LWQQ_STATUS_OFFLINE;
-	//获取验证码.
-	std::string url = 
-		boost::str(boost::format("%s%s?uin=%s&appid=%s") % LWQQ_URL_CHECK_HOST % VCCHECKPATH % m_qqnum % APPID);
-	std::string cookie = 
-		boost::str(boost::format("chkuin=%s") % m_qqnum);
-	read_streamptr stream(new avhttp::http_stream(m_io_service));
-
-	stream->request_options(
-		avhttp::request_opts()
-			(avhttp::http_options::cookie, cookie)
-			(avhttp::http_options::connection, "close")
-	);
-	async_http_download(stream, url, boost::bind(&WebQQ::cb_got_vc,this, boost::asio::placeholders::error, _2, _3));
+	qq::detail::corologin(*this);
 }
 
 void WebQQ::send_group_message(qqGroup& group, std::string msg, send_group_message_cb donecb)
@@ -386,32 +267,6 @@ void WebQQ::cb_send_msg(const boost::system::error_code& ec, read_streamptr stre
 		m_msg_queue.pop_front();
 	}
 	m_io_service.post( boost::asio::detail::bind_handler(donecb,ec));
-}
-
-void WebQQ::cb_got_version ( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer )
-{
-	const char* response = boost::asio::buffer_cast<const char*> ( buffer.data() );
-
-	if ( strstr ( response, "ptuiV" ) )
-	{
-		char* s, *t;
-		s = ( char* ) strchr ( response, '(' );
-		t = ( char* ) strchr ( response, ')' );
-
-		if ( !s || !t ) {
-			sigerror ( 0, 0 );
-			return ;
-		}
-
-		s++;
-		char v[t - s + 1];
-		memset ( v, 0, t - s + 1 );
-		strncpy ( v, s, t - s );
-		this->m_version = v;
-		std::cout << "Get webqq version: " <<  this->m_version <<  std::endl;
-		//开始真正的登录.
-		m_io_service.post(boost::bind(&WebQQ::login, this));
-	}
 }
 
 void WebQQ::update_group_list()
@@ -536,71 +391,6 @@ void WebQQ::login_withvc(std::string vccode)
 	loginstream->async_open(url,boost::bind(&WebQQ::cb_do_login,this, loginstream, boost::asio::placeholders::error) );
 }
 
-void WebQQ::cb_got_vc(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer)
-{
-	/**
-	* 
-	* The http message body has two format:
-	*
-	* ptui_checkVC('1','9ed32e3f644d968809e8cbeaaf2cce42de62dfee12c14b74');
-	* ptui_checkVC('0','!LOB');
-	* The former means we need verify code image and the second
-	* parameter is vc_type.
-	* The later means we don't need the verify code image. The second
-	* parameter is the verify code. The vc_type is in the header
-	* "Set-Cookie".
-	*/
-	const char * response = boost::asio::buffer_cast<const char * >(buffer.data());
-	char *s;
-	char *c = (char*)strstr(response, "ptui_checkVC");
-    c = (char*)strchr(response, '\'');
-    c++;
-    if (*c == '0') {
-        /* We got the verify code. */
-        
-        /* Parse uin first */
-        m_verifycode.uin = parse_verify_uin(response);
-        if (m_verifycode.uin.empty())
-		{
-			sigerror(1, 0);
-			return;
-		}
-
-        s = c;
-        c = strstr(s, "'");
-        s = c + 1;
-        c = strstr(s, "'");
-        s = c + 1;
-        c = strstr(s, "'");
-        *c = '\0';
-
-        /* We need get the ptvfsession from the header "Set-Cookie" */
-        update_cookies(&m_cookies, stream->response_options().header_string(), "ptvfsession", 1);
-        lwqq_log(LOG_NOTICE, "Verify code: %s\n", s);
-
-        login_withvc(s);
-    } else if (*c == '1') {
-        /* We need get the verify image. */
-
-        /* Parse uin first */
-        m_verifycode.uin = parse_verify_uin(response);
-        s = c;
-        c = strstr(s, "'");
-        s = c + 1;
-        c = strstr(s, "'");
-        s = c + 1;
-        c = strstr(s, "'");
-        *c = '\0';
-
-        // ptui_checkVC('1','7ea19f6d3d2794eb4184c9ae860babf3b9c61441520c6df0', '\x00\x00\x00\x00\x04\x7e\x73\xb2');
-
-        lwqq_log(LOG_NOTICE, "We need verify code image: %s\n", s);
-
-        //TODO, get verify image, and call signeedvc
-        get_verify_image(s);
-    }
-}
-
 void WebQQ::get_verify_image(std::string vcimgid)
 {
 	if( vcimgid.length() < 8){
@@ -624,7 +414,7 @@ void WebQQ::get_verify_image(std::string vcimgid)
 
 void WebQQ::cb_get_verify_image(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer)
 {
-	update_cookies(&m_cookies, stream->response_options().header_string() , "verifysession", 1);
+	qq::detail::update_cookies(&m_cookies, stream->response_options().header_string() , "verifysession", 1);
 	
 	// verify image is now in response
 	signeedvc(buffer.data());
@@ -650,7 +440,7 @@ void WebQQ::cb_done_login(read_streamptr stream, char* response, const boost::sy
     switch (status) {
     case 0:
 		m_status = LWQQ_STATUS_ONLINE;
-        save_cookie(&m_cookies, stream->response_options().header_string());
+        qq::detail::save_cookie(&m_cookies, stream->response_options().header_string());
         lwqq_log(LOG_NOTICE, "login success!\n");
         break;
         
@@ -1108,20 +898,4 @@ static std::string generate_clientid()
 	t = tv.tv_usec % 1000000;
 	return boost::str(boost::format("%d%ld") % r % t);
 #endif
-}
-
-static std::string parse_verify_uin(const char *str)
-{
-    const char *start;
-    const char *end;
-
-    start = strchr(str, '\\');
-    if (!start)
-        return "";
-
-    end = strchr(start,'\'');
-    if (!end)
-        return "";
-
-    return std::string(start, end - start);
 }

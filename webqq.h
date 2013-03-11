@@ -123,7 +123,6 @@ public:
 	webqq(boost::asio::io_service & asioservice, std::string qqnum, std::string passwd, LWQQ_STATUS status = LWQQ_STATUS_ONLINE);
 	void on_group_msg(boost::function<void (std::string group_code, std::string who, const std::vector<qqMsg> & )> cb);
 
-	void start();
 	// not need to call this the first time, but you might need this if you became offline.
 	void login();
 

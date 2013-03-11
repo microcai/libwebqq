@@ -110,6 +110,10 @@ typedef struct LwqqCookies {
 
 typedef std::map<std::string, qqGroup>	grouplist;
 
+namespace detail{
+	class corologin;
+}
+
 class SYMBOL_HIDDEN WebQQ
 {
 public:
@@ -121,7 +125,6 @@ public:
 	// in signeedvc signal, you can retreve images from server.
 	void login_withvc(std::string vccode);
 
-	void start();
 	typedef boost::function<void (const boost::system::error_code& ec)> send_group_message_cb;
 	void send_group_message(std::string group, std::string msg, send_group_message_cb donecb);
 	void send_group_message(qqGroup &  group, std::string msg, send_group_message_cb donecb);
@@ -150,10 +153,6 @@ public:// signals
 
 private:
 	void init_face_map();
-
-	void cb_got_version(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&);
-
-	void cb_got_vc(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&);
 
 	void get_verify_image(std::string vcimgid);
 	void cb_get_verify_image(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&);
@@ -194,8 +193,10 @@ private:
 	
 	bool		m_group_msg_insending;
 	boost::circular_buffer<boost::tuple<std::string, std::string, send_group_message_cb> >	m_msg_queue;
-	friend class ::webqq;
 	std::map<int,int> facemap;
+
+	friend class ::webqq;
+	friend class detail::corologin;
 };
 
 };

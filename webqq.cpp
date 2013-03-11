@@ -51,11 +51,6 @@ qqGroup* webqq::get_Group_by_qq(std::string qq)
 	return impl->get_Group_by_qq(qq);
 }
 
-void webqq::start()
-{
-	impl->start();
-}
-
 void webqq::login()
 {
 	impl->login();
