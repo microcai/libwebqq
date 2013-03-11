@@ -44,74 +44,10 @@ using namespace qq;
 
 static std::string generate_clientid();
 
-static void upcase_string(char *str, int len);
 ///low level special char mapping
 static std::string parse_unescape(std::string source);
 
 static std::string lwqq_status_to_str(LWQQ_STATUS status);
-
-/**
- * I hacked the javascript file named comm.js, which received from tencent
- * server, and find that fuck tencent has changed encryption algorithm
- * for password in webqq3 . The new algorithm is below(descripted with javascript):
- * var M=C.p.value; // M is the qq password 
- * var I=hexchar2bin(md5(M)); // Make a md5 digest
- * var H=md5(I+pt.uin); // Make md5 with I and uin(see below)
- * var G=md5(H+C.verifycode.value.toUpperCase());
- * 
- * @param pwd User's password
- * @param vc Verify Code. e.g. "!M6C"
- * @param uin A string like "\x00\x00\x00\x00\x54\xb3\x3c\x53", NB: it
- *        must contain 8 hexadecimal number, in this example, it equaled
- *        to "0x0,0x0,0x0,0x0,0x54,0xb3,0x3c,0x53"
- * 
- * @return Encoded password on success, else NULL on failed
- */
-static std::string lwqq_enc_pwd(const std::string & pwd, const std::string & vc, const std::string &uin)
-{
-    int i;
-    int uin_byte_length;
-    char buf[128] = {0};
-    char _uin[9] = {0};
-
-    /* Calculate the length of uin (it must be 8?) */
-    uin_byte_length = uin.length() / 4;
-
-    /**
-     * Ok, parse uin from string format.
-     * "\x00\x00\x00\x00\x54\xb3\x3c\x53" -> {0,0,0,0,54,b3,3c,53}
-     */
-    for (i = 0; i < uin_byte_length ; i++) {
-        char u[5] = {0};
-        char tmp;
-        strncpy(u, & uin [  i * 4 + 2 ] , 2);
-
-        errno = 0;
-        tmp = strtol(u, NULL, 16);
-        if (errno) {
-            return NULL;
-        }
-        _uin[i] = tmp;
-    }
-
-    /* Equal to "var I=hexchar2bin(md5(M));" */
-    lutil_md5_digest((unsigned char *)pwd.c_str(), pwd.length(), (char *)buf);
-
-    /* Equal to "var H=md5(I+pt.uin);" */
-    memcpy(buf + 16, _uin, uin_byte_length);
-    lutil_md5_data((unsigned char *)buf, 16 + uin_byte_length, (char *)buf);
-    
-    /* Equal to var G=md5(H+C.verifycode.value.toUpperCase()); */
-    std::sprintf(buf + strlen(buf), /*sizeof(buf) - strlen(buf),*/ "%s", vc.c_str());
-    upcase_string(buf, strlen(buf));
-
-    lutil_md5_data((unsigned char *)buf, strlen(buf), (char *)buf);
-    upcase_string(buf, strlen(buf));
-
-    /* OK, seems like every is OK */
-    lwqq_puts(buf);
-    return buf;
-}
 
 static std::string create_post_data(std::string vfwebqq)
 {
@@ -126,36 +62,6 @@ static pt::wptree json_parse(const wchar_t * doc)
 	stream <<  doc ;
 	js::read_json(stream, jstree);
 	return jstree;
-}
-
-namespace qq {
-namespace detail {
-
-// qq 登录办法-验证码登录
-class corologin_vc : boost::coro::coroutine {
-public:
-	corologin_vc(WebQQ & webqq )
-		:m_webqq(webqq)
-	{
-
-		
-	}
-
-	// 在这里实现　QQ 的登录.
-	void operator()(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buf)
-	{
-		//　登录步骤.
-		reenter(this)
-		{
-
-		}
-	}
-private:
-	WebQQ & m_webqq;
-};
-
-
-}
 }
 
 // build webqq and setup defaults
@@ -183,7 +89,17 @@ WebQQ::WebQQ(boost::asio::io_service& _io_service,
 /**login*/
 void WebQQ::login()
 {
+	// start login process, will call login_withvc later
 	qq::detail::corologin(*this);
+}
+
+// login to server with vc. called by login code or by user
+// if no verify image needed, then called by login
+// if verify image needed, then the user should listen to signeedvc and call this
+void WebQQ::login_withvc(std::string vccode)
+{
+	std::cout << "vc code is \"" << vccode << "\"" << std::endl;
+	qq::detail::corologin_vc(*this, vccode);
 }
 
 void WebQQ::send_group_message(qqGroup& group, std::string msg, send_group_message_cb donecb)
@@ -358,38 +274,6 @@ qqGroup* WebQQ::get_Group_by_qq(std::string qq)
 	return NULL;
 }
 
-// login to server with vc. called by login code or by user
-// if no verify image needed, then called by login
-// if verify image needed, then the user should listen to signeedvc and call this
-void WebQQ::login_withvc(std::string vccode)
-{
-	std::cout << "vc code is \"" << vccode << "\"" << std::endl;
-	std::string md5 = lwqq_enc_pwd(m_passwd.c_str(), vccode.c_str(), m_verifycode.uin.c_str());
-
-    // do login !
-    std::string url = boost::str(
-		boost::format(
-		    "%s/login?u=%s&p=%s&verifycode=%s&"
-             "webqq_type=%d&remember_uin=1&aid=1003903&login2qq=1&"
-             "u1=http%%3A%%2F%%2Fweb.qq.com%%2Floginproxy.html"
-             "%%3Flogin2qq%%3D1%%26webqq_type%%3D10&h=1&ptredirect=0&"
-             "ptlang=2052&from_ui=1&pttype=1&dumy=&fp=loginerroralert&"
-             "action=2-11-7438&mibao_css=m_webqq&t=1&g=1") 
-             % LWQQ_URL_LOGIN_HOST
-             % m_qqnum
-             % md5
-             % vccode
-             % m_status
-	);
-
-	read_streamptr loginstream(new avhttp::http_stream(m_io_service));
-	loginstream->request_options(
-		avhttp::request_opts()
-			(avhttp::http_options::cookie, m_cookies.lwcookies)
-			(avhttp::http_options::connection, "close")
-	);
-	loginstream->async_open(url,boost::bind(&WebQQ::cb_do_login,this, loginstream, boost::asio::placeholders::error) );
-}
 
 void WebQQ::get_verify_image(std::string vcimgid)
 {
@@ -849,15 +733,6 @@ static std::string lwqq_status_to_str(LWQQ_STATUS status)
         case LWQQ_STATUS_CALLME: return "callme";break;
         case LWQQ_STATUS_SLIENT: return "slient";break;
         default: return "unknow";break;
-    }
-}
-
-static void upcase_string(char *str, int len)
-{
-    int i;
-    for (i = 0; i < len; ++i) {
-        if (islower(str[i]))
-            str[i]= toupper(str[i]);
     }
 }
 

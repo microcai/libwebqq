@@ -112,6 +112,7 @@ typedef std::map<std::string, qqGroup>	grouplist;
 
 namespace detail{
 	class corologin;
+	class corologin_vc;
 }
 
 class SYMBOL_HIDDEN WebQQ
@@ -197,6 +198,7 @@ private:
 
 	friend class ::webqq;
 	friend class detail::corologin;
+	friend class detail::corologin_vc;
 };
 
 };
