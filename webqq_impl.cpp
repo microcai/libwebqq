@@ -304,92 +304,6 @@ void WebQQ::cb_get_verify_image(const boost::system::error_code& ec, read_stream
 	signeedvc(buffer.data());
 }
 
-void WebQQ::cb_done_login(read_streamptr stream, char* response, const boost::system::error_code& ec, std::size_t length)
-{
-    BOOST_SCOPE_EXIT( (&response) )
-    {
-		delete response;
-    } BOOST_SCOPE_EXIT_END
-	
-	std::cout << response << std::endl;
-    char *p = strstr(response, "\'");
-    if (!p) {
-        return;
-    }
-    char buf[4] = {0};
-    int status;
-    strncpy(buf, p + 1, 1);
-    status = atoi(buf);
-
-    switch (status) {
-    case 0:
-		m_status = LWQQ_STATUS_ONLINE;
-        qq::detail::save_cookie(&m_cookies, stream->response_options().header_string());
-        lwqq_log(LOG_NOTICE, "login success!\n");
-        break;
-        
-    case 1:
-        lwqq_log(LOG_WARNING, "Server busy! Please try again\n");
-
-        status = LWQQ_STATUS_OFFLINE;
-		break;
-	case 2:
-        lwqq_log(LOG_ERROR, "Out of date QQ number\n");
-        status = LWQQ_STATUS_OFFLINE;
-		break;
-		
-
-    case 3:
-        lwqq_log(LOG_ERROR, "Wrong password\n");
-        status = LWQQ_STATUS_OFFLINE;
-		break;
-		
-
-    case 4:
-        lwqq_log(LOG_ERROR, "Wrong verify code\n");
-        status = LWQQ_STATUS_OFFLINE;
-		break;
-		
-
-    case 5:
-        lwqq_log(LOG_ERROR, "Verify failed\n");
-        status = LWQQ_STATUS_OFFLINE;
-		break;
-		
-
-    case 6:
-        lwqq_log(LOG_WARNING, "You may need to try login again\n");
-        status = LWQQ_STATUS_OFFLINE;
-		break;
-		
-    case 7:
-        lwqq_log(LOG_ERROR, "Wrong input\n");
-        status = LWQQ_STATUS_OFFLINE;
-		break;
-		
-
-    case 8:
-        lwqq_log(LOG_ERROR, "Too many logins on this IP. Please try again\n");
-        status = LWQQ_STATUS_OFFLINE;
-		break;
-		
-
-    default:
-        status = LWQQ_STATUS_OFFLINE;
-        lwqq_log(LOG_ERROR, "Unknow error");
-    }
-
-    //set_online_status(lc, lwqq_status_to_str(lc->stat), err);
-    if (m_status == LWQQ_STATUS_ONLINE && status==0){
-		siglogin();
-		m_clientid = generate_clientid();
-
-		//change status,  this is the last step for login
-		set_online_status();
-		m_group_msg_insending =false;
-	}
-}
-
 void WebQQ::set_online_status()
 {
 	std::string msg = boost::str(
@@ -714,14 +628,6 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 	}
 }
 
-
-void WebQQ::cb_do_login(read_streamptr stream, const boost::system::error_code& ec)
-{
-	char * data = new char[8192];
-	boost::asio::async_read(*stream, boost::asio::buffer(data, 8192),
-		boost::bind(&WebQQ::cb_done_login, this,stream, data, boost::asio::placeholders::error,  boost::asio::placeholders::bytes_transferred) );
-}
-
 static std::string lwqq_status_to_str(LWQQ_STATUS status)
 {
     switch(status){
@@ -753,24 +659,4 @@ static std::string parse_unescape(std::string source)
 	boost::replace_all(source, "{", "\\\\u007B");
 	boost::replace_all(source, "}", "\\\\u007D");
 	return source;
-}
-
-static std::string generate_clientid()
-{
-    int r;
-    struct timeval tv;
-    long t;
-
-    srand(time(NULL));
-    r = rand() % 90 + 10;
-
-#ifdef WIN32
-	return boost::str(boost::format("%d%d%d") % r % r %r );
-#else
-	if (gettimeofday(&tv, NULL)) {
-		return NULL;
-	}
-	t = tv.tv_usec % 1000000;
-	return boost::str(boost::format("%d%ld") % r % t);
-#endif
 }

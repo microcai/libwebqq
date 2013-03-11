@@ -235,6 +235,27 @@ static void save_cookie(LwqqCookies * cookies, const std::string & httpheader)
     update_cookies(cookies, httpheader, "pt2gguin", 1);
 }
 
+
+static std::string generate_clientid()
+{
+    int r;
+    struct timeval tv;
+    long t;
+
+    srand(time(NULL));
+    r = rand() % 90 + 10;
+
+#ifdef WIN32
+	return boost::str(boost::format("%d%d%d") % r % r %r );
+#else
+	if (gettimeofday(&tv, NULL)) {
+		return NULL;
+	}
+	t = tv.tv_usec % 1000000;
+	return boost::str(boost::format("%d%ld") % r % t);
+#endif
+}
+
 // qq 登录办法
 class corologin : boost::coro::coroutine {
 public:
@@ -383,18 +404,104 @@ public:
 				(avhttp::http_options::cookie, m_webqq.m_cookies.lwcookies)
 				(avhttp::http_options::connection, "close")
 		);
- 		loginstream->async_open(url,boost::bind(&WebQQ::cb_do_login,&m_webqq, loginstream, boost::asio::placeholders::error) );
+		async_http_download(loginstream, url , *this);
 	}
 
 	// 在这里实现　QQ 的登录.
-	void operator()(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buf)
+	void operator()(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buffer)
 	{
 		//　登录步骤.
 		reenter(this)
 		{
+			//set_online_status(lc, lwqq_status_to_str(lc->stat), err);
+			if( (check_login(ec, stream, buffer) == 0) && (m_webqq.m_status == LWQQ_STATUS_ONLINE) )
+			{
+				m_webqq.siglogin();
+				m_webqq.m_clientid = generate_clientid();
 
+				//change status,  this is the last step for login
+				// 设定在线状态.
+				m_webqq.set_online_status();
+				m_webqq.m_group_msg_insending =false;
+			}
 		}
 	}
+
+private:
+	int check_login(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buffer)
+	{
+		const char * response = boost::asio::buffer_cast<const char*>(buffer.data());
+
+		std::cout << response << std::endl;
+		char *p = strstr((char*)response, "\'");
+		if (!p) {
+			return -1;
+		}
+		char buf[4] = {0};
+
+		strncpy(buf, p + 1, 1);
+		int status = atoi(buf);
+
+		switch (status) {
+		case 0:
+			m_webqq.m_status = LWQQ_STATUS_ONLINE;
+			save_cookie(&(m_webqq.m_cookies), stream->response_options().header_string());
+			lwqq_log(LOG_NOTICE, "login success!\n");
+			break;
+			
+		case 1:
+			lwqq_log(LOG_WARNING, "Server busy! Please try again\n");
+
+			status = LWQQ_STATUS_OFFLINE;
+			break;
+		case 2:
+			lwqq_log(LOG_ERROR, "Out of date QQ number\n");
+			status = LWQQ_STATUS_OFFLINE;
+			break;
+			
+
+		case 3:
+			lwqq_log(LOG_ERROR, "Wrong password\n");
+			status = LWQQ_STATUS_OFFLINE;
+			break;
+			
+
+		case 4:
+			lwqq_log(LOG_ERROR, "Wrong verify code\n");
+			status = LWQQ_STATUS_OFFLINE;
+			break;
+			
+
+		case 5:
+			lwqq_log(LOG_ERROR, "Verify failed\n");
+			status = LWQQ_STATUS_OFFLINE;
+			break;
+			
+
+		case 6:
+			lwqq_log(LOG_WARNING, "You may need to try login again\n");
+			status = LWQQ_STATUS_OFFLINE;
+			break;
+			
+		case 7:
+			lwqq_log(LOG_ERROR, "Wrong input\n");
+			status = LWQQ_STATUS_OFFLINE;
+			break;
+			
+
+		case 8:
+			lwqq_log(LOG_ERROR, "Too many logins on this IP. Please try again\n");
+			status = LWQQ_STATUS_OFFLINE;
+			break;
+			
+
+		default:
+			status = LWQQ_STATUS_OFFLINE;
+			lwqq_log(LOG_ERROR, "Unknow error");
+		}
+		return status;
+	}
+
 private:
 	WebQQ & m_webqq;
 	std::string vccode;
