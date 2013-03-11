@@ -29,6 +29,9 @@ namespace js = boost::property_tree::json_parser;
 #include <boost/assign.hpp>
 #include <boost/scope_exit.hpp>
 
+#include "boost/coro/coro.hpp"
+#include "boost/coro/yield.hpp"
+
 #include "webqq.h"
 #include "webqq_impl.h"
 #include "md5.hpp"
@@ -301,58 +304,49 @@ static pt::wptree json_parse(const wchar_t * doc)
 
 typedef boost::function<void (const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf &) > httpstreamhandler;
 
-static void http_stream_cb_reading(read_streamptr stream,httpstreamhandler handler,
-	boost::shared_ptr<boost::asio::streambuf> sb, 
-	const boost::system::error_code& ec, std::size_t length,
-	std::size_t readed)
-{
-	if (!ec){
-		// re read
-		readed += length;
-		sb->commit(length);
+class async_http_download : boost::coro::coroutine {
+public:
+	typedef void result_type;
+public:
+	async_http_download(read_streamptr _stream, const avhttp::url & url, httpstreamhandler _handler)
+		:handler(_handler),stream(_stream), sb(new boost::asio::streambuf() ) , readed(0)
+	{
+ 		stream->async_open(url, *this);
+	}
 
-		std::string content_length = stream->response_options().find(avhttp::http_options::content_length);
-
-		if(content_length.length()){
-			if(readed ==  boost::lexical_cast<std::size_t>(content_length))
+	void operator()(const boost::system::error_code& ec , std::size_t length = 0)
+	{
+		reenter(this)
+		{
+			if( !ec)
 			{
-				handler(boost::system::error_code(boost::asio::error::eof), stream, *sb);
-				return ;
+				content_length = stream->response_options().find(avhttp::http_options::content_length);
+
+				while(!ec)
+				{
+					coyield stream->async_read_some(sb->prepare(4096), *this);
+					sb->commit(length);
+					readed += length;
+
+					if(!content_length.empty() &&  readed == boost::lexical_cast<std::size_t>(content_length))
+					{
+						handler(boost::system::error_code(boost::asio::error::eof), stream, *sb);
+						return ;
+					}					
+				}				
 			}
+
+			handler(ec, stream, *sb);
 		}
-
-		stream->async_read_some(
-			sb->prepare(4096),
-			boost::bind(&http_stream_cb_reading, stream, handler, sb,
-						boost::asio::placeholders::error,
-						boost::asio::placeholders::bytes_transferred,
-						readed)
-		);
-		return ;
 	}
-	//	real callback
-	handler(ec, stream, *sb);
-}
 
-static void http_cb_connected(read_streamptr stream, httpstreamhandler handler, const boost::system::error_code& ec)
-{
-	boost::shared_ptr<boost::asio::streambuf> sb = boost::make_shared<boost::asio::streambuf>();
-	if (!ec){
-		stream->async_read_some(
-			sb->prepare(4096),
-			boost::bind(& http_stream_cb_reading,stream, handler, sb, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred, 0)
-		);
-	}else{
-		handler(ec, stream, *sb);
-	}
-}
-
-static void async_http_download(read_streamptr stream, const avhttp::url & url, httpstreamhandler handler)
-{
-	stream->async_open(url,
-			boost::bind(& http_cb_connected, stream, handler, boost::asio::placeholders::error) 
-	);
-}
+private:
+	std::size_t	readed;
+	std::string content_length;
+	read_streamptr stream;
+	httpstreamhandler handler;
+	boost::shared_ptr<boost::asio::streambuf> sb;
+};
 
 static void timeout(boost::shared_ptr<boost::asio::deadline_timer> t, boost::function<void()> cb)
 {
@@ -405,6 +399,13 @@ void qq::WebQQ::start()
 		boost::bind(&WebQQ::cb_got_version, this, boost::asio::placeholders::error, _2, _3)
 	);
 }
+
+class corologin : boost::coro::coroutine {
+	corologin(){}
+	void operator()(const boost::system::error_code& ec , read_streamptr stream, boost::asio::streambuf = boost::asio::streambuf()){
+		
+	}
+};
 
 /**login*/
 void WebQQ::login()
@@ -951,9 +952,9 @@ void WebQQ::cb_online_status(read_streamptr stream, char* response, const boost:
 			update_group_list();
 		}
 	}catch (const pt::json_parser_error & jserr){
-		printf("parse json error : %s \n\t %s\n", jserr.what(), response);
+		lwqq_log(LOG_ERROR , "parse json error : %s \n\t %s\n", jserr.what(), response);
 	}catch (const pt::ptree_bad_path & jserr){
-		printf("parse bad path error :  %s\n", jserr.what());
+		lwqq_log(LOG_ERROR , "parse bad path error :  %s\n", jserr.what());
 	}
 }
 
@@ -1061,7 +1062,7 @@ void WebQQ::cb_group_list(const boost::system::error_code& ec, read_streamptr st
 				}
 
  				this->m_groups.insert(std::make_pair(newgroup.gid, newgroup));
- 				lwqq_log(LOG_DEBUG, "qq群 %ls %ls\n",newgroup.gid.c_str(), newgroup.name.c_str());
+ 				lwqq_log(LOG_DEBUG, "qq群 %s %s\n",newgroup.gid.c_str(), newgroup.name.c_str());
 			}
 		}
 	}catch (const pt::json_parser_error & jserr){
@@ -1106,7 +1107,7 @@ void WebQQ::cb_group_qqnumber(const boost::system::error_code& ec, read_streampt
 		if (jsonobj.get<int>("retcode") == 0)
 		{
 			group.qqnum = jsonobj.get<std::string>("result.account");
-			lwqq_log(LOG_NOTICE, "qq number of group %ls is %ls\n", group.name.c_str(), group.qqnum.c_str());
+			lwqq_log(LOG_NOTICE, "qq number of group %s is %s\n", group.name.c_str(), group.qqnum.c_str());
 		}
 	}catch (const pt::json_parser_error & jserr){
 		lwqq_log(LOG_ERROR, "parse json error : %s\n", jserr.what());
@@ -1139,7 +1140,7 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 				buddy.uin = minfo.get<std::string>("uin");
 
 				group.memberlist.insert(std::make_pair(buddy.uin, buddy));
-				lwqq_log(LOG_DEBUG, "buddy list:: %ls %ls\n", buddy.uin.c_str(), buddy.nick.c_str());
+				lwqq_log(LOG_DEBUG, "buddy list:: %s %s\n", buddy.uin.c_str(), buddy.nick.c_str());
 			}
 			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result.ginfo.members"))
 			{
