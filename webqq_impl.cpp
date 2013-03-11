@@ -30,8 +30,6 @@ namespace js = boost::property_tree::json_parser;
 #include <boost/scope_exit.hpp>
 
 #include "boost/timedcall.hpp"
-#include "boost/coro/coro.hpp"
-#include "boost/coro/yield.hpp"
 
 #include "webqq.h"
 #include "webqq_impl.h"
@@ -234,53 +232,6 @@ static pt::wptree json_parse(const wchar_t * doc)
 	return jstree;
 }
 
-
-typedef boost::function<void (const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf &) > httpstreamhandler;
-
-class async_http_download : boost::coro::coroutine {
-public:
-	typedef void result_type;
-public:
-	async_http_download(read_streamptr _stream, const avhttp::url & url, httpstreamhandler _handler)
-		:handler(_handler),stream(_stream), sb(new boost::asio::streambuf() ) , readed(0)
-	{
- 		stream->async_open(url, *this);
-	}
-
-	void operator()(const boost::system::error_code& ec , std::size_t length = 0)
-	{
-		reenter(this)
-		{
-			if( !ec)
-			{
-				content_length = stream->response_options().find(avhttp::http_options::content_length);
-
-				while(!ec)
-				{
-					coyield stream->async_read_some(sb->prepare(4096), *this);
-					sb->commit(length);
-					readed += length;
-
-					if(!content_length.empty() &&  readed == boost::lexical_cast<std::size_t>(content_length))
-					{
-						handler(boost::system::error_code(boost::asio::error::eof), stream, *sb);
-						return ;
-					}					
-				}				
-			}
-
-			handler(ec, stream, *sb);
-		}
-	}
-
-private:
-	std::size_t	readed;
-	std::string content_length;
-	read_streamptr stream;
-	httpstreamhandler handler;
-	boost::shared_ptr<boost::asio::streambuf> sb;
-};
-
 // build webqq and setup defaults
 qq::WebQQ::WebQQ(boost::asio::io_service& _io_service,
 	std::string _qqnum, std::string _passwd, LWQQ_STATUS _status)
@@ -315,10 +266,19 @@ void qq::WebQQ::start()
 }
 
 class corologin : boost::coro::coroutine {
-	corologin(){}
-	void operator()(const boost::system::error_code& ec , read_streamptr stream, boost::asio::streambuf = boost::asio::streambuf()){
+public:
+	corologin(WebQQ & webqq )
+		:m_webqq(webqq)
+	{
 		
 	}
+
+	void operator()(const boost::system::error_code& ec , read_streamptr stream, boost::asio::streambuf = boost::asio::streambuf())
+	{
+		
+	}
+private:
+	WebQQ & m_webqq;
 };
 
 /**login*/
