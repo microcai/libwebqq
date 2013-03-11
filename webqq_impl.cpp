@@ -219,15 +219,6 @@ static std::string lwqq_enc_pwd(const std::string & pwd, const std::string & vc,
     return buf;
 }
 
-static pt::ptree json_parse(const char * doc)
-{
-	pt::ptree jstree;
-	std::stringstream stream;
-	stream <<  doc ;
-	js::read_json(stream, jstree);
-	return jstree;
-}
-
 static std::string create_post_data(std::string vfwebqq)
 {
     std::string m = boost::str(boost::format("{\"h\":\"hello\",\"vfwebqq\":\"%s\"}") % vfwebqq);
@@ -791,7 +782,9 @@ void WebQQ::set_online_status()
 			(avhttp::http_options::connection, "close")
 	);
 
-	stream->async_open(LWQQ_URL_SET_STATUS,boost::bind(&WebQQ::cb_online_status,this, stream, boost::asio::placeholders::error) );
+	async_http_download(stream, LWQQ_URL_SET_STATUS , 
+		boost::bind(&WebQQ::cb_online_status,this, _1,_2,_3)
+	);
 }
 
 void WebQQ::do_poll_one_msg(std::string cookie)
@@ -852,19 +845,15 @@ void WebQQ::cb_poll_msg(const boost::system::error_code& ec, read_streamptr stre
 	}
 }
 
-
-void WebQQ::cb_online_status(read_streamptr stream, char* response, const boost::system::error_code& ec, std::size_t length)
+void WebQQ::cb_online_status(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf)
 {
-    BOOST_SCOPE_EXIT( (&response) )
-    {
-		delete response;
-    } BOOST_SCOPE_EXIT_END
-    
+	std::istream response(&buf);
     //处理!
 	try{
-		pt::ptree json = json_parse(response);
-		js::write_json(std::cout, json);
+		pt::ptree json;
 
+		js::read_json(response, json);
+		js::write_json(std::cout, json);
 
 		if ( json.get<std::string>("retcode") == "0")
 		{
@@ -875,7 +864,7 @@ void WebQQ::cb_online_status(read_streamptr stream, char* response, const boost:
 			update_group_list();
 		}
 	}catch (const pt::json_parser_error & jserr){
-		lwqq_log(LOG_ERROR , "parse json error : %s \n\t %s\n", jserr.what(), response);
+		lwqq_log(LOG_ERROR , "parse json error : %s \n", jserr.what());
 	}catch (const pt::ptree_bad_path & jserr){
 		lwqq_log(LOG_ERROR , "parse bad path error :  %s\n", jserr.what());
 	}
@@ -1097,14 +1086,6 @@ void WebQQ::cb_do_login(read_streamptr stream, const boost::system::error_code& 
 	char * data = new char[8192];
 	boost::asio::async_read(*stream, boost::asio::buffer(data, 8192),
 		boost::bind(&WebQQ::cb_done_login, this,stream, data, boost::asio::placeholders::error,  boost::asio::placeholders::bytes_transferred) );
-}
-
-void WebQQ::cb_online_status(read_streamptr stream, const boost::system::error_code& ec)
-{
-	char * data = new char[8192];
-	memset(data, 0, 8192);
-	boost::asio::async_read(*stream, boost::asio::buffer(data, 8192),
-		boost::bind(&WebQQ::cb_online_status, this, stream, data, boost::asio::placeholders::error,  boost::asio::placeholders::bytes_transferred) );
 }
 
 static std::string lwqq_status_to_str(LWQQ_STATUS status)
