@@ -29,6 +29,7 @@ namespace js = boost::property_tree::json_parser;
 #include <boost/assign.hpp>
 #include <boost/scope_exit.hpp>
 
+#include "boost/timedcall.hpp"
 #include "boost/coro/coro.hpp"
 #include "boost/coro/yield.hpp"
 
@@ -348,25 +349,6 @@ private:
 	boost::shared_ptr<boost::asio::streambuf> sb;
 };
 
-static void timeout(boost::shared_ptr<boost::asio::deadline_timer> t, boost::function<void()> cb)
-{
-	t->get_io_service().post(boost::protect(cb));
-}
-
-template<class handler>
-void delayedcall(boost::asio::io_service &io_service, int sec, handler cb)
-{
-	boost::shared_ptr<boost::asio::deadline_timer> t( new boost::asio::deadline_timer(io_service, boost::posix_time::seconds(sec)));
-	t->async_wait(boost::bind(&timeout, t, boost::protect(cb)));
-}
-
-template<class handler>
-void delayedcallms(boost::asio::io_service &io_service, int msec, handler cb)
-{
-	boost::shared_ptr<boost::asio::deadline_timer> t( new boost::asio::deadline_timer(io_service, boost::posix_time::milliseconds(msec)));
-	t->async_wait(boost::bind(&timeout, t, boost::protect(cb)));
-}
-
 // build webqq and setup defaults
 qq::WebQQ::WebQQ(boost::asio::io_service& _io_service,
 	std::string _qqnum, std::string _passwd, LWQQ_STATUS _status)
@@ -492,7 +474,7 @@ void WebQQ::cb_send_msg(const boost::system::error_code& ec, read_streamptr stre
 			// 已经断线，重新登录
 			m_status = LWQQ_STATUS_UNKNOW;
 			// 10s 后登录.
-			delayedcall(m_io_service,10,boost::bind(&WebQQ::login,this));
+			boost::delayedcallsec(m_io_service,10,boost::bind(&WebQQ::login,this));
 		}
 	}catch (const pt::json_parser_error & jserr)
 	{
@@ -508,7 +490,7 @@ void WebQQ::cb_send_msg(const boost::system::error_code& ec, read_streamptr stre
 		m_group_msg_insending = false;
 	}else{
 		boost::tuple<std::string, std::string, send_group_message_cb> v = m_msg_queue.front();
-		delayedcallms(m_io_service, 500, boost::bind(&WebQQ::send_group_message_internal, this,boost::get<0>(v),boost::get<1>(v), boost::get<2>(v)));
+		boost::delayedcallms(m_io_service, 500, boost::bind(&WebQQ::send_group_message_internal, this,boost::get<0>(v),boost::get<1>(v), boost::get<2>(v)));
 		m_msg_queue.pop_front();
 	}
 	m_io_service.post( boost::asio::detail::bind_handler(donecb,ec));
@@ -730,7 +712,7 @@ void WebQQ::cb_got_vc(const boost::system::error_code& ec, read_streamptr stream
 void WebQQ::get_verify_image(std::string vcimgid)
 {
 	if( vcimgid.length() < 8){
-		delayedcall(m_io_service, 10,boost::bind(&WebQQ::login, this));
+		boost::delayedcallsec(m_io_service, 10,boost::bind(&WebQQ::login, this));
 		return ;
 	}
 
@@ -1003,7 +985,7 @@ void WebQQ::process_msg(const pt::wptree &jstree)
 	int retcode = jstree.get<int>(L"retcode");
 	if (retcode){
 		if(retcode != 102){
-			delayedcall(m_io_service, 15, boost::bind(&WebQQ::login, this));
+			boost::delayedcallsec(m_io_service, 15, boost::bind(&WebQQ::login, this));
 		}
 		return;
 	}
@@ -1030,7 +1012,7 @@ void WebQQ::process_msg(const pt::wptree &jstree)
 			js::write_json(std::wcout, result.second);
 			m_status = LWQQ_STATUS_OFFLINE;
 			//强制下线了，重登录.
-			delayedcall(m_io_service, 15, boost::bind(&WebQQ::login, this));
+			boost::delayedcallsec(m_io_service, 15, boost::bind(&WebQQ::login, this));
 		}
 	}
 }
@@ -1073,7 +1055,7 @@ void WebQQ::cb_group_list(const boost::system::error_code& ec, read_streamptr st
 	 	lwqq_log(LOG_ERROR, "bad path error %s\n", badpath.what());
 	}
 	if (retry){
-		delayedcall(m_io_service, 5, boost::bind(&WebQQ::update_group_list, this));
+		boost::delayedcallsec(m_io_service, 5, boost::bind(&WebQQ::update_group_list, this));
 	}else{
 		// fetching more budy info.
 		BOOST_FOREACH(grouplist::value_type & v, m_groups)
@@ -1112,7 +1094,7 @@ void WebQQ::cb_group_qqnumber(const boost::system::error_code& ec, read_streampt
 	}catch (const pt::json_parser_error & jserr){
 		lwqq_log(LOG_ERROR, "parse json error : %s\n", jserr.what());
 
-		delayedcall(m_io_service, 5, boost::bind(&WebQQ::update_group_member, this, boost::ref(group)));
+		boost::delayedcallsec(m_io_service, 5, boost::bind(&WebQQ::update_group_member, this, boost::ref(group)));
 	}catch (const pt::ptree_bad_path & badpath){
 	 	lwqq_log(LOG_ERROR, "bad path error %s\n", badpath.what());
 	}
@@ -1162,7 +1144,7 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 	}catch (const pt::json_parser_error & jserr){
 		lwqq_log(LOG_ERROR, "parse json error : %s\n", jserr.what());
 
-		delayedcall(m_io_service, 5, boost::bind(&WebQQ::update_group_member, this, boost::ref(group)));
+		boost::delayedcallsec(m_io_service, 5, boost::bind(&WebQQ::update_group_member, this, boost::ref(group)));
 	}catch (const pt::ptree_bad_path & badpath){
 	 	lwqq_log(LOG_ERROR, "bad path error %s\n", badpath.what());
 	}
