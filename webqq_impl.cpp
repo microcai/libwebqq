@@ -1154,22 +1154,19 @@ static std::string generate_clientid()
     int r;
     struct timeval tv;
     long t;
-    char buf[20] = {0};
 
     srand(time(NULL));
     r = rand() % 90 + 10;
 
 #ifdef WIN32
-	sprintf(buf, "%d%d%d%d", r, r, r);
+	return boost::str(boost::format("%d%d%d") % r % r %r );
 #else
 	if (gettimeofday(&tv, NULL)) {
 		return NULL;
 	}
 	t = tv.tv_usec % 1000000;
-	snprintf(buf, sizeof(buf), "%d%ld", r, t);
+	return boost::str(boost::format("%d%ld") % r % t);
 #endif
-
-	return buf;
 }
 
 static std::string parse_verify_uin(const char *str)
