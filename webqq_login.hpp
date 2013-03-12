@@ -275,7 +275,7 @@ static std::string lwqq_status_to_str(LWQQ_STATUS status)
 }
 
 // qq 登录办法
-class corologin : boost::coro::coroutine {
+class SYMBOL_HIDDEN corologin : boost::coro::coroutine {
 public:
 	corologin(qq::WebQQ & webqq )
 		:m_webqq(webqq)
@@ -393,7 +393,7 @@ private:
 };
 
 // qq 登录办法-验证码登录
-class corologin_vc : boost::coro::coroutine {
+class SYMBOL_HIDDEN corologin_vc : boost::coro::coroutine {
 public:
 	corologin_vc(WebQQ & webqq, std::string _vccode )
 		:m_webqq(webqq), vccode(_vccode)

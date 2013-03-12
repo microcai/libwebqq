@@ -29,7 +29,7 @@
 typedef boost::shared_ptr<avhttp::http_stream> read_streamptr;
 
 
-class async_http_download : boost::coro::coroutine {
+class SYMBOL_HIDDEN async_http_download : boost::coro::coroutine {
 public:
 	typedef void result_type;
 public:
