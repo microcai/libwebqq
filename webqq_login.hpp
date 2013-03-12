@@ -20,6 +20,9 @@
 #pragma once
 #include <boost/function.hpp>
 #include <boost/asio.hpp>
+#include <boost/property_tree/json_parser.hpp>
+namespace js = boost::property_tree::json_parser;
+
 #include <avhttp.hpp>
 
 #include "boost/coro/coro.hpp"
@@ -31,6 +34,7 @@
 
 #include "constant.hpp"
 #include "md5.hpp"
+#include "url.hpp"
 
 namespace qq {
 namespace detail {
@@ -256,6 +260,20 @@ static std::string generate_clientid()
 #endif
 }
 
+static std::string lwqq_status_to_str(LWQQ_STATUS status)
+{
+    switch(status){
+        case LWQQ_STATUS_ONLINE: return "online";break;
+        case LWQQ_STATUS_OFFLINE: return "offline";break;
+        case LWQQ_STATUS_AWAY: return "away";break;
+        case LWQQ_STATUS_HIDDEN: return "hidden";break;
+        case LWQQ_STATUS_BUSY: return "busy";break;
+        case LWQQ_STATUS_CALLME: return "callme";break;
+        case LWQQ_STATUS_SLIENT: return "slient";break;
+        default: return "unknow";break;
+    }
+}
+
 // qq 登录办法
 class corologin : boost::coro::coroutine {
 public:
@@ -398,18 +416,21 @@ public:
 				% m_webqq.m_status
 		);
 
-		read_streamptr loginstream(new avhttp::http_stream(m_webqq.get_ioservice()));
-		loginstream->request_options(
+		read_streamptr stream(new avhttp::http_stream(m_webqq.get_ioservice()));
+		stream->request_options(
 			avhttp::request_opts()
 				(avhttp::http_options::cookie, m_webqq.m_cookies.lwcookies)
 				(avhttp::http_options::connection, "close")
 		);
-		async_http_download(loginstream, url , *this);
+		async_http_download(stream, url , *this);
 	}
 
 	// 在这里实现　QQ 的登录.
 	void operator()(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buffer)
 	{
+		std::string msg;
+		pt::ptree json;
+		std::istream response(&buffer);
 		//　登录步骤.
 		reenter(this)
 		{
@@ -421,8 +442,51 @@ public:
 
 				//change status,  this is the last step for login
 				// 设定在线状态.
-				m_webqq.set_online_status();
-				m_webqq.m_group_msg_insending =false;
+				
+				msg = boost::str(
+					boost::format("{\"status\":\"%s\",\"ptwebqq\":\"%s\","
+						"\"passwd_sig\":""\"\",\"clientid\":\"%s\""
+						", \"psessionid\":null}")
+					% lwqq_status_to_str(LWQQ_STATUS_ONLINE)
+					% m_webqq.m_cookies.ptwebqq
+					% m_webqq.m_clientid
+				);
+
+				msg = boost::str(boost::format("r=%s") % url_encode(msg.c_str()));
+
+				stream.reset(new avhttp::http_stream(m_webqq.get_ioservice()));
+				stream->request_options(
+					avhttp::request_opts()
+						(avhttp::http_options::request_method, "POST")
+						(avhttp::http_options::cookie, m_webqq.m_cookies.lwcookies)
+						(avhttp::http_options::referer, "http://d.web2.qq.com/proxy.html?v=20110331002&callback=1&id=2")
+						(avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8")
+						(avhttp::http_options::request_body, msg)
+						(avhttp::http_options::content_length, boost::lexical_cast<std::string>(msg.length()))
+						(avhttp::http_options::connection, "close")
+				);
+
+				coyield async_http_download(stream, LWQQ_URL_SET_STATUS , * this);
+					
+				//处理!
+				try{
+					js::read_json(response, json);
+					js::write_json(std::cout, json);
+
+					if ( json.get<std::string>("retcode") == "0")
+					{
+						m_webqq.m_psessionid = json.get_child("result").get<std::string>("psessionid");
+						m_webqq.m_vfwebqq = json.get_child("result").get<std::string>("vfwebqq");
+						m_webqq.m_status = LWQQ_STATUS_ONLINE;
+						//polling group list
+						m_webqq.update_group_list();
+					}
+				}catch (const pt::json_parser_error & jserr){
+					lwqq_log(LOG_ERROR , "parse json error : %s \n", jserr.what());
+				}catch (const pt::ptree_bad_path & jserr){
+					lwqq_log(LOG_ERROR , "parse bad path error :  %s\n", jserr.what());
+				}
+
 			}
 		}
 	}

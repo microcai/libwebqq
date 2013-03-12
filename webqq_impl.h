@@ -158,10 +158,6 @@ private:
 	void get_verify_image(std::string vcimgid);
 	void cb_get_verify_image(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&);
 
-	//last step for login
-	void set_online_status();
-	void cb_online_status(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&);
-
 	void do_poll_one_msg(std::string cookie);
 	void cb_poll_msg(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf, std::string cookie);
 
