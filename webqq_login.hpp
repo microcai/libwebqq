@@ -294,7 +294,7 @@ public:
 			stream.reset(new avhttp::http_stream(m_webqq.get_ioservice()));
 			lwqq_log(LOG_DEBUG, "Get webqq version from %s\n", LWQQ_URL_VERSION);
 			// 首先获得版本.
-			coyield async_http_download(stream, LWQQ_URL_VERSION, *this);
+			_yield async_http_download(stream, LWQQ_URL_VERSION, *this);
 
 			m_webqq.m_version = parse_version(buf);
 			
@@ -315,7 +315,7 @@ public:
 					(avhttp::http_options::connection, "close")
 			);
 
-			coyield async_http_download(stream,
+			_yield async_http_download(stream,
 				/*url*/ boost::str(boost::format("%s%s?uin=%s&appid=%s") % LWQQ_URL_CHECK_HOST % VCCHECKPATH % m_webqq.m_qqnum % APPID),
 									*this);
 
@@ -466,7 +466,7 @@ public:
 						(avhttp::http_options::connection, "close")
 				);
 
-				coyield async_http_download(stream, LWQQ_URL_SET_STATUS , * this);
+				_yield async_http_download(stream, LWQQ_URL_SET_STATUS , * this);
 					
 				//处理!
 				try{

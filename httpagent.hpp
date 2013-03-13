@@ -50,7 +50,7 @@ public:
 
 				while(!ec)
 				{
-					coyield stream->async_read_some(sb->prepare(4096), *this);
+					_yield stream->async_read_some(sb->prepare(4096), *this);
 					sb->commit(length);
 					readed += length;
 
