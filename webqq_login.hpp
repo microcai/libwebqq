@@ -25,6 +25,7 @@ namespace js = boost::property_tree::json_parser;
 
 #include <avhttp.hpp>
 
+#include "boost/timedcall.hpp"
 #include "boost/coro/coro.hpp"
 #include "boost/coro/yield.hpp"
 
@@ -487,6 +488,18 @@ public:
 					lwqq_log(LOG_ERROR , "parse bad path error :  %s\n", jserr.what());
 				}
 
+				m_webqq.m_group_msg_insending = !m_webqq.m_msg_queue.empty();
+
+				if(m_webqq.m_group_msg_insending)
+				{
+					boost::tuple<std::string, std::string, WebQQ::send_group_message_cb> v = m_webqq.m_msg_queue.front();
+					boost::delayedcallms(m_webqq.get_ioservice(), 500, boost::bind(&WebQQ::send_group_message_internal, &m_webqq,boost::get<0>(v),boost::get<1>(v), boost::get<2>(v)));
+					m_webqq.m_msg_queue.pop_front();
+				}
+
+			}else
+			{
+				m_webqq.get_ioservice().post(boost::bind(&WebQQ::login, &m_webqq));
 			}
 		}
 	}
