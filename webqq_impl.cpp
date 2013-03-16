@@ -573,7 +573,8 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 static std::string parse_unescape(std::string source)
 {
 	boost::replace_all(source, "\\", "\\\\\\\\");
-	boost::replace_all(source, "\n", "\\\\n");
+	boost::replace_all(source, "\r", "");
+	boost::replace_all(source, "\n", "\\\\r\\\\n");
 	boost::replace_all(source, "\t", "\\\\t");
 	boost::replace_all(source, "\"", "\\\\u0022");
 	boost::replace_all(source, "&", "\\\\u0026");
