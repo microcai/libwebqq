@@ -583,7 +583,7 @@ static std::string parse_unescape(std::string source)
 	boost::replace_all(source, "+", "\\\\u002B");
 	boost::replace_all(source, "%", "\\\\u0025");
 	boost::replace_all(source, "`", "\\\\u0060");
-	boost::replace_all(source, "[`", "\\\\u005B");
+	boost::replace_all(source, "[", "\\\\u005B");
 	boost::replace_all(source, "]", "\\\\u005D");
 	boost::replace_all(source, ",", "\\\\u002C");
 	boost::replace_all(source, "{", "\\\\u007B");
