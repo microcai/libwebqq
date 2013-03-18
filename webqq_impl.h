@@ -154,6 +154,8 @@ public:// signals
 
 private:
 	void init_face_map();
+	
+	void update_group_member_qq(qqGroup & group);
 
 	void get_verify_image(std::string vcimgid);
 	void cb_get_verify_image(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&);

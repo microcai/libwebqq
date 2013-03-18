@@ -254,6 +254,13 @@ void WebQQ::update_group_member(qqGroup& group)
 	);
 }
 
+//　将组成员的 QQ 号码一个一个更新过来.
+void WebQQ::update_group_member_qq ( qqGroup& group )
+{
+	//我说了是一个一个的更新对吧，可不能一次发起　N 个连接同时更新，会被TX拉黑名单的.
+	
+}
+
 qqGroup* WebQQ::get_Group_by_gid(std::string gid)
 {
 	qq::grouplist::iterator it = m_groups.find(gid);
@@ -553,6 +560,10 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 				group.get_Buddy_by_uin(muin)->mflag = boost::lexical_cast<unsigned int>(mflag);
 				}catch(boost::bad_lexical_cast & e){}
 			}
+
+			// 开始更新成员的 QQ 号码，一次更新一个，慢慢来.
+			update_group_member_qq(group);
+
 			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result.cards"))
 			{
 				pt::ptree & minfo = v.second;
