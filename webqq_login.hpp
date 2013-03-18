@@ -70,7 +70,8 @@ static std::string parse_version(boost::asio::streambuf& buffer)
 		
 		std::cout << "Get webqq version: " <<  v <<  std::endl;
 		return v;
-	}	
+	}
+	return "";
 }
 
 // ptui_checkVC('0','!IJG, ptui_checkVC('0','!IJG', '\x00\x00\x00\x00\x54\xb3\x3c\x53');
