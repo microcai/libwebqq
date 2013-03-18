@@ -254,11 +254,104 @@ void WebQQ::update_group_member(qqGroup& group)
 	);
 }
 
-//　将组成员的 QQ 号码一个一个更新过来.
-void WebQQ::update_group_member_qq ( qqGroup& group )
+void update_buddy_qqnumber_helper(qqBuddy & buddy, boost::shared_ptr<avhttp::http_stream> stream)
 {
-	//我说了是一个一个的更新对吧，可不能一次发起　N 个连接同时更新，会被TX拉黑名单的.
 	
+}
+
+// 获得的返回代码类似
+// {"retcode":0,"result":{"uiuin":"","account":2664046919,"uin":721281587}}
+static void cb_update_buddy_qqnumber(qqBuddy& buddy,
+	const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buffer,
+	boost::function<void () >	handler)
+{
+	pt::ptree jsonobj;
+	std::iostream resultjson(&buffer);
+	try{
+		// 处理.
+ 		pt::json_parser::read_json(resultjson, jsonobj);
+		buddy.qqnum = jsonobj.get<std::string>("result.account");
+		handler();
+	}catch (const pt::json_parser_error & jserr){
+		lwqq_log(LOG_ERROR, "parse json error : %s\n",jserr.what());
+	}
+	catch (const pt::ptree_bad_path & badpath){
+		lwqq_log(LOG_ERROR, "bad path %s\n", badpath.what());
+		js::write_json(std::cout, jsonobj);
+	}
+}
+
+class SYMBOL_HIDDEN fetch_buddy_qqnumber : boost::coro::coroutine
+{
+public:
+	fetch_buddy_qqnumber();
+private:
+	boost::asio::io_service & io_service;
+};
+
+// 获得　buddy 的　qqnum
+void WebQQ::update_buddy_qqnumber(qqBuddy& buddy, boost::function<void ()> handler, boost::coro::coroutine coro)
+{
+	read_streamptr stream;
+	std::string url = boost::str(
+						boost::format("%s/api/get_friend_uin2?tuin=%s&verifysession=&type=1&code=&vfwebqq=%s")
+										% "http://s.web2.qq.com" % buddy.uin % m_vfwebqq
+					);
+
+	reenter(coro){
+		if (buddy.qqnum.empty())
+		{
+			stream.reset(new avhttp::http_stream(m_io_service));
+			stream->request_options(
+				avhttp::request_opts()
+					(avhttp::http_options::cookie, m_cookies.lwcookies)
+					(avhttp::http_options::referer, "http://s.web2.qq.com/proxy.html?v=20110412001&callback=1&id=3")
+					(avhttp::http_options::content_type, "UTF-8")
+					(avhttp::http_options::connection, "close")
+			);
+
+			_yield async_http_download(stream, url,
+					boost::bind(&cb_update_buddy_qqnumber, boost::ref(buddy), _1, _2, _3,
+						boost::function<void () >(boost::bind(&WebQQ::update_buddy_qqnumber, this, boost::ref(buddy),handler,coro))
+					)
+			);
+		}
+		// 咋样，又回来了.
+		m_io_service.post(handler);
+	}
+}
+
+class SYMBOL_HIDDEN update_group_member_qq : boost::coro::coroutine{
+public:
+	update_group_member_qq(boost::asio::io_service & io, WebQQ & _webqq, qqGroup& _group)
+		:io_service(io), group(_group), m_webqq(_webqq)
+	{
+		io_service.post(*this);
+	}
+
+	void operator()()
+	{
+	 	//我说了是一个一个的更新对吧，可不能一次发起　N 个连接同时更新，会被TX拉黑名单的.
+		reenter(this)
+		{
+			for(it = group.memberlist.begin();
+					it != group.memberlist.end(); it++)
+			{
+				_yield m_webqq.update_buddy_qqnumber(it->second, *this);
+			}
+		}
+	}
+private:
+	std::map< std::string, qqBuddy >::iterator it;
+	boost::asio::io_service & io_service;
+	qqGroup&					group;
+	WebQQ&					m_webqq;
+};
+
+//　将组成员的 QQ 号码一个一个更新过来.
+void WebQQ::update_group_member_qq (qqGroup& group)
+{
+	::update_group_member_qq(get_ioservice(), *this, group);
 }
 
 qqGroup* WebQQ::get_Group_by_gid(std::string gid)
@@ -551,6 +644,9 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 				group.memberlist.insert(std::make_pair(buddy.uin, buddy));
 				lwqq_log(LOG_DEBUG, "buddy list:: %s %s\n", buddy.uin.c_str(), buddy.nick.c_str());
 			}
+			// 开始更新成员的 QQ 号码，一次更新一个，慢慢来.
+			this->update_group_member_qq(group);
+
 			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result.ginfo.members"))
 			{
 				pt::ptree & minfo = v.second;
@@ -560,9 +656,6 @@ void WebQQ::cb_group_member(const boost::system::error_code& ec, read_streamptr 
 				group.get_Buddy_by_uin(muin)->mflag = boost::lexical_cast<unsigned int>(mflag);
 				}catch(boost::bad_lexical_cast & e){}
 			}
-
-			// 开始更新成员的 QQ 号码，一次更新一个，慢慢来.
-			update_group_member_qq(group);
 
 			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result.cards"))
 			{

@@ -132,6 +132,9 @@ public:
 	void update_group_list();
 	void update_group_qqmember(qqGroup& group);
     void update_group_member(qqGroup &  group);
+
+    void update_buddy_qqnumber(qqBuddy & buddy, boost::function<void ()> handler, boost::coro::coroutine coro = boost::coro::coroutine());
+    
 	qqGroup * get_Group_by_gid(std::string gid);
 	qqGroup * get_Group_by_qq(std::string qq);
 	boost::asio::io_service	&get_ioservice(){

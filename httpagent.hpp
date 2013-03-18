@@ -40,16 +40,6 @@ public:
  		stream->async_open(url, *this);
 	}
 
-	template<class httpstreamhandler>
-	async_http_download(read_streamptr _stream, const avhttp::request_opts& options , httpstreamhandler _handler)
-		:handler(_handler),stream(_stream), sb(new boost::asio::streambuf() ) , readed(0)
-	{
-		if (stream->is_open())
-			stream->async_request(options,  *this);
-		else
-			handler(boost::asio::error::network_reset, stream, *sb);
-	}
-
 	void operator()(const boost::system::error_code& ec , std::size_t length = 0)
 	{
 		reenter(this)
