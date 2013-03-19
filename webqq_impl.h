@@ -133,8 +133,6 @@ public:
 	void update_group_qqmember(qqGroup& group);
     void update_group_member(qqGroup &  group);
 
-    void update_buddy_qqnumber(qqBuddy & buddy, boost::function<void ()> handler, boost::coro::coroutine coro = boost::coro::coroutine());
-    
 	qqGroup * get_Group_by_gid(std::string gid);
 	qqGroup * get_Group_by_qq(std::string qq);
 	boost::asio::io_service	&get_ioservice(){
@@ -175,6 +173,10 @@ private:
 	void send_group_message_internal(std::string group, std::string msg, send_group_message_cb donecb);
 	void cb_send_msg(const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, boost::function<void (const boost::system::error_code& ec)> donecb);
 
+public:
+	std::string	m_vfwebqq;
+	LwqqCookies m_cookies;
+
 private:
     boost::asio::io_service & m_io_service;
 
@@ -182,11 +184,10 @@ private:
     LWQQ_STATUS m_status;
 
 	std::string	m_version;
-	std::string m_clientid, m_psessionid, m_vfwebqq;
+	std::string m_clientid, m_psessionid;
 	long m_msg_id;     // update on every message.
 
 	LwqqVerifyCode m_verifycode;
-	LwqqCookies m_cookies;
 
 	grouplist	m_groups;
 	
