@@ -323,10 +323,10 @@ void WebQQ::update_buddy_qqnumber(qqBuddy& buddy, boost::function<void ()> handl
 
 class SYMBOL_HIDDEN update_group_member_qq : boost::coro::coroutine{
 public:
-	update_group_member_qq(boost::asio::io_service & io, WebQQ & _webqq, qqGroup& _group)
-		:io_service(io), group(_group), m_webqq(_webqq)
+	update_group_member_qq(WebQQ & _webqq, qqGroup& _group)
+		:group(_group), m_webqq(_webqq)
 	{
-		io_service.post(*this);
+		m_webqq.get_ioservice().post(*this);
 	}
 
 	void operator()()
@@ -343,9 +343,8 @@ public:
 	}
 private:
 	std::map< std::string, qqBuddy >::iterator it;
-	boost::asio::io_service & io_service;
 	qqGroup&					group;
-	WebQQ&					m_webqq;
+	WebQQ&						m_webqq;
 };
 
 //　将组成员的 QQ 号码一个一个更新过来.
