@@ -240,7 +240,7 @@ void WebQQ::update_group_member(qqGroup& group)
 		% "http://s.web2.qq.com"
 		% group.code
 		% m_vfwebqq
-		% time(NULL)
+		% std::time(NULL)
 	);
 	stream->request_options(
 		avhttp::request_opts()
@@ -260,6 +260,7 @@ public:
 	// 将　qqBuddy 里的　uin 转化为　qq 号码.
 	template<class Handler>
 	buddy_uin_to_qqnumber(WebQQ & _webqq, std::string uin, Handler handler)
+	  : _io_service(_webqq.get_ioservice())
 	{
 		read_streamptr stream;
 		std::string url = boost::str(
@@ -290,15 +291,19 @@ public:
 			// 处理.
 			pt::json_parser::read_json(resultjson, jsonobj);
 			std::string qqnum = jsonobj.get<std::string>("result.account");
-			handler(qqnum);
+
+			_io_service.post(boost::asio::detail::bind_handler(handler, qqnum));
+
 		}catch (const pt::json_parser_error & jserr){
 			lwqq_log(LOG_ERROR, "parse json error : %s\n",jserr.what());
 		}
 		catch (const pt::ptree_bad_path & badpath){
 			lwqq_log(LOG_ERROR, "bad path %s\n", badpath.what());
 			js::write_json(std::cout, jsonobj);
-		}		
+		}
 	}
+private:
+	boost::asio::io_service& _io_service;
 };
 
 class SYMBOL_HIDDEN update_group_member_qq : boost::coro::coroutine{
