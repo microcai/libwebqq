@@ -325,6 +325,7 @@ public:
 					it != group.memberlist.end(); it++)
 			{
 				_yield buddy_uin_to_qqnumber(m_webqq, it->second.uin, *this);
+				it->second.qqnum = qqnum;
 			}
 		}
 	}
