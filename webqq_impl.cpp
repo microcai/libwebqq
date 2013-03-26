@@ -601,7 +601,7 @@ void WebQQ::cb_group_qqnumber(const boost::system::error_code& ec, read_streampt
 	}catch (const pt::json_parser_error & jserr){
 		lwqq_log(LOG_ERROR, "parse json error : %s\n", jserr.what());
 
-		boost::delayedcallsec(m_io_service, 5, boost::bind(&WebQQ::update_group_member, this, boost::ref(group)));
+		boost::delayedcallsec(m_io_service, 5, boost::bind(&WebQQ::update_group_qqmember, this, boost::ref(group)));
 	}catch (const pt::ptree_bad_path & badpath){
 	 	lwqq_log(LOG_ERROR, "bad path error %s\n", badpath.what());
 	}
