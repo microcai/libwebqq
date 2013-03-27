@@ -424,9 +424,6 @@ void WebQQ::cb_poll_msg(const boost::system::error_code& ec, read_streamptr stre
 		return ;
 	}
 
-	//开启新的 poll
-	do_poll_one_msg(cookie);
-
 	std::wstring response = utf8_wide(std::string(boost::asio::buffer_cast<const char*>(buf.data()) , buf.size()));
 	
 	pt::wptree	jsonobj;
@@ -438,13 +435,20 @@ void WebQQ::cb_poll_msg(const boost::system::error_code& ec, read_streamptr stre
 	try{
  		pt::json_parser::read_json(jsondata, jsonobj);
 		process_msg(jsonobj);
+		//开启新的 poll
+		do_poll_one_msg(cookie);
+
 	}catch (const pt::json_parser_error & jserr){
 		lwqq_log(LOG_ERROR, "parse json error : %s\n",jserr.what());
+		// 网络可能出了点问题，延时重试.
+		boost::delayedcallsec(get_ioservice(), 5, boost::bind(&WebQQ::do_poll_one_msg, this, cookie));
 	}
 	catch (const pt::ptree_bad_path & badpath){
 		lwqq_log(LOG_ERROR, "bad path %s\n", badpath.what());
 		js::write_json(std::wcout, jsonobj);
-	}
+		//开启新的 poll
+		do_poll_one_msg(cookie);
+   }
 }
 
 void WebQQ::process_group_message ( const boost::property_tree::wptree& jstree )
@@ -590,7 +594,6 @@ void WebQQ::cb_group_qqnumber(const boost::system::error_code& ec, read_streampt
 	//处理!
 	try{
 		pt::json_parser::read_json(jsondata, jsonobj);
-		js::write_json(std::cout, jsonobj);
 
 		//TODO, group members
 		if (jsonobj.get<int>("retcode") == 0)
