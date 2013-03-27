@@ -436,8 +436,7 @@ void WebQQ::cb_poll_msg(const boost::system::error_code& ec, read_streamptr stre
  		pt::json_parser::read_json(jsondata, jsonobj);
 		process_msg(jsonobj);
 		//开启新的 poll
-		do_poll_one_msg(cookie);
-
+		boost::delayedcallms(get_ioservice(), 5, boost::bind(&WebQQ::do_poll_one_msg, this, cookie));
 	}catch (const pt::json_parser_error & jserr){
 		lwqq_log(LOG_ERROR, "parse json error : %s\n",jserr.what());
 		// 网络可能出了点问题，延时重试.
@@ -447,7 +446,7 @@ void WebQQ::cb_poll_msg(const boost::system::error_code& ec, read_streamptr stre
 		lwqq_log(LOG_ERROR, "bad path %s\n", badpath.what());
 		js::write_json(std::wcout, jsonobj);
 		//开启新的 poll
-		do_poll_one_msg(cookie);
+		boost::delayedcallsec(get_ioservice(), 1, boost::bind(&WebQQ::do_poll_one_msg, this, cookie));
    }
 }
 
@@ -576,8 +575,8 @@ void WebQQ::cb_group_list(const boost::system::error_code& ec, read_streamptr st
 		}
 		//start polling messages, 2 connections!
 		lwqq_log(LOG_DEBUG, "start polling messages\n");
-		do_poll_one_msg(m_cookies.lwcookies);
-		do_poll_one_msg(m_cookies.lwcookies);
+		boost::delayedcallsec(get_ioservice(), 1, boost::bind(&WebQQ::do_poll_one_msg, this, m_cookies.lwcookies));
+		boost::delayedcallsec(get_ioservice(), 2, boost::bind(&WebQQ::do_poll_one_msg, this, m_cookies.lwcookies));
 	}
 }
 
