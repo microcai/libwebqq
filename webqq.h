@@ -126,6 +126,8 @@ public:
 	// not need to call this the first time, but you might need this if you became offline.
 	void login();
 
+	bool is_online();
+
 	void on_verify_code(boost::function<void ( const boost::asio::const_buffer &)>);
 	// login with vc, call this if you got signeedvc signal.
 	// in signeedvc signal, you can retreve images from server.

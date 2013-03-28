@@ -76,3 +76,9 @@ boost::asio::io_service& webqq::get_ioservice()
 {
 	return impl->get_ioservice();
 }
+
+bool webqq::is_online()
+{
+	return impl->m_status == LWQQ_STATUS_ONLINE;
+}
+
