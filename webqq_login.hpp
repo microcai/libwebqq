@@ -64,12 +64,11 @@ static std::string parse_version(boost::asio::streambuf& buffer)
 		}
 
 		s++;
-		char v[t - s + 1];
-		memset ( v, 0, t - s + 1 );
-		strncpy ( v, s, t - s );
+		std::vector<char> v(t - s + 1);
+		strncpy ( v.data(), s, t - s );
 		
-		std::cout << "Get webqq version: " <<  v <<  std::endl;
-		return v;
+		std::cout << "Get webqq version: " <<  v.data() <<  std::endl;
+		return v.data();
 	}
 	return "";
 }
