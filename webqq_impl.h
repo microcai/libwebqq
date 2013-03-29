@@ -48,7 +48,9 @@ namespace pt = boost::property_tree;
 
 #include "httpagent.hpp"
 
+#if !defined(_MSC_VER)
 #pragma GCC visibility push(hidden)
+#endif
 
 namespace qq{
 
@@ -202,6 +204,9 @@ private:
 
 };
 
+#if !defined(_MSC_VER)
 #pragma GCC visibility pop
+#endif
+
 
 #endif // WEBQQ_H
