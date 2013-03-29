@@ -9,6 +9,7 @@
  * 
  */
 #include <string>
+#include <vector>
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -40,8 +41,8 @@ std::string url_encode(const char *str)
     if (!str)
         return "";
 	
-	char buf[strlen(str) * 3 + 1];
-    char *pstr = (char*) str, *pbuf = buf;
+	std::vector<char> buf(strlen(str) * 3 + 1);
+    char *pstr = (char*) str, *pbuf = buf.data();
     
     while (*pstr) {
         if (isalnum(*pstr) || *pstr == '-' || *pstr == '_' || *pstr == '.' || *pstr == '~' ) 
@@ -51,7 +52,7 @@ std::string url_encode(const char *str)
         pstr++;
     }
     *pbuf = '\0';
-    return buf;
+    return buf.data();
 }
 
 std::string url_encode(const std::string str)
