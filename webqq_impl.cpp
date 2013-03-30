@@ -293,7 +293,7 @@ public:
 			std::string qqnum = jsonobj.get<std::string>("result.account");
 
 			_io_service.post(boost::asio::detail::bind_handler(handler, qqnum));
-
+			return ;
 		}catch (const pt::json_parser_error & jserr){
 			lwqq_log(LOG_ERROR, "parse json error : %s\n",jserr.what());
 		}
@@ -301,6 +301,7 @@ public:
 			lwqq_log(LOG_ERROR, "bad path %s\n", badpath.what());
 			js::write_json(std::cout, jsonobj);
 		}
+		_io_service.post(boost::asio::detail::bind_handler(handler, ""));
 	}
 private:
 	boost::asio::io_service& _io_service;
