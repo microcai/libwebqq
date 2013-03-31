@@ -301,7 +301,7 @@ public:
 			lwqq_log(LOG_ERROR, "bad path %s\n", badpath.what());
 			js::write_json(std::cout, jsonobj);
 		}
-		_io_service.post(boost::asio::detail::bind_handler(handler, ""));
+		_io_service.post(boost::asio::detail::bind_handler(handler, std::string("")));
 	}
 private:
 	boost::asio::io_service& _io_service;
