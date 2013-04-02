@@ -2,10 +2,10 @@
  * @file   logger.h
  * @author mathslinux <riegamaths@gmail.com>
  * @date   Sun May 20 23:27:05 2012
- * 
+ *
  * @brief  Linux WebQQ Logger API
- * 
- * 
+ *
+ *
  */
 
 #ifndef LWQQ_LOGGER_H
@@ -31,17 +31,17 @@
 #define __LOG_ERROR		3
 #define LOG_ERROR		__LOG_ERROR, _A_
 
-/** 
+/**
  * This is standard logger function
- * 
+ *
  * @param level Which level of this message, e.g. debug
  * @param file Which file this function called in
  * @param line Which line this function call at
- * @param function Which function call this function 
+ * @param function Which function call this function
  * @param msg Log message
  */
-void lwqq_log(int level, const char *file, int line,
-              const char *function, const char* msg, ...);
+void lwqq_log( int level, const char *file, int line,
+			   const char *function, const char* msg, ... );
 
 #define lwqq_puts(str) fprintf(stderr,"%s\n",str);
 

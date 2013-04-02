@@ -2,10 +2,10 @@
  * @file   logger.c
  * @author mathslinux <riegamaths@gmail.com>
  * @date   Sun May 20 23:25:33 2012
- * 
+ *
  * @brief  Linux WebQQ Logger API
- * 
- * 
+ *
+ *
  */
 
 #include <stdarg.h>
@@ -28,42 +28,42 @@ static const char *levels[] = {
 
 static FILE* logto = stderr;
 
-/** 
+/**
  * This is standard logger function
- * 
+ *
  * @param level Which level of this message, e.g. debug
  * @param file Which file this function called in
  * @param line Which line this function call at
- * @param function Which function call this function 
+ * @param function Which function call this function
  * @param msg Log message
  */
-void lwqq_log(int level, const char *file, int line,
-              const char *function, const char* msg, ...)
+void lwqq_log( int level, const char *file, int line,
+			   const char *function, const char* msg, ... )
 {
 	va_list  va;
-	time_t  t = time(NULL);
+	time_t  t = time( NULL );
 	struct tm *tm;
 	int buf_used = 0;
 	char date[256] = "NOTIME";
 
 #ifndef WIN32
-	tm = localtime(&t);
-	strftime(date, sizeof(date), "%b %e %T", tm);
+	tm = localtime( &t );
+	strftime( date, sizeof( date ), "%b %e %T", tm );
 #endif // WIN32
 
-    if(level > 1){
-		fprintf(logto, "[%s] %s[%ld]: %s:%d %s: \n\t", date, levels[level],
+	if( level > 1 ) {
+		fprintf( logto, "[%s] %s[%ld]: %s:%d %s: \n\t", date, levels[level],
 #ifdef _WIN32
-			(long)GetCurrentProcessId(),
+				 ( long )GetCurrentProcessId(),
 #else
-			(long)getpid(),
+				 ( long )getpid(),
 #endif
-			file, line, function);
-		
+				 file, line, function );
+
 	}
 
-	va_start (va, msg);
-	vfprintf(logto , msg, va);
-	va_end(va);
+	va_start( va, msg );
+	vfprintf( logto , msg, va );
+	va_end( va );
 }
 

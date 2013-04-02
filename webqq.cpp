@@ -19,36 +19,36 @@
 #include "webqq.h"
 #include "webqq_impl.h"
 
-webqq::webqq(boost::asio::io_service& asioservice, std::string qqnum, std::string passwd, LWQQ_STATUS status)
-  : impl(new qq::WebQQ(asioservice, qqnum, passwd, status))
+webqq::webqq( boost::asio::io_service& asioservice, std::string qqnum, std::string passwd, LWQQ_STATUS status )
+	: impl( new qq::WebQQ( asioservice, qqnum, passwd, status ) )
 {
-	
+
 }
 
-void webqq::on_verify_code ( boost::function< void ( const boost::asio::const_buffer &) >  cb)
+void webqq::on_verify_code( boost::function< void ( const boost::asio::const_buffer & ) >  cb )
 {
-	impl->signeedvc.connect(cb);
+	impl->signeedvc.connect( cb );
 }
 
 
-void webqq::on_group_msg(boost::function< void(std::string, std::string, const std::vector<qqMsg>& )> cb)
+void webqq::on_group_msg( boost::function< void( std::string, std::string, const std::vector<qqMsg>& )> cb )
 {
-	this->impl->siggroupmessage.connect(cb);
+	this->impl->siggroupmessage.connect( cb );
 }
 
-void webqq::update_group_member(qqGroup& group)
+void webqq::update_group_member( qqGroup& group )
 {
-	impl->update_group_member(group);
+	impl->update_group_member( group );
 }
 
-qqGroup * webqq::get_Group_by_gid(std::string gid)
+qqGroup * webqq::get_Group_by_gid( std::string gid )
 {
-	return impl->get_Group_by_gid(gid);
+	return impl->get_Group_by_gid( gid );
 }
 
-qqGroup* webqq::get_Group_by_qq(std::string qq)
+qqGroup* webqq::get_Group_by_qq( std::string qq )
 {
-	return impl->get_Group_by_qq(qq);
+	return impl->get_Group_by_qq( qq );
 }
 
 void webqq::login()
@@ -56,20 +56,20 @@ void webqq::login()
 	impl->login();
 }
 
-void webqq::login_withvc ( std::string vccode )
+void webqq::login_withvc( std::string vccode )
 {
-	impl->login_withvc(vccode);
+	impl->login_withvc( vccode );
 }
 
 
-void webqq::send_group_message(std::string group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb)
+void webqq::send_group_message( std::string group, std::string msg, boost::function<void ( const boost::system::error_code& ec )> donecb )
 {
-	impl->send_group_message(group, msg, donecb);
+	impl->send_group_message( group, msg, donecb );
 }
 
-void webqq::send_group_message(qqGroup& group, std::string msg, boost::function<void (const boost::system::error_code& ec)> donecb)
+void webqq::send_group_message( qqGroup& group, std::string msg, boost::function<void ( const boost::system::error_code& ec )> donecb )
 {
-	impl->send_group_message(group, msg, donecb);
+	impl->send_group_message( group, msg, donecb );
 }
 
 boost::asio::io_service& webqq::get_ioservice()

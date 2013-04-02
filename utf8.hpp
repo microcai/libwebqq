@@ -36,14 +36,14 @@ DEALINGS IN THE SOFTWARE.
 #include <boost/locale.hpp>
 #include <boost/locale/utf.hpp>
 
-inline std::string wide_utf8(const std::wstring &source)
+inline std::string wide_utf8( const std::wstring &source )
 {
-	return boost::locale::conv::utf_to_utf<char>(source);
+	return boost::locale::conv::utf_to_utf<char>( source );
 }
 
-inline std::wstring utf8_wide(std::string const &source)
+inline std::wstring utf8_wide( std::string const &source )
 {
-	return boost::locale::conv::utf_to_utf<wchar_t>(source);
+	return boost::locale::conv::utf_to_utf<wchar_t>( source );
 }
 
 #else
@@ -53,23 +53,27 @@ inline std::wstring utf8_wide(std::string const &source)
 
 #include "./utf/unchecked.h"
 
-inline std::string wide_utf8(const std::wstring &source)
+inline std::string wide_utf8( const std::wstring &source )
 {
 	std::string result;
-	if(sizeof(wchar_t) == 32)
-		utf8::unchecked::utf32to8<>(source.begin(),source.end(),result.begin());
-	else if (sizeof(wchar_t) == 16)
-		utf8::unchecked::utf16to8(source.begin(),source.end(),result.begin());
+
+	if( sizeof( wchar_t ) == 32 )
+		utf8::unchecked::utf32to8<>( source.begin(), source.end(), result.begin() );
+	else if( sizeof( wchar_t ) == 16 )
+		utf8::unchecked::utf16to8( source.begin(), source.end(), result.begin() );
+
 	return result;
 }
 
-inline std::wstring utf8_wide(std::string const &source)
+inline std::wstring utf8_wide( std::string const &source )
 {
 	std::wstring result;
-	if(sizeof(wchar_t) == 32)
-		utf8::unchecked::utf8to32(source.begin(),source.end(),result.begin());
-	else if (sizeof(wchar_t) == 16)
-		utf8::unchecked::utf8to16(source.begin(),source.end(),result.begin());
+
+	if( sizeof( wchar_t ) == 32 )
+		utf8::unchecked::utf8to32( source.begin(), source.end(), result.begin() );
+	else if( sizeof( wchar_t ) == 16 )
+		utf8::unchecked::utf8to16( source.begin(), source.end(), result.begin() );
+
 	return result;
 }
 

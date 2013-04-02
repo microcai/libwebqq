@@ -34,35 +34,29 @@ public:
 	typedef void result_type;
 public:
 	template<class httpstreamhandler>
-	async_http_download(read_streamptr _stream, const avhttp::url & url, httpstreamhandler _handler)
-		:handler(_handler),stream(_stream), sb(new boost::asio::streambuf() ) , readed(0)
-	{
- 		stream->async_open(url, *this);
+	async_http_download( read_streamptr _stream, const avhttp::url & url, httpstreamhandler _handler )
+		: handler( _handler ), stream( _stream ), sb( new boost::asio::streambuf() ) , readed( 0 ) {
+		stream->async_open( url, *this );
 	}
 
-	void operator()(const boost::system::error_code& ec , std::size_t length = 0)
-	{
-		reenter(this)
-		{
-			if( !ec)
-			{
-				content_length = stream->response_options().find(avhttp::http_options::content_length);
+	void operator()( const boost::system::error_code& ec , std::size_t length = 0 ) {
+		reenter( this ) {
+			if( !ec ) {
+				content_length = stream->response_options().find( avhttp::http_options::content_length );
 
-				while(!ec)
-				{
-					_yield stream->async_read_some(sb->prepare(4096), *this);
-					sb->commit(length);
+				while( !ec ) {
+					_yield stream->async_read_some( sb->prepare( 4096 ), *this );
+					sb->commit( length );
 					readed += length;
 
-					if(!content_length.empty() &&  readed == boost::lexical_cast<std::size_t>(content_length))
-					{
-						handler(boost::system::error_code(boost::asio::error::eof), stream, *sb);
+					if( !content_length.empty() &&  readed == boost::lexical_cast<std::size_t>( content_length ) ) {
+						handler( boost::system::error_code( boost::asio::error::eof ), stream, *sb );
 						return ;
-					}					
-				}				
+					}
+				}
 			}
 
-			handler(ec, stream, *sb);
+			handler( ec, stream, *sb );
 		}
 	}
 
@@ -70,6 +64,6 @@ private:
 	std::size_t	readed;
 	std::string content_length;
 	read_streamptr stream;
-	boost::function<void (const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf &) > handler;
+	boost::function<void ( const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & ) > handler;
 	boost::shared_ptr<boost::asio::streambuf> sb;
 };

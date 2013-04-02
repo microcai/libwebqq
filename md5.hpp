@@ -53,12 +53,12 @@
 #define MD5_HASHBYTES 16
 
 typedef struct MD5Context {
-    uint32_t buf[4];
-    uint32_t bits[2];
-    unsigned char in[64];
+	uint32_t buf[4];
+	uint32_t bits[2];
+	unsigned char in[64];
 } MD5_CTX;
 
-char * lutil_md5_digest(const unsigned char * data, unsigned int len , char *buf);
-char* lutil_md5_data(const unsigned char *data, unsigned int len, char *buf);
+char * lutil_md5_digest( const unsigned char * data, unsigned int len , char *buf );
+char* lutil_md5_data( const unsigned char *data, unsigned int len, char *buf );
 
 #endif /* MD5_H */
