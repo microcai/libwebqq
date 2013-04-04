@@ -106,6 +106,8 @@ struct qqGroup {
 	}
 };
 
+typedef boost::shared_ptr<qqGroup> qqGroup_ptr;
+
 struct qqMsg {
 	enum {
 		LWQQ_MSG_FONT,
@@ -138,12 +140,12 @@ public:
 	void send_group_message( std::string group, std::string msg, boost::function<void ( const boost::system::error_code& ec )> donecb );
 	void send_group_message( qqGroup &  group, std::string msg, boost::function<void ( const boost::system::error_code& ec )> donecb );
 
-	void update_group_member( qqGroup &  group );
+	void update_group_member(boost::shared_ptr<qqGroup> group );
 
 	void async_fetch_cface(std::string cface, boost::function<void(boost::system::error_code ec, boost::asio::streambuf & buf)> callback);
 
-	qqGroup * get_Group_by_gid( std::string );
-	qqGroup * get_Group_by_qq( std::string qq );
+	qqGroup_ptr get_Group_by_gid( std::string );
+	qqGroup_ptr get_Group_by_qq( std::string qq );
 	boost::asio::io_service	&get_ioservice();
 private:
 	class qq::WebQQ * const impl;

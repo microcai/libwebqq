@@ -41,17 +41,17 @@ void webqq::on_group_msg( boost::function< void( const std::string, const std::s
 	this->impl->siggroupmessage.connect( cb );
 }
 
-void webqq::update_group_member( qqGroup& group )
+void webqq::update_group_member(boost::shared_ptr<qqGroup> group )
 {
 	impl->update_group_member( group );
 }
 
-qqGroup * webqq::get_Group_by_gid( std::string gid )
+qqGroup_ptr webqq::get_Group_by_gid( std::string gid )
 {
 	return impl->get_Group_by_gid( gid );
 }
 
-qqGroup* webqq::get_Group_by_qq( std::string qq )
+qqGroup_ptr webqq::get_Group_by_qq( std::string qq )
 {
 	return impl->get_Group_by_qq( qq );
 }

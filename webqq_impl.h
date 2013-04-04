@@ -110,7 +110,7 @@ typedef struct LwqqCookies {
 	}
 } LwqqCookies;
 
-typedef std::map<std::string, qqGroup>	grouplist;
+typedef std::map<std::string, boost::shared_ptr<qqGroup> > grouplist;
 
 namespace detail {
 class corologin;
@@ -131,11 +131,11 @@ public:
 	void send_group_message( std::string group, std::string msg, send_group_message_cb donecb );
 	void send_group_message( qqGroup &  group, std::string msg, send_group_message_cb donecb );
 	void update_group_list();
-	void update_group_qqmember( qqGroup& group );
-	void update_group_member( qqGroup &  group );
+	void update_group_qqmember(boost::shared_ptr<qqGroup> group);
+	void update_group_member(boost::shared_ptr<qqGroup> group);
 
-	qqGroup * get_Group_by_gid( std::string gid );
-	qqGroup * get_Group_by_qq( std::string qq );
+	qqGroup_ptr get_Group_by_gid( std::string gid );
+	qqGroup_ptr get_Group_by_qq( std::string qq );
 	boost::asio::io_service	&get_ioservice() {
 		return m_io_service;
 	};
@@ -157,7 +157,7 @@ public:// signals
 private:
 	void init_face_map();
 
-	void update_group_member_qq( qqGroup & group );
+	void update_group_member_qq(boost::shared_ptr<qqGroup> group );
 
 	void get_verify_image( std::string vcimgid );
 	void cb_get_verify_image( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& );
@@ -168,9 +168,9 @@ private:
 	void process_msg( const pt::wptree & jstree );
 	void process_group_message( const pt::wptree & jstree );
 	void cb_group_list( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& );
-	void cb_group_member_process_json(pt::ptree	&jsonobj, qqGroup &);
-	void cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, qqGroup & );
-	void cb_group_qqnumber( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, qqGroup & );
+	void cb_group_member_process_json(pt::ptree	&jsonobj, boost::shared_ptr<qqGroup>);
+	void cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, boost::shared_ptr<qqGroup> );
+	void cb_group_qqnumber( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, boost::shared_ptr<qqGroup> );
 
 	void send_group_message_internal( std::string group, std::string msg, send_group_message_cb donecb );
 	void cb_send_msg( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, boost::function<void ( const boost::system::error_code& ec )> donecb );

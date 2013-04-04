@@ -211,14 +211,14 @@ void WebQQ::update_group_list()
 					   );
 }
 
-void WebQQ::update_group_qqmember( qqGroup& group )
+void WebQQ::update_group_qqmember(boost::shared_ptr<qqGroup> group )
 {
 	std::string url;
 
 	url = boost::str(
 			  boost::format( "%s/api/get_friend_uin2?tuin=%s&verifysession=&type=1&code=&vfwebqq=%s&t=%ld" )
 			  % "http://s.web2.qq.com"
-			  % group.code
+			  % group->code
 			  % m_vfwebqq
 			  % time( NULL )
 		  );
@@ -231,18 +231,18 @@ void WebQQ::update_group_qqmember( qqGroup& group )
 	);
 
 	async_http_download( stream, url,
-						 boost::bind( &WebQQ::cb_group_qqnumber, this, boost::asio::placeholders::error, _2, _3, boost::ref( group ) )
+						 boost::bind( &WebQQ::cb_group_qqnumber, this, boost::asio::placeholders::error, _2, _3, group)
 					   );
 }
 
-void WebQQ::update_group_member( qqGroup& group )
+void WebQQ::update_group_member(boost::shared_ptr<qqGroup> group )
 {
 	read_streamptr stream( new avhttp::http_stream( m_io_service ) );
 
 	std::string url = boost::str(
 						  boost::format( "%s/api/get_group_info_ext2?gcode=%s&vfwebqq=%s&t=%ld" )
 						  % "http://s.web2.qq.com"
-						  % group.code
+						  % group->code
 						  % m_vfwebqq
 						  % std::time( NULL )
 					  );
@@ -254,7 +254,7 @@ void WebQQ::update_group_member( qqGroup& group )
 	);
 
 	async_http_download( stream, url,
-						 boost::bind( &WebQQ::cb_group_member, this, boost::asio::placeholders::error, _2, _3, boost::ref( group ) )
+						 boost::bind( &WebQQ::cb_group_member, this, boost::asio::placeholders::error, _2, _3, group)
 					   );
 }
 
@@ -284,7 +284,8 @@ public:
 	}
 
 	template <class Handler>
-	void operator()( const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buffer, Handler handler ) {
+	void operator()( const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buffer, Handler handler )
+	{
 		// 获得的返回代码类似
 		// {"retcode":0,"result":{"uiuin":"","account":2664046919,"uin":721281587}}
 		pt::ptree jsonobj;
@@ -319,7 +320,7 @@ class SYMBOL_HIDDEN update_group_member_qq : boost::coro::coroutine {
 public:
 	typedef void result_type;
 
-	update_group_member_qq( WebQQ & _webqq, qqGroup& _group )
+	update_group_member_qq( WebQQ & _webqq, boost::shared_ptr<qqGroup> _group )
 		: group( _group ), m_webqq( _webqq ) {
 		m_webqq.get_ioservice().post( boost::bind( *this, "" ) );
 	}
@@ -329,8 +330,8 @@ public:
 		//我说了是一个一个的更新对吧，可不能一次发起　N 个连接同时更新，会被TX拉黑名单的.
 		reenter( this )
 		{
-			for( it = group.memberlist.begin();
-					it != group.memberlist.end(); it++ ) {
+			for( it = group->memberlist.begin();
+					it != group->memberlist.end(); it++ ) {
 				_yield buddy_uin_to_qqnumber( m_webqq, it->second.uin, *this );
 				if ( qqnum == "-1")
 					return;
@@ -340,36 +341,36 @@ public:
 	}
 private:
 	std::map< std::string, qqBuddy >::iterator it;
-	qqGroup&					group;
+	boost::shared_ptr<qqGroup>	group;
 	WebQQ&						m_webqq;
 };
 
 //　将组成员的 QQ 号码一个一个更新过来.
-void WebQQ::update_group_member_qq( qqGroup& group )
+void WebQQ::update_group_member_qq(boost::shared_ptr<qqGroup> group )
 {
 	::update_group_member_qq( *this, group );
 }
 
-qqGroup* WebQQ::get_Group_by_gid( std::string gid )
+qqGroup_ptr WebQQ::get_Group_by_gid( std::string gid )
 {
 	qq::grouplist::iterator it = m_groups.find( gid );
 
 	if( it != m_groups.end() )
-		return & it->second;
+		return it->second;
 
-	return NULL;
+	return qqGroup_ptr();
 }
 
-qqGroup* WebQQ::get_Group_by_qq( std::string qq )
+qqGroup_ptr WebQQ::get_Group_by_qq( std::string qq )
 {
 	qq::grouplist::iterator it = m_groups.begin();
 
 	for( ; it != m_groups.end(); it ++ ) {
-		if( it->second.qqnum == qq )
-			return & it->second;
+		if( it->second->qqnum == qq )
+			return it->second;
 	}
 
-	return NULL;
+	return qqGroup_ptr();
 }
 
 
@@ -610,19 +611,19 @@ void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr s
 		if( !( retry = !( jsonobj.get<int>( "retcode" ) == 0 ) ) ) {
 			BOOST_FOREACH( pt::ptree::value_type result,
 						   jsonobj.get_child( "result" ).get_child( "gnamelist" ) ) {
-				qqGroup	newgroup;
-				newgroup.gid = result.second.get<std::string>( "gid" );
-				newgroup.name = result.second.get<std::string>( "name" );
-				newgroup.code = result.second.get<std::string>( "code" );
+				boost::shared_ptr<qqGroup>	newgroup(new qqGroup);
+				newgroup->gid = result.second.get<std::string>( "gid" );
+				newgroup->name = result.second.get<std::string>( "name" );
+				newgroup->code = result.second.get<std::string>( "code" );
 
-				if( newgroup.gid[0] == '-' ) {
+				if( newgroup->gid[0] == '-' ) {
 					retry = true;
 					lwqq_log( LOG_ERROR, "qqGroup get error \n" );
 					continue;
 				}
 
-				this->m_groups.insert( std::make_pair( newgroup.gid, newgroup ) );
-				lwqq_log( LOG_DEBUG, "qq群 %s %s\n", newgroup.gid.c_str(), newgroup.name.c_str() );
+				this->m_groups.insert( std::make_pair( newgroup->gid, newgroup ) );
+				lwqq_log( LOG_DEBUG, "qq群 %s %s\n", newgroup->gid.c_str(), newgroup->name.c_str() );
 			}
 		}
 	} catch( const pt::json_parser_error & jserr ) {
@@ -648,7 +649,7 @@ void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr s
 	}
 }
 
-void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer, qqGroup & group )
+void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer, boost::shared_ptr<qqGroup> group)
 {
 	pt::ptree	jsonobj;
 	std::istream jsondata( &buffer );
@@ -664,23 +665,23 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 
 		//TODO, group members
 		if( jsonobj.get<int>( "retcode" ) == 0 ) {
-			group.qqnum = jsonobj.get<std::string>( "result.account" );
-			lwqq_log( LOG_NOTICE, "qq number of group %s is %s\n", group.name.c_str(), group.qqnum.c_str() );
+			group->qqnum = jsonobj.get<std::string>( "result.account" );
+			lwqq_log( LOG_NOTICE, "qq number of group %s is %s\n", group->name.c_str(), group->qqnum.c_str() );
 		}
 	} catch( const pt::json_parser_error & jserr ) {
 		lwqq_log( LOG_ERROR, "parse json error : %s\n", jserr.what() );
 
-		boost::delayedcallsec( m_io_service, 5, boost::bind( &WebQQ::update_group_qqmember, this, boost::ref( group ) ) );
+		boost::delayedcallsec( m_io_service, 5, boost::bind( &WebQQ::update_group_qqmember, this, group) );
 	} catch( const pt::ptree_bad_path & badpath ) {
 		lwqq_log( LOG_ERROR, "bad path error %s\n", badpath.what() );
 	}
 }
 
-void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, qqGroup& group)
+void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, boost::shared_ptr<qqGroup> group)
 {
 	//TODO, group members
 	if( jsonobj.get<int>( "retcode" ) == 0 ) {
-		group.owner = jsonobj.get<std::string>( "result.ginfo.owner" );
+		group->owner = jsonobj.get<std::string>( "result.ginfo.owner" );
 
 		BOOST_FOREACH( pt::ptree::value_type & v, jsonobj.get_child( "result.minfo" ) ) {
 			qqBuddy buddy;
@@ -688,7 +689,7 @@ void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, qqGroup& group)
 			buddy.nick = minfo.get<std::string>( "nick" );
 			buddy.uin = minfo.get<std::string>( "uin" );
 
-			group.memberlist.insert( std::make_pair( buddy.uin, buddy ) );
+			group->memberlist.insert( std::make_pair( buddy.uin, buddy ) );
 			lwqq_log( LOG_DEBUG, "buddy list:: %s %s\n", buddy.uin.c_str(), buddy.nick.c_str() );
 		}
 
@@ -698,7 +699,7 @@ void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, qqGroup& group)
 			std::string mflag = minfo.get<std::string>( "mflag" );
 
 			try {
-				group.get_Buddy_by_uin( muin )->mflag = boost::lexical_cast<unsigned int>( mflag );
+				group->get_Buddy_by_uin( muin )->mflag = boost::lexical_cast<unsigned int>( mflag );
 			} catch( boost::bad_lexical_cast & e ) {}
 		}
 		try {
@@ -707,7 +708,7 @@ void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, qqGroup& group)
 				pt::ptree & minfo = v.second;
 				std::string muin = minfo.get<std::string>( "muin" );
 				std::string card = minfo.get<std::string>( "card" );
-				group.get_Buddy_by_uin( muin )->card = card;
+				group->get_Buddy_by_uin( muin )->card = card;
 			}
 		} catch( const pt::ptree_bad_path & badpath ) {
 			lwqq_log( LOG_ERROR, "bad path error %s\n", badpath.what() );
@@ -716,7 +717,7 @@ void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, qqGroup& group)
 }
 
 
-void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer, qqGroup& group)
+void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer, boost::shared_ptr<qqGroup> group)
 {
 	//处理!
 	try {
@@ -728,7 +729,7 @@ void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr
 
 		cb_group_member_process_json(jsonobj, group);
 
-		pt::json_parser::write_json( std::string("cache_group_") + group.name , jsonobj );
+		pt::json_parser::write_json( std::string("cache_group_") + group->name , jsonobj );
 
 		// 开始更新成员的 QQ 号码，一次更新一个，慢慢来.
 		this->update_group_member_qq( group );
@@ -736,11 +737,11 @@ void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr
 	} catch( const pt::json_parser_error & jserr ) {
 		lwqq_log( LOG_ERROR, "parse json error : %s\n", jserr.what() );
 
-		boost::delayedcallsec( m_io_service, 5, boost::bind( &WebQQ::update_group_member, this, boost::ref( group ) ) );
+		boost::delayedcallsec( m_io_service, 5, boost::bind( &WebQQ::update_group_member, this, group) );
 		// 在重试之前，获取缓存文件.
 		try{
 		pt::ptree jsonobj;
-		pt::json_parser::read_json(std::string("cache_group_") + group.name , jsonobj);
+		pt::json_parser::read_json(std::string("cache_group_") + group->name , jsonobj);
 		cb_group_member_process_json(jsonobj, group);
 		}catch (...){}
 	} catch( const pt::ptree_bad_path & badpath ) {
