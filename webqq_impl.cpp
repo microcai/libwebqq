@@ -293,9 +293,14 @@ public:
 		try {
 			// 处理.
 			pt::json_parser::read_json( resultjson, jsonobj );
-			std::string qqnum = jsonobj.get<std::string>( "result.account" );
+			int retcode = jsonobj.get<int>("retcode");
+			if (retcode ==  99999 ){
+				_io_service.post( boost::asio::detail::bind_handler( handler, std::string("-1") ) );
+			}else{
+				std::string qqnum = jsonobj.get<std::string>( "result.account" );
 
-			_io_service.post( boost::asio::detail::bind_handler( handler, qqnum ) );
+				_io_service.post( boost::asio::detail::bind_handler( handler, qqnum ) );
+			}
 			return ;
 		} catch( const pt::json_parser_error & jserr ) {
 			lwqq_log( LOG_ERROR, "parse json error : %s\n", jserr.what() );
@@ -319,12 +324,16 @@ public:
 		m_webqq.get_ioservice().post( boost::bind( *this, "" ) );
 	}
 
-	void operator()( std::string qqnum ) {
+	void operator()( std::string qqnum )
+	{
 		//我说了是一个一个的更新对吧，可不能一次发起　N 个连接同时更新，会被TX拉黑名单的.
-		reenter( this ) {
+		reenter( this )
+		{
 			for( it = group.memberlist.begin();
 					it != group.memberlist.end(); it++ ) {
 				_yield buddy_uin_to_qqnumber( m_webqq, it->second.uin, *this );
+				if ( qqnum == "-1")
+					return;
 				it->second.qqnum = qqnum;
 			}
 		}
