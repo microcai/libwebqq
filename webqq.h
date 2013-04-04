@@ -140,6 +140,8 @@ public:
 
 	void update_group_member( qqGroup &  group );
 
+	void async_fetch_cface(std::string cface, boost::function<void(boost::system::error_code ec, boost::asio::streambuf & buf)> callback);
+
 	qqGroup * get_Group_by_gid( std::string );
 	qqGroup * get_Group_by_qq( std::string qq );
 	boost::asio::io_service	&get_ioservice();

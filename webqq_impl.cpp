@@ -66,7 +66,7 @@ static pt::wptree json_parse( const wchar_t * doc )
 WebQQ::WebQQ( boost::asio::io_service& _io_service,
 			  std::string _qqnum, std::string _passwd, LWQQ_STATUS _status )
 	: m_io_service( _io_service ), m_qqnum( _qqnum ), m_passwd( _passwd ), m_status( LWQQ_STATUS_OFFLINE ),
-	  m_msg_queue( 20 ) //　最多保留最后的20条未发送消息.
+	m_fetch_cface(0), m_msg_queue( 20 ) //　最多保留最后的20条未发送消息.
 {
 #ifndef _WIN32
 	/* Set msg_id */
@@ -481,13 +481,13 @@ public:
 				if ((*p_msg)[i].type == qqMsg::LWQQ_MSG_CFACE){
 					url = boost::str(
 						boost::format( "http://w.qq.com/cgi-bin/get_group_pic?pic=%s" )
-							% (*p_msg)[i].cface
+							% url_encode( (*p_msg)[i].cface )
 					);
 					// fetch url
 					stream.reset(new avhttp::http_stream(io_service));
 					_yield async_http_download(stream, url, * this);
 					// store result to cface_data
-					if (!ec){
+					if (!ec || ec == boost::asio::error::eof){
 						(*p_msg)[i].cface_data.assign(
 							boost::asio::buffer_cast<const char*>(buf.data()), boost::asio::buffer_size(buf.data())
 						);
@@ -544,7 +544,7 @@ void WebQQ::process_group_message( const boost::property_tree::wptree& jstree )
 			messagecontent.push_back( msg );
 		}
 	}
-	if (has_cface){
+	if (has_cface && m_fetch_cface){
 		// 发起异步 图片 fetch
 		async_cface_fetch(m_io_service, siggroupmessage, group_code, who, messagecontent);
 	}else

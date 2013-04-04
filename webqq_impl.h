@@ -193,6 +193,7 @@ private:
 	grouplist	m_groups;
 
 	bool		m_group_msg_insending;
+	bool		m_fetch_cface;
 	boost::circular_buffer<boost::tuple<std::string, std::string, send_group_message_cb> >	m_msg_queue;
 	std::map<int, int> facemap;
 
