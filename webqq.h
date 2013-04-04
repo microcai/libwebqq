@@ -117,12 +117,13 @@ struct qqMsg {
 	std::string text;
 	int face;
 	std::string cface;
+	std::string	cface_data;
 };
 
 class webqq {
 public:
 	webqq( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd, LWQQ_STATUS status = LWQQ_STATUS_ONLINE );
-	void on_group_msg( boost::function<void ( std::string group_code, std::string who, const std::vector<qqMsg> & )> cb );
+	void on_group_msg( boost::function<void ( const std::string group_code, const std::string who, const std::vector<qqMsg> & )> cb );
 
 	// not need to call this the first time, but you might need this if you became offline.
 	void login();

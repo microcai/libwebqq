@@ -452,6 +452,61 @@ void WebQQ::cb_poll_msg( const boost::system::error_code& ec, read_streamptr str
 	}
 }
 
+template <class Handler>
+class async_cface_fetch_op : boost::coro::coroutine{
+	boost::asio::io_service & io_service;
+	std::string	group;
+	std::string who;
+	boost::shared_ptr< std::vector<qqMsg> > p_msg;
+	Handler &handler;
+	int msg_size;
+	int i;
+public:
+	async_cface_fetch_op(boost::asio::io_service & _io_service, Handler &_handler, std::string _group, std::string _who, std::vector<qqMsg> _msg)
+	  : io_service(_io_service), group(_group), who(_who), handler(_handler), p_msg(new std::vector<qqMsg>(_msg)), msg_size(_msg.size())
+	{
+		i = 0;
+		read_streamptr stream;
+		boost::asio::streambuf buf;
+		(*this)(boost::system::error_code(), stream, buf);
+	}
+
+	void operator()(const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buf)
+	{
+		std::string url;
+		reenter(this)
+		{
+			for (i=0;i< msg_size ;i++)
+			{
+				if ((*p_msg)[i].type == qqMsg::LWQQ_MSG_CFACE){
+					url = boost::str(
+						boost::format( "http://w.qq.com/cgi-bin/get_group_pic?pic=%s" )
+							% (*p_msg)[i].cface
+					);
+					// fetch url
+					stream.reset(new avhttp::http_stream(io_service));
+					_yield async_http_download(stream, url, * this);
+					// store result to cface_data
+					if (!ec){
+						(*p_msg)[i].cface_data.assign(
+							boost::asio::buffer_cast<const char*>(buf.data()), boost::asio::buffer_size(buf.data())
+						);
+					}
+				}
+			}
+			// 处理完毕 !
+ 			handler(group, who, *p_msg);
+		}
+	}
+};
+
+template<class Handler>
+static void async_cface_fetch(boost::asio::io_service & io_service, Handler & handler, std::string group, std::string who, std::vector<qqMsg> msg)
+{
+	async_cface_fetch_op<boost::signal< void ( const std::string group, const std::string who, const std::vector<qqMsg> & )> >
+		(io_service, handler, group, who, msg);
+}
+
 void WebQQ::process_group_message( const boost::property_tree::wptree& jstree )
 {
 	std::string group_code = wide_utf8( jstree.get<std::wstring>( L"value.from_uin" ) );
@@ -459,6 +514,7 @@ void WebQQ::process_group_message( const boost::property_tree::wptree& jstree )
 
 	//parse content
 	std::vector<qqMsg>	messagecontent;
+	bool has_cface = false;
 
 	BOOST_FOREACH( const pt::wptree::value_type & content, jstree.get_child( L"value.content" ) ) {
 		if( content.second.count( L"" ) ) {
@@ -478,6 +534,7 @@ void WebQQ::process_group_message( const boost::property_tree::wptree& jstree )
 				msg.type = qqMsg::LWQQ_MSG_CFACE;
 				msg.cface = wide_utf8( content.second.rbegin()->second.get<std::wstring> ( L"name" ) );
 				messagecontent.push_back( msg );
+				has_cface = true;
 			}
 		} else {
 			//聊天字符串就在这里.
@@ -487,7 +544,11 @@ void WebQQ::process_group_message( const boost::property_tree::wptree& jstree )
 			messagecontent.push_back( msg );
 		}
 	}
-	siggroupmessage( group_code, who, messagecontent );
+	if (has_cface){
+		// 发起异步 图片 fetch
+		async_cface_fetch(m_io_service, siggroupmessage, group_code, who, messagecontent);
+	}else
+		siggroupmessage( group_code, who, messagecontent );
 }
 
 void WebQQ::process_msg( const pt::wptree &jstree )

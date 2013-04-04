@@ -152,7 +152,7 @@ public:// signals
 	boost::signal< bool ( int stage, int why )> sigerror;
 
 	// 有群消息的时候激发.
-	boost::signal< void ( std::string group, std::string who, const std::vector<qqMsg> & )> siggroupmessage;
+	boost::signal< void ( const std::string group, const std::string who, const std::vector<qqMsg> & )> siggroupmessage;
 
 private:
 	void init_face_map();

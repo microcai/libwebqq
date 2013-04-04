@@ -22,7 +22,6 @@
 webqq::webqq( boost::asio::io_service& asioservice, std::string qqnum, std::string passwd, LWQQ_STATUS status )
 	: impl( new qq::WebQQ( asioservice, qqnum, passwd, status ) )
 {
-
 }
 
 void webqq::on_verify_code( boost::function< void ( const boost::asio::const_buffer & ) >  cb )
@@ -31,7 +30,7 @@ void webqq::on_verify_code( boost::function< void ( const boost::asio::const_buf
 }
 
 
-void webqq::on_group_msg( boost::function< void( std::string, std::string, const std::vector<qqMsg>& )> cb )
+void webqq::on_group_msg( boost::function< void( const std::string, const std::string, const std::vector<qqMsg>& )> cb )
 {
 	this->impl->siggroupmessage.connect( cb );
 }

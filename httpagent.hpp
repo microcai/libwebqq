@@ -36,7 +36,8 @@ public:
 	typedef void result_type;
 public:
 	async_http_download_op( read_streamptr _stream, const avhttp::url & url, httpstreamhandler _handler )
-		: handler( _handler ), stream( _stream ), sb( new boost::asio::streambuf() ) , readed( 0 ) {
+		: handler( _handler ), stream( _stream ), sb( new boost::asio::streambuf() ) , readed( 0 )
+	{
 		stream->async_open( url, *this );
 	}
 
