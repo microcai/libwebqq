@@ -28,41 +28,37 @@
 
 typedef boost::shared_ptr<avhttp::http_stream> read_streamptr;
 
+namespace detail{
 
-class SYMBOL_HIDDEN async_http_download : boost::coro::coroutine {
+template<class httpstreamhandler>
+class SYMBOL_HIDDEN async_http_download_op : boost::coro::coroutine {
 public:
 	typedef void result_type;
 public:
-	template<class httpstreamhandler>
-	async_http_download(read_streamptr _stream, const avhttp::url & url, httpstreamhandler _handler)
-		:handler(_handler),stream(_stream), sb(new boost::asio::streambuf() ) , readed(0)
+	async_http_download_op( read_streamptr _stream, const avhttp::url & url, httpstreamhandler _handler )
+		: handler( _handler ), stream( _stream ), sb( new boost::asio::streambuf() ) , readed( 0 )
 	{
- 		stream->async_open(url, *this);
+		stream->async_open( url, *this );
 	}
 
-	void operator()(const boost::system::error_code& ec , std::size_t length = 0)
-	{
-		reenter(this)
-		{
-			if( !ec)
-			{
-				content_length = stream->response_options().find(avhttp::http_options::content_length);
+	void operator()( const boost::system::error_code& ec , std::size_t length = 0 ) {
+		reenter( this ) {
+			if( !ec ) {
+				content_length = stream->response_options().find( avhttp::http_options::content_length );
 
-				while(!ec)
-				{
-					_yield stream->async_read_some(sb->prepare(4096), *this);
-					sb->commit(length);
+				while( !ec ) {
+					_yield stream->async_read_some( sb->prepare( 4096 ), *this );
+					sb->commit( length );
 					readed += length;
 
-					if(!content_length.empty() &&  readed == boost::lexical_cast<std::size_t>(content_length))
-					{
-						handler(boost::system::error_code(boost::asio::error::eof), stream, *sb);
+					if( !content_length.empty() &&  readed == boost::lexical_cast<std::size_t>( content_length ) ) {
+						handler( boost::asio::error::make_error_code( boost::asio::error::eof ), stream, *sb );
 						return ;
-					}					
-				}				
+					}
+				}
 			}
 
-			handler(ec, stream, *sb);
+			handler( ec, stream, *sb );
 		}
 	}
 
@@ -70,6 +66,15 @@ private:
 	std::size_t	readed;
 	std::string content_length;
 	read_streamptr stream;
-	boost::function<void (const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf &) > handler;
+	httpstreamhandler handler;
 	boost::shared_ptr<boost::asio::streambuf> sb;
 };
+
+}
+
+template<class httpstreamhandler>
+void async_http_download(read_streamptr _stream, const avhttp::url & url, httpstreamhandler _handler)
+{
+	detail::async_http_download_op<boost::function<void ( const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & ) > >(_stream, url, _handler);
+}
+
