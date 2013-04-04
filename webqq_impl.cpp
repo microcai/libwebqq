@@ -164,7 +164,12 @@ void WebQQ::cb_send_msg( const boost::system::error_code& ec, read_streamptr str
 			m_status = LWQQ_STATUS_UNKNOW;
 			// 10s 后登录.
 			boost::delayedcallsec( m_io_service, 10, boost::bind( &WebQQ::login, this ) );
+			m_group_msg_insending = false;
+			return ;
 		}
+
+		m_msg_queue.pop_front();
+
 	} catch( const pt::json_parser_error & jserr ) {
 		std::istream	response( &buffer );
 		lwqq_log( LOG_ERROR, "parse json error : %s\n=========\n%s\n=========\n", jserr.what(), jserr.message().c_str() );
@@ -178,7 +183,6 @@ void WebQQ::cb_send_msg( const boost::system::error_code& ec, read_streamptr str
 	} else {
 		boost::tuple<std::string, std::string, send_group_message_cb> v = m_msg_queue.front();
 		boost::delayedcallms( m_io_service, 500, boost::bind( &WebQQ::send_group_message_internal, this, boost::get<0>( v ), boost::get<1>( v ), boost::get<2>( v ) ) );
-		m_msg_queue.pop_front();
 	}
 
 	m_io_service.post( boost::asio::detail::bind_handler( donecb, ec ) );
