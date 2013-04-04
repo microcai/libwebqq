@@ -667,6 +667,17 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 		if( jsonobj.get<int>( "retcode" ) == 0 ) {
 			group->qqnum = jsonobj.get<std::string>( "result.account" );
 			lwqq_log( LOG_NOTICE, "qq number of group %s is %s\n", group->name.c_str(), group->qqnum.c_str() );
+			// 写缓存
+			pt::json_parser::write_json(std::string("cache_group_qqnumber") + group->gid, jsonobj);
+		}else{
+			std::cerr <<  "获取群的QQ号码失败" <<  std::endl;
+			pt::json_parser::write_json(std::cerr, jsonobj);
+			boost::delayedcallsec( m_io_service, 5, boost::bind( &WebQQ::update_group_qqmember, this, group) );
+			// 读取缓存
+			pt::json_parser::read_json(std::string("cache_group_qqnumber") + group->gid, jsonobj);
+
+			group->qqnum = jsonobj.get<std::string>( "result.account" );
+			lwqq_log( LOG_NOTICE, "qq number of group %s is %s (cached)\n", group->name.c_str(), group->qqnum.c_str() );
 		}
 	} catch( const pt::json_parser_error & jserr ) {
 		lwqq_log( LOG_ERROR, "parse json error : %s\n", jserr.what() );
