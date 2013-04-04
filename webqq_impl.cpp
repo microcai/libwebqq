@@ -172,7 +172,7 @@ void WebQQ::cb_send_msg( const boost::system::error_code& ec, read_streamptr str
 	} catch( const pt::json_parser_error & jserr ) {
 		std::istream	response( &buffer );
 		lwqq_log( LOG_ERROR, "parse json error : %s\n=========\n%s\n=========\n", jserr.what(), jserr.message().c_str() );
-		std::cerr << response;
+		m_msg_queue.pop_front();
 	} catch( const pt::ptree_bad_path & badpath ) {
 		lwqq_log( LOG_ERROR, "bad path %s\n", badpath.what() );
 	}
