@@ -667,52 +667,68 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 	}
 }
 
-void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer, qqGroup& group )
+void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, qqGroup& group)
 {
-	pt::ptree	jsonobj;
-	std::istream jsondata( &buffer );
+	//TODO, group members
+	if( jsonobj.get<int>( "retcode" ) == 0 ) {
+		group.owner = jsonobj.get<std::string>( "result.ginfo.owner" );
 
+		BOOST_FOREACH( pt::ptree::value_type & v, jsonobj.get_child( "result.minfo" ) ) {
+			qqBuddy buddy;
+			pt::ptree & minfo = v.second;
+			buddy.nick = minfo.get<std::string>( "nick" );
+			buddy.uin = minfo.get<std::string>( "uin" );
+
+			group.memberlist.insert( std::make_pair( buddy.uin, buddy ) );
+			lwqq_log( LOG_DEBUG, "buddy list:: %s %s\n", buddy.uin.c_str(), buddy.nick.c_str() );
+		}
+		// 开始更新成员的 QQ 号码，一次更新一个，慢慢来.
+		this->update_group_member_qq( group );
+
+		BOOST_FOREACH( pt::ptree::value_type & v, jsonobj.get_child( "result.ginfo.members" ) ) {
+			pt::ptree & minfo = v.second;
+			std::string muin = minfo.get<std::string>( "muin" );
+			std::string mflag = minfo.get<std::string>( "mflag" );
+
+			try {
+				group.get_Buddy_by_uin( muin )->mflag = boost::lexical_cast<unsigned int>( mflag );
+			} catch( boost::bad_lexical_cast & e ) {}
+		}
+
+		BOOST_FOREACH( pt::ptree::value_type & v, jsonobj.get_child( "result.cards" ) ) {
+			pt::ptree & minfo = v.second;
+			std::string muin = minfo.get<std::string>( "muin" );
+			std::string card = minfo.get<std::string>( "card" );
+			group.get_Buddy_by_uin( muin )->card = card;
+		}
+	}
+}
+
+
+void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer, qqGroup& group)
+{
 	//处理!
 	try {
+
+		pt::ptree jsonobj;
+		std::istream jsondata( &buffer );
+
 		pt::json_parser::read_json( jsondata, jsonobj );
 
-		//TODO, group members
-		if( jsonobj.get<int>( "retcode" ) == 0 ) {
-			group.owner = jsonobj.get<std::string>( "result.ginfo.owner" );
+		cb_group_member_process_json(jsonobj, group);
 
-			BOOST_FOREACH( pt::ptree::value_type & v, jsonobj.get_child( "result.minfo" ) ) {
-				qqBuddy buddy;
-				pt::ptree & minfo = v.second;
-				buddy.nick = minfo.get<std::string>( "nick" );
-				buddy.uin = minfo.get<std::string>( "uin" );
+		pt::json_parser::write_json( std::string("cache_group_") + group.name , jsonobj );
 
-				group.memberlist.insert( std::make_pair( buddy.uin, buddy ) );
-				lwqq_log( LOG_DEBUG, "buddy list:: %s %s\n", buddy.uin.c_str(), buddy.nick.c_str() );
-			}
-			// 开始更新成员的 QQ 号码，一次更新一个，慢慢来.
-			this->update_group_member_qq( group );
-
-			BOOST_FOREACH( pt::ptree::value_type & v, jsonobj.get_child( "result.ginfo.members" ) ) {
-				pt::ptree & minfo = v.second;
-				std::string muin = minfo.get<std::string>( "muin" );
-				std::string mflag = minfo.get<std::string>( "mflag" );
-
-				try {
-					group.get_Buddy_by_uin( muin )->mflag = boost::lexical_cast<unsigned int>( mflag );
-				} catch( boost::bad_lexical_cast & e ) {}
-			}
-
-			BOOST_FOREACH( pt::ptree::value_type & v, jsonobj.get_child( "result.cards" ) ) {
-				pt::ptree & minfo = v.second;
-				std::string muin = minfo.get<std::string>( "muin" );
-				std::string card = minfo.get<std::string>( "card" );
-				group.get_Buddy_by_uin( muin )->card = card;
-			}
-		}
 	} catch( const pt::json_parser_error & jserr ) {
 		lwqq_log( LOG_ERROR, "parse json error : %s\n", jserr.what() );
 
 		boost::delayedcallsec( m_io_service, 5, boost::bind( &WebQQ::update_group_member, this, boost::ref( group ) ) );
+		// 在重试之前，获取缓存文件.
+		try{
+		pt::ptree jsonobj;
+		pt::json_parser::read_json(std::string("cache_group_") + group.name , jsonobj);
+		cb_group_member_process_json(jsonobj, group);
+		}catch (...){}
 	} catch( const pt::ptree_bad_path & badpath ) {
 		lwqq_log( LOG_ERROR, "bad path error %s\n", badpath.what() );
 	}

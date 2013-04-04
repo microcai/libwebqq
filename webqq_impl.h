@@ -168,6 +168,7 @@ private:
 	void process_msg( const pt::wptree & jstree );
 	void process_group_message( const pt::wptree & jstree );
 	void cb_group_list( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& );
+	void cb_group_member_process_json(pt::ptree	&jsonobj, qqGroup &);
 	void cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, qqGroup & );
 	void cb_group_qqnumber( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, qqGroup & );
 
