@@ -28,6 +28,7 @@
 
 typedef boost::shared_ptr<avhttp::http_stream> read_streamptr;
 
+namespace detail{
 
 template<class httpstreamhandler>
 class SYMBOL_HIDDEN async_http_download_op : boost::coro::coroutine {
@@ -68,9 +69,11 @@ private:
 	boost::shared_ptr<boost::asio::streambuf> sb;
 };
 
+}
+
 template<class httpstreamhandler>
 void async_http_download(read_streamptr _stream, const avhttp::url & url, httpstreamhandler _handler)
 {
-	async_http_download_op<boost::function<void ( const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & ) > >(_stream, url, _handler);
+	detail::async_http_download_op<boost::function<void ( const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & ) > >(_stream, url, _handler);
 }
 
