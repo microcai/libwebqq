@@ -108,10 +108,9 @@ void WebQQ::send_group_message( qqGroup& group, std::string msg, send_group_mess
 void WebQQ::send_group_message( std::string group, std::string msg, send_group_message_cb donecb )
 {
 	//check if already in sending a message
-	if( m_group_msg_insending ) {
-		m_msg_queue.push_back( boost::make_tuple( group, msg, donecb ) );
-		return;
-	} else {
+	m_msg_queue.push_back( boost::make_tuple( group, msg, donecb ) );
+
+	if( !m_group_msg_insending ) {
 		m_group_msg_insending = true;
 		send_group_message_internal( group, msg, donecb );
 	}
