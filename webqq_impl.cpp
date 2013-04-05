@@ -913,6 +913,7 @@ void WebQQ::join_group(qqGroup_ptr group, std::string vfcode, webqq::join_group_
 
 	read_streamptr stream(new avhttp::http_stream(m_io_service));
 	stream->request_options(avhttp::request_opts()
+		(avhttp::http_options::http_version, "HTTP/1.0")
 		(avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8")
 		(avhttp::http_options::referer, "http://s.web2.qq.com/proxy.html?v=20110412001&callback=1&id=1")
 		(avhttp::http_options::cookie, m_cookies.lwcookies)
