@@ -249,6 +249,7 @@ void WebQQ::update_group_member(boost::shared_ptr<qqGroup> group )
 					  );
 	stream->request_options(
 		avhttp::request_opts()
+		( avhttp::http_options::http_version , "HTTP/1.0" )
 		( avhttp::http_options::cookie, m_cookies.lwcookies )
 		( avhttp::http_options::referer, LWQQ_URL_REFERER_QUN_DETAIL )
 		( avhttp::http_options::connection, "close" )
@@ -275,6 +276,7 @@ public:
 		stream.reset( new avhttp::http_stream( _webqq.get_ioservice() ) );
 		stream->request_options(
 			avhttp::request_opts()
+			( avhttp::http_options::http_version , "HTTP/1.0" )
 			( avhttp::http_options::cookie, _webqq.m_cookies.lwcookies )
 			( avhttp::http_options::referer, "http://s.web2.qq.com/proxy.html?v=20110412001&callback=1&id=3" )
 			( avhttp::http_options::content_type, "UTF-8" )
