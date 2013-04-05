@@ -673,7 +673,7 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 		}else{
 			std::cerr <<  "获取群的QQ号码失败" <<  std::endl;
 			pt::json_parser::write_json(std::cerr, jsonobj);
-			boost::delayedcallsec( m_io_service, 5, boost::bind( &WebQQ::update_group_qqmember, this, group) );
+			boost::delayedcallsec( m_io_service, 5 + rand() % 5, boost::bind( &WebQQ::update_group_qqmember, this, group) );
 		}
 	} catch( const pt::json_parser_error & jserr ) {
 		lwqq_log( LOG_ERROR, "parse json error : %s\n", jserr.what() );
