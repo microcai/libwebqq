@@ -645,10 +645,6 @@ void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr s
 			update_group_qqmember( v.second );
 			update_group_member( v.second );
 		}
-		//start polling messages, 2 connections!
-		lwqq_log( LOG_DEBUG, "start polling messages\n" );
-		boost::delayedcallsec( get_ioservice(), 1, boost::bind( &WebQQ::do_poll_one_msg, this, m_cookies.lwcookies ) );
-		boost::delayedcallsec( get_ioservice(), 2, boost::bind( &WebQQ::do_poll_one_msg, this, m_cookies.lwcookies ) );
 	}
 }
 
@@ -672,6 +668,10 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 			lwqq_log( LOG_NOTICE, "qq number of group %s is %s\n", group->name.c_str(), group->qqnum.c_str() );
 			// 写缓存
 			pt::json_parser::write_json(std::string("cache_group_qqnumber") + group->gid, jsonobj);
+					//start polling messages, 2 connections!
+			lwqq_log( LOG_DEBUG, "start polling messages\n" );
+			boost::delayedcallsec( get_ioservice(), 1, boost::bind( &WebQQ::do_poll_one_msg, this, m_cookies.lwcookies ) );
+
 			return ;
 		}else{
 			std::cerr <<  "获取群的QQ号码失败" <<  std::endl;
@@ -755,7 +755,7 @@ void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr
 	} catch( const pt::json_parser_error & jserr ) {
 		lwqq_log( LOG_ERROR, "parse json error : %s\n", jserr.what() );
 
-		boost::delayedcallsec( m_io_service, 5, boost::bind( &WebQQ::update_group_member, this, group) );
+		boost::delayedcallsec( m_io_service, 20, boost::bind( &WebQQ::update_group_member, this, group) );
 		// 在重试之前，获取缓存文件.
 		try{
 		pt::ptree jsonobj;
