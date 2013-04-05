@@ -876,15 +876,20 @@ void WebQQ::cb_join_group( qqGroup_ptr group, const boost::system::error_code& e
 
 		if(jsobj.get<int>("retcode") == 0){
 			// 搞定！群加入咯. 等待管理员吧.
-
+			handler(group, 0, "");
 			// 获取群的其他信息
 			// GET http://s.web2.qq.com/api/get_group_public_info2?gcode=3272859045&vfwebqq=f08e7a200fd0be375d753d3fedfd24e99f6ba0a8063005030bb95f9fa4b7e0c30415ae74e77709e3&t=1365161430494 HTTP/1.1
-
+		}else if(jsobj.get<int>("retcode") == 100001){
+			std::cout <<  "原因：" <<   jsobj.get<std::string>("tips") <<  std::endl;
+			// 需要验证码, 先获取验证码图片，然后回调
+			fetch_aid(boost::str(boost::format("aid=1003903&_=%ld") % std::time(NULL)), boost::bind(cb_join_group_vcode, _1, _2, handler, group) );
 		}else{
 			// 需要验证码, 先获取验证码图片，然后回调
 			fetch_aid(boost::str(boost::format("aid=1003903&_=%ld") % std::time(NULL)), boost::bind(cb_join_group_vcode, _1, _2, handler, group) );
 		}
-	}catch (...){}
+	}catch (...){
+		handler(qqGroup_ptr(), 0, "");
+	}
 }
 
 
@@ -894,7 +899,7 @@ void WebQQ::join_group(qqGroup_ptr group, std::string vfcode, webqq::join_group_
 	
 	std::string postdata =	boost::str(
 								boost::format(
-									"r={\"gcode\":%s,"
+									"{\"gcode\":%s,"
 									"\"code\":\"%s\","
 									"\"vfy\":\"%s\","
 									"\"msg\":\"avbot\","
@@ -902,7 +907,7 @@ void WebQQ::join_group(qqGroup_ptr group, std::string vfcode, webqq::join_group_
 								% group->code % vfcode % m_cookies.verifysession % m_vfwebqq
 							);
 
-	postdata = url_encode(postdata);
+	postdata = std::string("r=") + url_encode(postdata);
 
 	read_streamptr stream(new avhttp::http_stream(m_io_service));
 	stream->request_options(avhttp::request_opts()
