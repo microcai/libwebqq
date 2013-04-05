@@ -112,3 +112,8 @@ void webqq::search_group( std::string groupqqnum, std::string vfcode, webqq::sea
 {
 	impl->search_group(groupqqnum, vfcode, handler);
 }
+
+void webqq::join_group( qqGroup_ptr group, std::string vfcode, webqq::join_group_handler handler )
+{
+	impl->join_group(group, vfcode, handler);
+}

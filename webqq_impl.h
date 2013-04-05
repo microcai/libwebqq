@@ -137,6 +137,10 @@ public:
 	// 查找群，如果要验证码，则获取后带vfcode参数进行调用.否则对  vfcode 是 ""
 	void search_group(std::string groupqqnum, std::string vfcode, webqq::search_group_handler handler);
 
+	// 加入群，如果要验证码，则获取后带vfcode参数进行调用.否则对  vfcode 是 ""
+	// group 是 search_group 返回的那个.
+	void join_group(qqGroup_ptr group, std::string vfcode, webqq::join_group_handler handler);
+
 	qqGroup_ptr get_Group_by_gid( std::string gid );
 	qqGroup_ptr get_Group_by_qq( std::string qq );
 	boost::asio::io_service	&get_ioservice() {
@@ -180,8 +184,10 @@ private:
 
 	void cb_search_group(std::string, const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buf, webqq::search_group_handler handler);
 	
-	void fetch_aid(std::string adi, boost::uint64_t _time_, boost::function<void(const boost::system::error_code&, std::string)> handler);
+	void fetch_aid(std::string arg, boost::function<void(const boost::system::error_code&, std::string)> handler);
 	void cb_fetch_aid(const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buf, boost::function<void(const boost::system::error_code&, std::string)> handler);
+
+	void cb_join_group(qqGroup_ptr, const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buf, webqq::join_group_handler handler);
 
 public:
 	std::string	m_vfwebqq;

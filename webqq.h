@@ -145,9 +145,13 @@ public:
 	void async_fetch_cface(std::string cface, boost::function<void(boost::system::error_code ec, boost::asio::streambuf & buf)> callback);
 
 	typedef boost::function<void(qqGroup_ptr group, bool needvc, const std::string & vc_img_data)>	search_group_handler;
-
 	// 查找群，如果要验证码，则获取后带vfcode参数进行调用.否则对  vfcode 是 ""
 	void search_group(std::string groupqqnum, std::string vfcode, search_group_handler handler);
+
+	typedef boost::function<void(qqGroup_ptr group, bool needvc, const std::string & vc_img_data)>	join_group_handler;
+	// 加入群，如果要验证码，则获取后带vfcode参数进行调用.否则对  vfcode 是 ""
+	// group 是 search_group 返回的那个.
+	void join_group(qqGroup_ptr group, std::string vfcode, webqq::join_group_handler handler);
 
 	qqGroup_ptr get_Group_by_gid( std::string );
 	qqGroup_ptr get_Group_by_qq( std::string qq );

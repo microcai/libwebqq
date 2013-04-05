@@ -778,11 +778,10 @@ void WebQQ::cb_fetch_aid(const boost::system::error_code& ec, read_streamptr str
 	handler(ec, std::string());
 }
 
-void WebQQ::fetch_aid( std::string aid, boost::uint64_t _time_, boost::function<void(const boost::system::error_code&, std::string)> handler)
+void WebQQ::fetch_aid(std::string arg, boost::function<void(const boost::system::error_code&, std::string)> handler)
 {
 	std::string url = boost::str(
-		boost::format("%s/getimage?aid=%s&%ld") 
-			% "http://captcha.qq.com" % aid % _time_
+		boost::format("http://captcha.qq.com/getimage?%s") % arg
 	);
 
 	read_streamptr stream(new avhttp::http_stream(m_io_service));
@@ -815,16 +814,15 @@ void WebQQ::cb_search_group(std::string groupqqnum, const boost::system::error_c
 	if (!ec || ec == boost::asio::error::eof){
 		// 读取 json 格式
 		js::read_json(jsondata, jsobj);
-		js::write_json(std::cerr, jsobj);
 		group.reset(new qqGroup);
 		group->qqnum = groupqqnum;
 		try{
 			if(jsobj.get<int>("retcode") == 0){
-				group->qqnum = jsobj.get<std::string>("result.GE");
-				group->code = jsobj.get<std::string>("result.GEX");
+				group->qqnum = jsobj.get<std::string>("result..GE");
+				group->code = jsobj.get<std::string>("result..GEX");
 			}else if(jsobj.get<int>("retcode") == 100110){
 				// 需要验证码, 先获取验证码图片，然后回调
-				fetch_aid("1003901", std::time(NULL), boost::bind(cb_search_group_vcode, _1, _2, handler, group) );
+				fetch_aid(boost::str(boost::format("aid=1003901&%ld") % std::time(NULL)), boost::bind(cb_search_group_vcode, _1, _2, handler, group) );
 				return;
 			}else if (jsobj.get<int>("retcode")==100102){
 				// 验证码错误
@@ -855,6 +853,70 @@ void WebQQ::search_group(std::string groupqqnum, std::string vfcode, webqq::sear
 	);
 	async_http_download(stream, url, boost::bind(&WebQQ::cb_search_group, this, groupqqnum, _1, _2, _3, handler));
 }
+
+static void cb_join_group_vcode(const boost::system::error_code& ec, std::string vcodedata, webqq::join_group_handler handler, qqGroup_ptr group)
+{
+	if (!ec){
+		handler(group, 1, vcodedata);
+	}else{
+		group.reset();
+		handler(group, 0, vcodedata);
+	}
+}
+
+
+void WebQQ::cb_join_group( qqGroup_ptr group, const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf, webqq::join_group_handler handler )
+{
+	// 检查返回值是不是 retcode == 0
+	pt::ptree	jsobj;
+	std::istream jsondata(&buf);
+	try{
+		js::read_json(jsondata, jsobj);
+		js::write_json(std::cerr, jsobj);
+
+		if(jsobj.get<int>("retcode") == 0){
+			// 搞定！群加入咯. 等待管理员吧.
+
+			// 获取群的其他信息
+			// GET http://s.web2.qq.com/api/get_group_public_info2?gcode=3272859045&vfwebqq=f08e7a200fd0be375d753d3fedfd24e99f6ba0a8063005030bb95f9fa4b7e0c30415ae74e77709e3&t=1365161430494 HTTP/1.1
+
+		}else{
+			// 需要验证码, 先获取验证码图片，然后回调
+			fetch_aid(boost::str(boost::format("aid=1003903&_=%ld") % std::time(NULL)), boost::bind(cb_join_group_vcode, _1, _2, handler, group) );
+		}
+	}catch (...){}
+}
+
+
+void WebQQ::join_group(qqGroup_ptr group, std::string vfcode, webqq::join_group_handler handler )
+{
+	std::string url = "http://s.web2.qq.com/api/apply_join_group2";
+	
+	std::string postdata =	boost::str(
+								boost::format(
+									"r={\"gcode\":%s,"
+									"\"code\":\"%s\","
+									"\"vfy\":\"%s\","
+									"\"msg\":\"avbot\","
+									"\"vfwebqq\":\"%s\"}" )
+								% group->code % vfcode % m_cookies.verifysession % m_vfwebqq
+							);
+
+	postdata = url_encode(postdata);
+
+	read_streamptr stream(new avhttp::http_stream(m_io_service));
+	stream->request_options(avhttp::request_opts()
+		(avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8")
+		(avhttp::http_options::referer, "http://s.web2.qq.com/proxy.html?v=20110412001&callback=1&id=1")
+		(avhttp::http_options::cookie, m_cookies.lwcookies)
+		(avhttp::http_options::connection, "close")
+		(avhttp::http_options::request_method, "POST")
+		(avhttp::http_options::request_body, postdata)
+		(avhttp::http_options::content_length, boost::lexical_cast<std::string>(postdata.length()))
+	);
+	async_http_download(stream, url, boost::bind(&WebQQ::cb_join_group, this, group, _1, _2, _3, handler));
+}
+
 
 static std::string parse_unescape( std::string source )
 {
