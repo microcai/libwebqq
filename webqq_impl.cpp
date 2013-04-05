@@ -764,6 +764,88 @@ void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr
 	}
 }
 
+static void cb_fetch_aid(const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buf, boost::function<void(const boost::system::error_code&, std::string)> handler)
+{
+	if (!ec || ec == boost::asio::error::eof)
+	{
+		// 获取到咯
+		handler(boost::system::error_code(), std::string(boost::asio::buffer_cast<const char*>(buf.data()), boost::asio::buffer_size(buf.data())));
+		return;
+	}
+	handler(ec, std::string());
+}
+
+void WebQQ::fetch_aid( std::string aid, boost::uint64_t _time_, boost::function<void(const boost::system::error_code&, std::string)> handler)
+{
+	std::string url = boost::str(
+		boost::format("%s/getimage? aid=%s&%ld") 
+			% "http://captcha.qq.com" % aid % _time_
+	);
+
+	read_streamptr stream(new avhttp::http_stream(m_io_service));
+	stream->request_options(
+		avhttp::request_opts()
+			(avhttp::http_options::referer, "http://web.qq.com/")
+			(avhttp::http_options::cookie, m_cookies.lwcookies)
+			(avhttp::http_options::connection, "close")
+	);
+
+	async_http_download(stream, url, boost::bind(cb_fetch_aid, _1, _2, _3, handler ));
+}
+
+static void cb_search_group_vcode(const boost::system::error_code& ec, std::string vcodedata, webqq::search_group_handler handler, qqGroup_ptr group)
+{
+	if (!ec){
+		handler(group, 1, vcodedata);
+	}else{
+		group.reset();
+		handler(group, 0, vcodedata);
+	}
+}
+
+void WebQQ::cb_search_group(std::string groupqqnum, const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buf, webqq::search_group_handler handler)
+{
+	pt::ptree	jsobj;
+	std::istream jsondata(&buf);
+	qqGroup_ptr  group;
+
+	if (!ec || ec == boost::asio::error::eof){
+		// 读取 json 格式
+		js::read_json(jsondata, jsobj);
+		try{
+			if(jsobj.get<int>("retcode") == 0){
+				group.reset(new qqGroup);
+				group->qqnum = jsobj.get<std::string>("result.GE");
+				group->code = jsobj.get<std::string>("result.GEX");
+			}else if(jsobj.get<int>("retcode") == 100110){
+				// 需要验证码, 先获取验证码图片，然后回调
+				fetch_aid("1003901", std::time(NULL), boost::bind(cb_search_group_vcode, _1, _2, handler, group) );
+				return;
+			}
+		}catch (...){}
+	}
+	handler(group, 0, "");
+
+}
+
+void WebQQ::search_group(std::string groupqqnum, std::string vfcode, webqq::search_group_handler handler)
+{
+	// GET /keycgi/qqweb/group/search.do?pg=1&perpage=10&all=82069263&c1=0&c2=0&c3=0&st=0&vfcode=&type=1&vfwebqq=59b09b83f622d820cd9ee4e04d4f4e4664e6704ee7ac487ce00595f8c539476b49fdcc372e1d11ea&t=1365138435110 HTTP/1.1
+	std::string url = boost::str(
+		boost::format("%s/keycgi/qqweb/group/search.do?pg=1&perpage=10&all=%s&c1=0&c2=0&c3=0&st=0&vfcode=%s&type=1&vfwebqq=%s&t=%ld")
+			%  "http://cgi.web2.qq.com" % groupqqnum % vfcode %  m_vfwebqq % std::time(NULL)
+	);
+
+	read_streamptr stream(new avhttp::http_stream(m_io_service));
+	stream->request_options(avhttp::request_opts()
+		(avhttp::http_options::content_type, "utf-8")
+		(avhttp::http_options::referer, "http://cgi.web2.qq.com/proxy.html?v=20110412001&callback=1&id=1")
+		(avhttp::http_options::cookie, m_cookies.lwcookies)
+		(avhttp::http_options::connection, "close")
+	);
+	async_http_download(stream, url, boost::bind(&WebQQ::cb_search_group, this, groupqqnum, _1, _2, _3, handler));
+}
+
 static std::string parse_unescape( std::string source )
 {
 	boost::replace_all( source, "\\", "\\\\\\\\" );

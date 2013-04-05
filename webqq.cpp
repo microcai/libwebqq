@@ -106,3 +106,9 @@ void webqq::async_fetch_cface(std::string cface, boost::function<void(boost::sys
 	stream.reset( new avhttp::http_stream( get_ioservice() ) );
 	async_http_download( stream, url, boost::bind(async_fetch_cface_cb, _1, _2, _3, callback));
 }
+
+
+void webqq::search_group( std::string groupqqnum, std::string vfcode, webqq::search_group_handler handler )
+{
+	impl->search_group(groupqqnum, vfcode, handler);
+}

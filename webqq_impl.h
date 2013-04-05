@@ -134,6 +134,9 @@ public:
 	void update_group_qqmember(boost::shared_ptr<qqGroup> group);
 	void update_group_member(boost::shared_ptr<qqGroup> group);
 
+	// 查找群，如果要验证码，则获取后带vfcode参数进行调用.否则对  vfcode 是 ""
+	void search_group(std::string groupqqnum, std::string vfcode, webqq::search_group_handler handler);
+
 	qqGroup_ptr get_Group_by_gid( std::string gid );
 	qqGroup_ptr get_Group_by_qq( std::string qq );
 	boost::asio::io_service	&get_ioservice() {
@@ -175,6 +178,9 @@ private:
 	void send_group_message_internal( std::string group, std::string msg, send_group_message_cb donecb );
 	void cb_send_msg( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, boost::function<void ( const boost::system::error_code& ec )> donecb );
 
+	void cb_search_group(std::string, const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buf, webqq::search_group_handler handler);
+	
+	void fetch_aid(std::string adi, boost::uint64_t _time_, boost::function<void(const boost::system::error_code&, std::string)> handler);
 public:
 	std::string	m_vfwebqq;
 	LwqqCookies m_cookies;
