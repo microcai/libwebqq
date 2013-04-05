@@ -181,6 +181,7 @@ private:
 	void cb_search_group(std::string, const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buf, webqq::search_group_handler handler);
 	
 	void fetch_aid(std::string adi, boost::uint64_t _time_, boost::function<void(const boost::system::error_code&, std::string)> handler);
+	void cb_fetch_aid(const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buf, boost::function<void(const boost::system::error_code&, std::string)> handler);
 
 public:
 	std::string	m_vfwebqq;
