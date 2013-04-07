@@ -29,6 +29,7 @@ namespace js = boost::property_tree::json_parser;
 #include <boost/assign.hpp>
 #include <boost/scope_exit.hpp>
 
+#include "boost/vc_comp.hpp"
 #include "boost/timedcall.hpp"
 
 #include "constant.hpp"
@@ -60,6 +61,12 @@ static pt::wptree json_parse( const wchar_t * doc )
 	stream <<  doc ;
 	js::read_json( stream, jstree );
 	return jstree;
+}
+
+
+inline std::string utf8_ansi( std::string const &source, const std::string &characters = "GB18030" )
+{
+	return boost::locale::conv::between( source, characters, "UTF-8" ).c_str();
 }
 
 // build webqq and setup defaults
@@ -120,14 +127,14 @@ void WebQQ::send_group_message_internal( std::string group, std::string msg, sen
 {
 	//unescape for POST
 	std::string postdata = boost::str(
-							   boost::format( "r={\"group_uin\":\"%s\", "
+							   boost::format( utf8str("r={\"group_uin\":\"%s\", "
 									   "\"content\":\"["
 									   "\\\"%s\\\","
 									   "[\\\"font\\\",{\\\"name\\\":\\\"宋体\\\",\\\"size\\\":\\\"9\\\",\\\"style\\\":[0,0,0],\\\"color\\\":\\\"000000\\\"}]"
 									   "]\","
 									   "\"msg_id\":%ld,"
 									   "\"clientid\":\"%s\","
-									   "\"psessionid\":\"%s\"}&clientid=%s&psessionid=%s" )
+									   "\"psessionid\":\"%s\"}&clientid=%s&psessionid=%s" ))
 							   % group % parse_unescape( msg ) % m_msg_id % m_clientid % m_psessionid
 							   % m_clientid
 							   % m_psessionid
@@ -626,7 +633,11 @@ void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr s
 				}
 
 				this->m_groups.insert( std::make_pair( newgroup->gid, newgroup ) );
-				lwqq_log( LOG_DEBUG, "qq群 %s %s\n", newgroup->gid.c_str(), newgroup->name.c_str() );
+#ifndef WIN32
+				lwqq_log( LOG_DEBUG,  "qq群 %s %s\n", newgroup->gid.c_str(), newgroup->name.c_str() );
+# else
+				lwqq_log( LOG_DEBUG,  localstr("qq群 %s %s\n"), newgroup->gid.c_str(), utf8_ansi(newgroup->name.c_str()).c_str() );
+# endif
 			}
 		}
 	} catch( const pt::json_parser_error & jserr ) {
@@ -674,7 +685,7 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 
 			return ;
 		}else{
-			std::cerr <<  "获取群的QQ号码失败" <<  std::endl;
+			std::cerr <<  localstr("获取群的QQ号码失败") <<  std::endl;
 			pt::json_parser::write_json(std::cerr, jsonobj);
 			boost::delayedcallsec( m_io_service, 5 + rand() % 5, boost::bind( &WebQQ::update_group_qqmember, this, group) );
 		}
@@ -823,11 +834,11 @@ void WebQQ::cb_search_group(std::string groupqqnum, const boost::system::error_c
 				group->qqnum = jsobj.get<std::string>("result..GE");
 				group->code = jsobj.get<std::string>("result..GEX");
 			}else if(jsobj.get<int>("retcode") == 100110){
-				// 需要验证码, 先获取验证码图片，然后回调
+				// 需要验证码, 先获取验证码图片，然后回调.
 				fetch_aid(boost::str(boost::format("aid=1003901&%ld") % std::time(NULL)), boost::bind(cb_search_group_vcode, _1, _2, handler, group) );
 				return;
 			}else if (jsobj.get<int>("retcode")==100102){
-				// 验证码错误
+				// 验证码错误.
 				group.reset();
 			}
 		}catch (...){
@@ -882,11 +893,11 @@ void WebQQ::cb_join_group( qqGroup_ptr group, const boost::system::error_code& e
 			// 获取群的其他信息
 			// GET http://s.web2.qq.com/api/get_group_public_info2?gcode=3272859045&vfwebqq=f08e7a200fd0be375d753d3fedfd24e99f6ba0a8063005030bb95f9fa4b7e0c30415ae74e77709e3&t=1365161430494 HTTP/1.1
 		}else if(jsobj.get<int>("retcode") == 100001){
-			std::cout <<  "原因：" <<   jsobj.get<std::string>("tips") <<  std::endl;
-			// 需要验证码, 先获取验证码图片，然后回调
+			std::cout <<  localstr("原因：") <<   jsobj.get<std::string>("tips") <<  std::endl;
+			// 需要验证码, 先获取验证码图片，然后回调.
 			fetch_aid(boost::str(boost::format("aid=1003903&_=%ld") % std::time(NULL)), boost::bind(cb_join_group_vcode, _1, _2, handler, group) );
 		}else{
-			// 需要验证码, 先获取验证码图片，然后回调
+			// 需要验证码, 先获取验证码图片，然后回调.
 			fetch_aid(boost::str(boost::format("aid=1003903&_=%ld") % std::time(NULL)), boost::bind(cb_join_group_vcode, _1, _2, handler, group) );
 		}
 	}catch (...){

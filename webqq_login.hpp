@@ -517,7 +517,6 @@ private:
 	int check_login( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buffer ) {
 		const char * response = boost::asio::buffer_cast<const char*>( buffer.data() );
 
-		std::cout << response << std::endl;
 		char *p = strstr( ( char* )response, "\'" );
 
 		if( !p ) {
