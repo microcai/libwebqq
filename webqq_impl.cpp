@@ -691,6 +691,9 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 
 		group->qqnum = jsonobj.get<std::string>( "result.account" );
 		lwqq_log( LOG_NOTICE, "qq number of group %s is %s (cached)\n", group->name.c_str(), group->qqnum.c_str() );
+
+		boost::delayedcallsec( get_ioservice(), 3, boost::bind( &WebQQ::do_poll_one_msg, this, m_cookies.ptwebqq ) );
+		return;
 	}catch (...){}
 	boost::delayedcallsec( m_io_service, 50 + boost::rand48()() % 100 , boost::bind( &WebQQ::update_group_qqmember, this, group) );
 }
