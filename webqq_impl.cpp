@@ -17,6 +17,7 @@
  */
 #include <string.h>
 #include <iostream>
+#include <boost/random.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/bind.hpp>
 #include <boost/bind/protect.hpp>
@@ -676,7 +677,6 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 		}else{
 			std::cerr <<  "获取群的QQ号码失败" <<  std::endl;
 			pt::json_parser::write_json(std::cerr, jsonobj);
-			boost::delayedcallsec( m_io_service, 5 + rand() % 5, boost::bind( &WebQQ::update_group_qqmember, this, group) );
 		}
 	} catch( const pt::json_parser_error & jserr ) {
 		lwqq_log( LOG_ERROR, "parse json error : %s\n", jserr.what() );
@@ -692,7 +692,7 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 		group->qqnum = jsonobj.get<std::string>( "result.account" );
 		lwqq_log( LOG_NOTICE, "qq number of group %s is %s (cached)\n", group->name.c_str(), group->qqnum.c_str() );
 	}catch (...){}
-	boost::delayedcallsec( m_io_service, 5, boost::bind( &WebQQ::update_group_qqmember, this, group) );
+	boost::delayedcallsec( m_io_service, 5 + boost::rand48()() % 20 , boost::bind( &WebQQ::update_group_qqmember, this, group) );
 }
 
 void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, boost::shared_ptr<qqGroup> group)
