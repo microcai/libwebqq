@@ -420,7 +420,7 @@ public:
 		std::string url = boost::str(
 							  boost::format(
 								  "%s/login?u=%s&p=%s&verifycode=%s&"
-								  "webqq_type=%d&remember_uin=1&aid=1003903&login2qq=1&"
+								  "webqq_type=%d&remember_uin=1&aid=%s&login2qq=1&"
 								  "u1=http%%3A%%2F%%2Fweb.qq.com%%2Floginproxy.html"
 								  "%%3Flogin2qq%%3D1%%26webqq_type%%3D10&h=1&ptredirect=0&"
 								  "ptlang=2052&from_ui=1&pttype=1&dumy=&fp=loginerroralert&"
@@ -430,6 +430,7 @@ public:
 							  % md5
 							  % vccode
 							  % m_webqq.m_status
+							  % APPID
 						  );
 
 		read_streamptr stream( new avhttp::http_stream( m_webqq.get_ioservice() ) );

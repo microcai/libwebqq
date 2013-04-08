@@ -887,10 +887,10 @@ void WebQQ::cb_join_group( qqGroup_ptr group, const boost::system::error_code& e
 		}else if(jsobj.get<int>("retcode") == 100001){
 			std::cout <<  "原因：" <<   jsobj.get<std::string>("tips") <<  std::endl;
 			// 需要验证码, 先获取验证码图片，然后回调
-			fetch_aid(boost::str(boost::format("aid=1003903&_=%ld") % std::time(NULL)), boost::bind(cb_join_group_vcode, _1, _2, handler, group) );
+			fetch_aid(boost::str(boost::format("aid=%s&_=%ld") % APPID % std::time(NULL)), boost::bind(cb_join_group_vcode, _1, _2, handler, group) );
 		}else{
 			// 需要验证码, 先获取验证码图片，然后回调
-			fetch_aid(boost::str(boost::format("aid=1003903&_=%ld") % std::time(NULL)), boost::bind(cb_join_group_vcode, _1, _2, handler, group) );
+			fetch_aid(boost::str(boost::format("aid=%s&_=%ld") % APPID % std::time(NULL)), boost::bind(cb_join_group_vcode, _1, _2, handler, group) );
 		}
 	}catch (...){
 		handler(qqGroup_ptr(), 0, "");
