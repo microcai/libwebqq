@@ -21,6 +21,8 @@
 #define WEBQQ_H
 #include <string>
 #include <vector>
+#include <map>
+#include <boost/function.hpp>
 #include <boost/asio.hpp>
 #include <boost/function.hpp>
 
