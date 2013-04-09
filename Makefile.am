@@ -1,5 +1,5 @@
 
-EXTRA_DIST = avhttp utf/checked.h  utf/core.h  utf/unchecked.h
+EXTRA_DIST = avhttp utf/checked.h  utf/core.h  utf/unchecked.h CMakeLists.txt
 
 AM_CPPFLAGS = -I${srcdir}/avhttp/include -I${top_srcdir}/avproxy/include -I${top_srcdir}
 
