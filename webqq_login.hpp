@@ -494,9 +494,9 @@ public:
 						m_webqq.update_group_list();
 					}
 				} catch( const pt::json_parser_error & jserr ) {
-					std::cerr <<  __LINE__ <<  "parse json error :" <<  jserr.what() <<  std::endl;
+					std::cerr <<  __FILE__ << " : " <<__LINE__ << " :" <<  "parse json error :" <<  jserr.what() <<  std::endl;
 				} catch( const pt::ptree_bad_path & jserr ) {
-					std::cerr <<  __LINE__ << "parse bad path error : " <<  jserr.what() <<  std::endl;
+					std::cerr <<  __FILE__ << " : " <<__LINE__ << " :" << "parse bad path error : " <<  jserr.what() <<  std::endl;
 				}
 
 				m_webqq.m_group_msg_insending = !m_webqq.m_msg_queue.empty();
