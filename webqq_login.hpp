@@ -38,6 +38,7 @@ namespace js = boost::property_tree::json_parser;
 #include "constant.hpp"
 #include "md5.hpp"
 #include "url.hpp"
+#include "boost/consolestr.hpp"
 
 namespace qq {
 namespace detail {
@@ -516,7 +517,7 @@ private:
 	int check_login( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buffer ) {
 		const char * response = boost::asio::buffer_cast<const char*>( buffer.data() );
 
-		std::cout << response << std::endl;
+		std::cout << console_out_str(response) << std::endl;
 		char *p = strstr( ( char* )response, "\'" );
 
 		if( !p ) {
