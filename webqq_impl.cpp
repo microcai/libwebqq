@@ -635,7 +635,7 @@ void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr s
 				}
 
 				this->m_groups.insert( std::make_pair( newgroup->gid, newgroup ) );
-				std::cerr <<  __LINE__ << console_out_str("qq群") <<  newgroup->gid <<  console_out_str(newgroup->name) << std::endl;
+				std::cerr <<  __LINE__ << console_out_str("qq群") << console_out_str(newgroup->gid) <<  console_out_str(newgroup->name) << std::endl;
 
 			}
 		}
