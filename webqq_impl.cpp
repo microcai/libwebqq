@@ -756,7 +756,7 @@ void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr
 
 		cb_group_member_process_json(jsonobj, group);
 
-		pt::json_parser::write_json( std::string("cache_group_") + group->name , jsonobj );
+		pt::json_parser::write_json( std::string("cache_group_") + console_out_str(group->name) , jsonobj );
 
 		// 开始更新成员的 QQ 号码，一次更新一个，慢慢来.
 		this->update_group_member_qq( group );
