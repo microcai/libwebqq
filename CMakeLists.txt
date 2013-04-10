@@ -6,6 +6,6 @@ include_directories(${Boost_INCLUDE_DIRS})
 include_directories(avhttp/include/)
 include_directories(..)
 
-add_library(webqq STATIC webqq.cpp webqq_face.cpp url.cpp logger.cpp md5.cpp webqq_impl.cpp)
+add_library(webqq STATIC webqq.cpp webqq_face.cpp url.cpp md5.cpp webqq_impl.cpp)
 
 target_link_libraries(webqq ${Boost_LIBRARIES})

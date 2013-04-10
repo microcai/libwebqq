@@ -37,9 +37,9 @@ namespace js = boost::property_tree::json_parser;
 #include "webqq_impl.h"
 #include "md5.hpp"
 #include "url.hpp"
-#include "logger.h"
 #include "utf8.hpp"
 #include "webqq_login.hpp"
+#include "boost/consolestr.hpp"
 
 using namespace qq;
 
@@ -170,10 +170,11 @@ void WebQQ::cb_send_msg( const boost::system::error_code& ec, read_streamptr str
 
 	} catch( const pt::json_parser_error & jserr ) {
 		std::istream	response( &buffer );
-		lwqq_log( LOG_ERROR, "parse json error : %s\n=========\n%s\n=========\n", jserr.what(), jserr.message().c_str() );
+		std::cerr <<  __LINE__ << "parse json error : " << jserr.what()
+ 			<<  "\n=========\n" <<  jserr.message() << "\n=========" <<  std::endl;
 		m_msg_queue.pop_front();
 	} catch( const pt::ptree_bad_path & badpath ) {
-		lwqq_log( LOG_ERROR, "bad path %s\n", badpath.what() );
+		std::cerr << __LINE__ <<  "bad path " <<  badpath.what() <<  std::endl;
 	}
 
 	if (!m_msg_queue.empty())
@@ -191,7 +192,7 @@ void WebQQ::cb_send_msg( const boost::system::error_code& ec, read_streamptr str
 
 void WebQQ::update_group_list()
 {
-	lwqq_log( LOG_NOTICE, "getting group list\n" );
+	std::cout <<  "getting group list" <<  std::endl;
 	/* Create post data: {"h":"hello","vfwebqq":"4354j53h45j34"} */
 	std::string postdata = create_post_data( this->m_vfwebqq );
 	std::string url = boost::str( boost::format( "%s/api/get_group_name_list_mask2" ) % "http://s.web2.qq.com" );
@@ -308,9 +309,9 @@ public:
 			}
 			return ;
 		} catch( const pt::json_parser_error & jserr ) {
-			lwqq_log( LOG_ERROR, "parse json error : %s\n", jserr.what() );
+			std::cerr <<  __LINE__ << "parse json error : " <<  jserr.what() <<  std::endl;
 		} catch( const pt::ptree_bad_path & badpath ) {
-			lwqq_log( LOG_ERROR, "bad path %s\n", badpath.what() );
+			std::cerr <<  __LINE__ <<  "bad path" <<  badpath.what() << std::endl;
 			js::write_json( std::cout, jsonobj );
 		}
 
@@ -449,20 +450,27 @@ void WebQQ::cb_poll_msg( const boost::system::error_code& ec, read_streamptr str
 	jsondata << response;
 
 	//处理!
-	try {
+	try
+	{
 		pt::json_parser::read_json( jsondata, jsonobj );
 		process_msg( jsonobj );
 		//开启新的 poll
 		boost::delayedcallms( get_ioservice(), 5, boost::bind( &WebQQ::do_poll_one_msg, this, ptwebqq ) );
-	} catch( const pt::json_parser_error & jserr ) {
-		lwqq_log( LOG_ERROR, "parse json error : %s\n", jserr.what() );
+
+	}
+	catch( const pt::json_parser_error & jserr )
+	{
+		std::cerr <<  __LINE__ << "parse json error : " <<  jserr.what() <<  std::endl;
 		// 网络可能出了点问题，延时重试.
 		boost::delayedcallsec( get_ioservice(), 5, boost::bind( &WebQQ::do_poll_one_msg, this, ptwebqq ) );
-	} catch( const pt::ptree_bad_path & badpath ) {
-		lwqq_log( LOG_ERROR, "bad path %s\n", badpath.what() );
+	}
+	catch( const pt::ptree_bad_path & badpath )
+	{
+		std::cerr <<  __LINE__ <<  "bad path" <<  badpath.what() << std::endl;
 		js::write_json( std::wcout, jsonobj );
 		//开启新的 poll
 		boost::delayedcallsec( get_ioservice(), 1, boost::bind( &WebQQ::do_poll_one_msg, this, ptwebqq ) );
+
 	}
 }
 
@@ -622,20 +630,21 @@ void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr s
 
 				if( newgroup->gid[0] == '-' ) {
 					retry = true;
-					lwqq_log( LOG_ERROR, "qqGroup get error \n" );
+					std::cerr <<  __LINE__ <<  "qqGroup get error" << std::endl;
 					continue;
 				}
 
 				this->m_groups.insert( std::make_pair( newgroup->gid, newgroup ) );
-				lwqq_log( LOG_DEBUG, "qq群 %s %s\n", newgroup->gid.c_str(), newgroup->name.c_str() );
+				std::cerr <<  __LINE__ << "qq群" <<  newgroup->gid <<  console_out_str(newgroup->name) << std::endl;
+
 			}
 		}
 	} catch( const pt::json_parser_error & jserr ) {
 		retry = true;
-		lwqq_log( LOG_ERROR, "parse json error : %s \n", jserr.what() );
+		std::cerr << __LINE__ <<  "parse json error : " <<  console_out_str(jserr.what()) << std::endl;
 	} catch( const pt::ptree_bad_path & badpath ) {
 		retry = true;
-		lwqq_log( LOG_ERROR, "bad path error %s\n", badpath.what() );
+		std::cerr << __LINE__ <<   "bad path error " <<  badpath.what() << std::endl;
 	}
 
 	if( retry ) {
@@ -666,23 +675,22 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 		//TODO, group members
 		if( jsonobj.get<int>( "retcode" ) == 0 ) {
 			group->qqnum = jsonobj.get<std::string>( "result.account" );
-			lwqq_log( LOG_NOTICE, "qq number of group %s is %s\n", group->name.c_str(), group->qqnum.c_str() );
+			std::cerr <<  "qq number of group" <<  console_out_str(group->name) << "is" <<  group->qqnum << std::endl;
 			// 写缓存
 			pt::json_parser::write_json(std::string("cache_group_qqnumber") + group->gid, jsonobj);
-					//start polling messages, 2 connections!
-			lwqq_log( LOG_DEBUG, "start polling messages\n" );
+			//start polling messages, 2 connections!
+			std::cerr << "start polling messages" <<  std::endl;
+
 			boost::delayedcallsec( get_ioservice(), 3, boost::bind( &WebQQ::do_poll_one_msg, this, m_cookies.ptwebqq ) );
 
 			return ;
 		}else{
-			std::cerr <<  "获取群的QQ号码失败" <<  std::endl;
+			std::cerr << console_out_str("获取群的QQ号码失败") <<  std::endl;
 			pt::json_parser::write_json(std::cerr, jsonobj);
 		}
 	} catch( const pt::json_parser_error & jserr ) {
-		lwqq_log( LOG_ERROR, "parse json error : %s\n", jserr.what() );
 
 	} catch( const pt::ptree_bad_path & badpath ) {
-		lwqq_log( LOG_ERROR, "bad path error %s\n", badpath.what() );
 	}
 
 	try{
@@ -690,7 +698,7 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 		pt::json_parser::read_json(std::string("cache_group_qqnumber") + group->gid, jsonobj);
 
 		group->qqnum = jsonobj.get<std::string>( "result.account" );
-		lwqq_log( LOG_NOTICE, "qq number of group %s is %s (cached)\n", group->name.c_str(), group->qqnum.c_str() );
+		std::cerr <<  "(cached) qq number of group" <<  console_out_str(group->name) << "is" <<  group->qqnum << std::endl;
 
 		boost::delayedcallsec( get_ioservice(), 3, boost::bind( &WebQQ::do_poll_one_msg, this, m_cookies.ptwebqq ) );
 		return;
@@ -711,7 +719,6 @@ void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, boost::shared_ptr<q
 			buddy.uin = minfo.get<std::string>( "uin" );
 
 			group->memberlist.insert( std::make_pair( buddy.uin, buddy ) );
-			lwqq_log( LOG_DEBUG, "buddy list:: %s %s\n", buddy.uin.c_str(), buddy.nick.c_str() );
 		}
 
 		BOOST_FOREACH( pt::ptree::value_type & v, jsonobj.get_child( "result.ginfo.members" ) ) {
@@ -732,7 +739,6 @@ void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, boost::shared_ptr<q
 				group->get_Buddy_by_uin( muin )->card = card;
 			}
 		} catch( const pt::ptree_bad_path & badpath ) {
-			lwqq_log( LOG_ERROR, "bad path error %s\n", badpath.what() );
 		}
 	}
 }
@@ -756,7 +762,7 @@ void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr
 		this->update_group_member_qq( group );
 
 	} catch( const pt::json_parser_error & jserr ) {
-		lwqq_log( LOG_ERROR, "parse json error : %s\n", jserr.what() );
+		std::cerr <<  __LINE__ <<  "parse json error : " <<  jserr.what() << std::endl;
 
 		boost::delayedcallsec( m_io_service, 20, boost::bind( &WebQQ::update_group_member, this, group) );
 		// 在重试之前，获取缓存文件.
@@ -766,7 +772,6 @@ void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr
 		cb_group_member_process_json(jsonobj, group);
 		}catch (...){}
 	} catch( const pt::ptree_bad_path & badpath ) {
-		lwqq_log( LOG_ERROR, "bad path error %s\n", badpath.what() );
 	}
 }
 
@@ -885,7 +890,7 @@ void WebQQ::cb_join_group( qqGroup_ptr group, const boost::system::error_code& e
 			// 获取群的其他信息
 			// GET http://s.web2.qq.com/api/get_group_public_info2?gcode=3272859045&vfwebqq=f08e7a200fd0be375d753d3fedfd24e99f6ba0a8063005030bb95f9fa4b7e0c30415ae74e77709e3&t=1365161430494 HTTP/1.1
 		}else if(jsobj.get<int>("retcode") == 100001){
-			std::cout <<  "原因：" <<   jsobj.get<std::string>("tips") <<  std::endl;
+			std::cout << console_out_str("原因：") <<   jsobj.get<std::string>("tips") <<  std::endl;
 			// 需要验证码, 先获取验证码图片，然后回调
 			fetch_aid(boost::str(boost::format("aid=%s&_=%ld") % APPID % std::time(NULL)), boost::bind(cb_join_group_vcode, _1, _2, handler, group) );
 		}else{

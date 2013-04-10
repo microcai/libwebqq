@@ -18,6 +18,8 @@
  */
 
 #pragma once
+
+#include <iostream>
 #include <boost/function.hpp>
 #include <boost/asio.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -199,7 +201,7 @@ static void update_cookies( LwqqCookies *cookies, const std::string & httpheader
 	} else if( ( key == "verifysession" ) ) {
 		FREE_AND_STRDUP( cookies->verifysession, value );
 	} else {
-		lwqq_log( LOG_WARNING, "No this cookie: %s\n", key.c_str() );
+		std::cerr <<  "warring: No this cookie: " <<  key <<  std::endl;
 	}
 
 #undef FREE_AND_STRDUP
@@ -309,7 +311,7 @@ public:
 		//　登录步骤.
 		reenter( this ) {
 			stream.reset( new avhttp::http_stream( m_webqq.get_ioservice() ) );
-			lwqq_log( LOG_DEBUG, "Get webqq version from %s\n", LWQQ_URL_VERSION );
+			std::cout << "Get webqq version from " <<  LWQQ_URL_VERSION <<  std::endl;
 			// 首先获得版本.
 			_yield async_http_download( stream, LWQQ_URL_VERSION, *this );
 
@@ -341,7 +343,8 @@ public:
 		}
 	}
 
-	void parse_verify_code( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer ) {
+	void parse_verify_code( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer )
+	{
 		/**
 		*
 		* The http message body has two format:
@@ -381,7 +384,6 @@ public:
 
 			/* We need get the ptvfsession from the header "Set-Cookie" */
 			update_cookies( &( m_webqq.m_cookies ), stream->response_options().header_string(), "ptvfsession", 1 );
-			lwqq_log( LOG_NOTICE, "Verify code: %s\n", s );
 
 			m_webqq.login_withvc( s );
 		} else if( *c == '1' ) {
@@ -396,10 +398,6 @@ public:
 			s = c + 1;
 			c = strstr( s, "'" );
 			*c = '\0';
-
-			// ptui_checkVC('1','7ea19f6d3d2794eb4184c9ae860babf3b9c61441520c6df0', '\x00\x00\x00\x00\x04\x7e\x73\xb2');
-
-			lwqq_log( LOG_NOTICE, "We need verify code image: %s\n", s );
 
 			//TODO, get verify image, and call signeedvc
 			m_webqq.get_verify_image( s );
@@ -495,9 +493,9 @@ public:
 						m_webqq.update_group_list();
 					}
 				} catch( const pt::json_parser_error & jserr ) {
-					lwqq_log( LOG_ERROR , "parse json error : %s \n", jserr.what() );
+					std::cerr <<  __LINE__ <<  "parse json error :" <<  jserr.what() <<  std::endl;
 				} catch( const pt::ptree_bad_path & jserr ) {
-					lwqq_log( LOG_ERROR , "parse bad path error :  %s\n", jserr.what() );
+					std::cerr <<  __LINE__ << "parse bad path error : " <<  jserr.what() <<  std::endl;
 				}
 
 				m_webqq.m_group_msg_insending = !m_webqq.m_msg_queue.empty();
@@ -534,58 +532,58 @@ private:
 			case 0:
 				m_webqq.m_status = LWQQ_STATUS_ONLINE;
 				save_cookie( &( m_webqq.m_cookies ), stream->response_options().header_string() );
-				lwqq_log( LOG_NOTICE, "login success!\n" );
+				std::cerr <<  "login success!" << std::endl;
 				break;
 
 			case 1:
-				lwqq_log( LOG_WARNING, "Server busy! Please try again\n" );
+				std::cerr << "Server busy! Please try again" <<  std::endl;
 
 				status = LWQQ_STATUS_OFFLINE;
 				break;
 			case 2:
-				lwqq_log( LOG_ERROR, "Out of date QQ number\n" );
+				std::cerr << "Out of date QQ number" <<  std::endl;
+
 				status = LWQQ_STATUS_OFFLINE;
 				break;
 
 
 			case 3:
-				lwqq_log( LOG_ERROR, "Wrong password\n" );
+				std::cerr << "Wrong QQ password" <<  std::endl;
 				status = LWQQ_STATUS_OFFLINE;
+				exit(1);
 				break;
-
 
 			case 4:
-				lwqq_log( LOG_ERROR, "Wrong verify code\n" );
+				std::cerr << "!!!!!!!!!! Wrong verify code !!!!!!!!" <<  std::endl;
 				status = LWQQ_STATUS_OFFLINE;
 				break;
 
-
 			case 5:
-				lwqq_log( LOG_ERROR, "Verify failed\n" );
+   				std::cerr << "!!!!!!!!!! Verify failed !!!!!!!!" <<  std::endl;
 				status = LWQQ_STATUS_OFFLINE;
 				break;
 
 
 			case 6:
-				lwqq_log( LOG_WARNING, "You may need to try login again\n" );
+				std::cerr << "!!!!!!!!!! You may need to try login again !!!!!!!!" <<  std::endl;
 				status = LWQQ_STATUS_OFFLINE;
 				break;
 
 			case 7:
-				lwqq_log( LOG_ERROR, "Wrong input\n" );
+				std::cerr << "!!!!!!!!!! Wrong input !!!!!!!!" <<  std::endl;
 				status = LWQQ_STATUS_OFFLINE;
 				break;
 
 
 			case 8:
-				lwqq_log( LOG_ERROR, "Too many logins on this IP. Please try again\n" );
+				std::cerr << "!!!!!!!!!! Too many logins on this IP. Please try again !!!!!!!!" <<  std::endl;
 				status = LWQQ_STATUS_OFFLINE;
 				break;
 
 
 			default:
+				std::cerr << "!!!!!!!!!! Unknow error!!!!!!!!" <<  std::endl;
 				status = LWQQ_STATUS_OFFLINE;
-				lwqq_log( LOG_ERROR, "Unknow error" );
 		}
 
 		return status;
