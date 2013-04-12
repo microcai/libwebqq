@@ -36,7 +36,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/circular_buffer.hpp>
 #include <boost/asio.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2.hpp>
 #include <boost/concept_check.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -149,17 +149,17 @@ public:
 
 public:// signals
 	// 登录成功激发.
-	boost::signal< void ()> siglogin;
+	boost::signals2::signal< void ()> siglogin;
 	// 验证码, 需要自行下载url中的图片，然后调用 login_withvc.
-	boost::signal< void ( const boost::asio::const_buffer & )> signeedvc;
+	boost::signals2::signal< void ( const boost::asio::const_buffer & )> signeedvc;
 	// 断线的时候激发.
-	boost::signal< void ()> sigoffline;
+	boost::signals2::signal< void ()> sigoffline;
 
 	// 发生错误的时候激发, 返回 false 停止登录，停止发送，等等操作。true则重试.
-	boost::signal< bool ( int stage, int why )> sigerror;
+	boost::signals2::signal< bool ( int stage, int why )> sigerror;
 
 	// 有群消息的时候激发.
-	boost::signal< void ( const std::string group, const std::string who, const std::vector<qqMsg> & )> siggroupmessage;
+	boost::signals2::signal< void ( const std::string group, const std::string who, const std::vector<qqMsg> & )> siggroupmessage;
 
 private:
 	void init_face_map();

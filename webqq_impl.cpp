@@ -525,7 +525,7 @@ public:
 template<class Handler>
 static void async_cface_fetch(boost::asio::io_service & io_service, Handler & handler, std::string group, std::string who, std::vector<qqMsg> msg)
 {
-	async_cface_fetch_op<boost::signal< void ( const std::string group, const std::string who, const std::vector<qqMsg> & )> >
+	async_cface_fetch_op<boost::signals2::signal< void ( const std::string group, const std::string who, const std::vector<qqMsg> & )> >
 		(io_service, handler, group, who, msg);
 }
 
