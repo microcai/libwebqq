@@ -40,7 +40,7 @@ namespace js = boost::property_tree::json_parser;
 #include "url.hpp"
 #include "boost/consolestr.hpp"
 
-namespace qq {
+namespace qqimpl {
 namespace detail {
 
 static void upcase_string( char *str, int len )
@@ -173,7 +173,7 @@ static std::string get_cookie( const std::string & cookie, std::string key )
 	return cookie.substr( keyindex , valend - keyindex );
 }
 
-static void update_cookies( LwqqCookies *cookies, const std::string & httpheader,
+static void update_cookies(  LwqqCookies *cookies, const std::string & httpheader,
 							std::string key, int update_cache )
 {
 	std::string value = get_cookie( httpheader, key );
@@ -300,9 +300,9 @@ static std::string lwqq_status_to_str( LWQQ_STATUS status )
 // qq 登录办法
 class SYMBOL_HIDDEN corologin : boost::coro::coroutine {
 public:
-	corologin( qq::WebQQ & webqq )
+	corologin( qqimpl::WebQQ & webqq )
 		: m_webqq( webqq ) {
-		read_streamptr stream;//(new avhttp::http_stream(m_webqq.get_ioservice()));
+		read_streamptr stream;
 		boost::asio::streambuf buf;
 		( *this )( boost::system::error_code(), stream, buf );
 	}
@@ -405,7 +405,7 @@ public:
 		}
 	}
 private:
-	qq::WebQQ & m_webqq;
+	qqimpl::WebQQ & m_webqq;
 };
 
 // qq 登录办法-验证码登录

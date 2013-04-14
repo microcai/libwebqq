@@ -52,7 +52,7 @@ namespace pt = boost::property_tree;
 #pragma GCC visibility push(hidden)
 #endif
 
-namespace qq {
+namespace qqimpl{
 
 typedef enum LwqqMsgType {
 	LWQQ_MT_BUDDY_MSG = 0,

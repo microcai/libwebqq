@@ -51,7 +51,7 @@
 #endif
 #endif
 
-namespace qq {
+namespace qqimpl {
 class WebQQ;
 };
 
@@ -159,7 +159,7 @@ public:
 	qqGroup_ptr get_Group_by_qq( std::string qq );
 	boost::asio::io_service	&get_ioservice();
 private:
-	class qq::WebQQ * const impl;
+	class qqimpl::WebQQ * const impl;
 };
 
 #endif // WEBQQ_H

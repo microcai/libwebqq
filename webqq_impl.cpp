@@ -41,7 +41,7 @@ namespace js = boost::property_tree::json_parser;
 #include "webqq_login.hpp"
 #include "boost/consolestr.hpp"
 
-using namespace qq;
+using namespace qqimpl;
 
 static std::string generate_clientid();
 
@@ -89,7 +89,7 @@ WebQQ::WebQQ( boost::asio::io_service& _io_service,
 void WebQQ::login()
 {
 	// start login process, will call login_withvc later
-	qq::detail::corologin( *this );
+	detail::corologin( *this );
 }
 
 // login to server with vc. called by login code or by user
@@ -98,7 +98,7 @@ void WebQQ::login()
 void WebQQ::login_withvc( std::string vccode )
 {
 	std::cout << "vc code is \"" << vccode << "\"" << std::endl;
-	qq::detail::corologin_vc( *this, vccode );
+	detail::corologin_vc( *this, vccode );
 }
 
 void WebQQ::send_group_message( qqGroup& group, std::string msg, send_group_message_cb donecb )
@@ -358,7 +358,7 @@ void WebQQ::update_group_member_qq(boost::shared_ptr<qqGroup> group )
 
 qqGroup_ptr WebQQ::get_Group_by_gid( std::string gid )
 {
-	qq::grouplist::iterator it = m_groups.find( gid );
+	grouplist::iterator it = m_groups.find( gid );
 
 	if( it != m_groups.end() )
 		return it->second;
@@ -368,7 +368,7 @@ qqGroup_ptr WebQQ::get_Group_by_gid( std::string gid )
 
 qqGroup_ptr WebQQ::get_Group_by_qq( std::string qq )
 {
-	qq::grouplist::iterator it = m_groups.begin();
+	grouplist::iterator it = m_groups.begin();
 
 	for( ; it != m_groups.end(); it ++ ) {
 		if( it->second->qqnum == qq )
@@ -402,7 +402,7 @@ void WebQQ::get_verify_image( std::string vcimgid )
 
 void WebQQ::cb_get_verify_image( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer )
 {
-	qq::detail::update_cookies( &m_cookies, stream->response_options().header_string() , "verifysession", 1 );
+	detail::update_cookies( &m_cookies, stream->response_options().header_string() , "verifysession", 1 );
 
 	// verify image is now in response
 	signeedvc( buffer.data() );
@@ -780,7 +780,7 @@ void WebQQ::cb_fetch_aid(const boost::system::error_code& ec, read_streamptr str
 	if (!ec || ec == boost::asio::error::eof)
 	{
 		// 获取到咯, 更新 verifysession
-		qq::detail::update_cookies(&m_cookies, stream->response_options().header_string(), "verifysession", 1);
+		detail::update_cookies(&m_cookies, stream->response_options().header_string(), "verifysession", 1);
 
 		handler(boost::system::error_code(), std::string(boost::asio::buffer_cast<const char*>(buf.data()), boost::asio::buffer_size(buf.data())));
 		return;
