@@ -65,7 +65,7 @@ static pt::wptree json_parse( const wchar_t * doc )
 
 // build webqq and setup defaults
 WebQQ::WebQQ( boost::asio::io_service& _io_service,
-			  std::string _qqnum, std::string _passwd, LWQQ_STATUS _status )
+			  std::string _qqnum, std::string _passwd)
 	: m_io_service( _io_service ), m_qqnum( _qqnum ), m_passwd( _passwd ), m_status( LWQQ_STATUS_OFFLINE ),
 	m_fetch_cface(0), m_msg_queue( 20 ) //　最多保留最后的20条未发送消息.
 {

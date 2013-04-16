@@ -119,7 +119,7 @@ class corologin_vc;
 
 class SYMBOL_HIDDEN WebQQ {
 public:
-	WebQQ( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd, LWQQ_STATUS status = LWQQ_STATUS_ONLINE );
+	WebQQ( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd);
 
 	// not need to call this the first time, but you might need this if you became offline.
 	void login();

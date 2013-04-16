@@ -25,8 +25,8 @@
 #include "url.hpp"
 #include "httpagent.hpp"
 
-webqq::webqq( boost::asio::io_service& asioservice, std::string qqnum, std::string passwd, LWQQ_STATUS status )
-	: impl( new qqimpl::WebQQ( asioservice, qqnum, passwd, status ) )
+webqq::webqq( boost::asio::io_service& asioservice, std::string qqnum, std::string passwd)
+	: impl( new qqimpl::WebQQ( asioservice, qqnum, passwd) )
 {
 }
 
