@@ -41,6 +41,11 @@ void webqq::on_group_msg( boost::function< void( const std::string, const std::s
 	this->impl->siggroupmessage.connect( cb );
 }
 
+void webqq::on_group_found( boost::function< void (qqGroup_ptr) > cb )
+{
+	impl->siggroupnumber.connect(cb);
+}
+
 void webqq::update_group_member(boost::shared_ptr<qqGroup> group )
 {
 	impl->update_group_member( group );

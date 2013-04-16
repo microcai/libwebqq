@@ -683,6 +683,8 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 
 			boost::delayedcallsec( get_ioservice(), 3, boost::bind( &WebQQ::do_poll_one_msg, this, m_cookies.ptwebqq ) );
 
+			siggroupnumber(group);
+
 			return ;
 		}else{
 			std::cerr << console_out_str("获取群的QQ号码失败") <<  std::endl;
@@ -701,9 +703,13 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 		std::cerr <<  "(cached) qq number of group" <<  console_out_str(group->name) << "is" <<  group->qqnum << std::endl;
 
 		boost::delayedcallsec( get_ioservice(), 3, boost::bind( &WebQQ::do_poll_one_msg, this, m_cookies.ptwebqq ) );
+
+		// 向用户报告一个 group 出来了.
+		siggroupnumber(group);
 		return;
-	}catch (...){}
-	boost::delayedcallsec( m_io_service, 50 + boost::rand48()() % 100 , boost::bind( &WebQQ::update_group_qqmember, this, group) );
+	}catch (...){
+		boost::delayedcallsec( m_io_service, 50 + boost::rand48()() % 100 , boost::bind( &WebQQ::update_group_qqmember, this, group) );
+	}
 }
 
 void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, boost::shared_ptr<qqGroup> group)

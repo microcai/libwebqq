@@ -158,6 +158,9 @@ public:// signals
 	// 发生错误的时候激发, 返回 false 停止登录，停止发送，等等操作。true则重试.
 	boost::signals2::signal< bool ( int stage, int why )> sigerror;
 
+	// 获得一个群QQ号码的时候激发.
+	boost::signals2::signal< void ( qqGroup_ptr )> siggroupnumber;
+
 	// 有群消息的时候激发.
 	boost::signals2::signal< void ( const std::string group, const std::string who, const std::vector<qqMsg> & )> siggroupmessage;
 

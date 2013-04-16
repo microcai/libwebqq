@@ -127,7 +127,10 @@ struct qqMsg {
 class webqq {
 public:
 	webqq( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd);
+	// 设置受到群消息的回调.
 	void on_group_msg( boost::function<void ( const std::string group_code, const std::string who, const std::vector<qqMsg> & )> cb );
+	// 发现一个群就回调.
+	void on_group_found(boost::function<void ( qqGroup_ptr )> cb);
 
 	// not need to call this the first time, but you might need this if you became offline.
 	void login();
