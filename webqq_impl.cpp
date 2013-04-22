@@ -941,22 +941,27 @@ void WebQQ::join_group(qqGroup_ptr group, std::string vfcode, webqq::join_group_
 }
 
 // 把 boost::u8_to_u32_iterator 封装一下，提供 * 解引用操作符.
-struct u8_u32_iterator: public boost::u8_to_u32_iterator<std::string::const_iterator>
+class u8_u32_iterator: public boost::u8_to_u32_iterator<std::string::const_iterator>
 {
+public:
 	typedef boost::uint32_t reference;
 
-	reference operator* () const {return boost::u8_to_u32_iterator<std::string::const_iterator>::dereference();}
-	u8_u32_iterator(std::string::const_iterator b):
-		boost::u8_to_u32_iterator<std::string::const_iterator>(b){}
+	reference operator* () const
+	{
+		return dereference();
+	}
+	u8_u32_iterator( std::string::const_iterator b ):
+		boost::u8_to_u32_iterator<std::string::const_iterator>( b ) {}
 };
 
 // 向后迭代，然后返回每个字符
 template<class BaseIterator>
-struct escape_iterator{
+struct escape_iterator
+{
 	BaseIterator m_position;
 	typedef std::string reference;
 
-	escape_iterator(BaseIterator b):m_position(b){}
+	escape_iterator( BaseIterator b ): m_position( b ) {}
 
 	escape_iterator& operator ++()
 	{
@@ -966,35 +971,36 @@ struct escape_iterator{
 
 	reference operator* () const
 	{
-		char buf[8]={0};
+		char buf[8] = {0};
 
-		snprintf(buf, sizeof(buf), "\\\\u%04X", (boost::uint32_t)(* m_position));
+		snprintf( buf, sizeof( buf ), "\\\\u%04X", ( boost::uint32_t )( * m_position ) );
 		// 好，解引用！
 		// 获得 代码点后，就是构造  \\\\uXXXX 了
 		return buf;
 	}
 
-	bool operator == (const escape_iterator & rhs) const
+	bool operator == ( const escape_iterator & rhs ) const
 	{
 		return m_position == rhs.m_position;
 	}
 
-	bool operator != (const escape_iterator & rhs) const
+	bool operator != ( const escape_iterator & rhs ) const
 	{
 		return m_position != rhs.m_position;
 	}
 };
 
-static std::string parse_unescape(const std::string & source )
+static std::string parse_unescape( const std::string & source )
 {
 	std::string result;
-	escape_iterator<u8_u32_iterator> ues(source.begin());
-	escape_iterator<u8_u32_iterator> end(source.end());
+	escape_iterator<u8_u32_iterator> ues( source.begin() );
+	escape_iterator<u8_u32_iterator> end( source.end() );
 
-	while (ues!=end)
+	while( ues != end )
 	{
 		result += * ues;
 		++ ues;
 	}
+
 	return result;
 }
