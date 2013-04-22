@@ -16,6 +16,7 @@
  *
  */
 #include <string.h>
+#include <string>
 #include <iostream>
 #include <boost/random.hpp>
 #include <boost/system/system_error.hpp>
@@ -29,7 +30,7 @@ namespace js = boost::property_tree::json_parser;
 #include <boost/foreach.hpp>
 #include <boost/assign.hpp>
 #include <boost/scope_exit.hpp>
-
+#include <boost/regex/pending/unicode_iterator.hpp>
 #include "boost/timedcall.hpp"
 
 #include "constant.hpp"
@@ -46,7 +47,7 @@ using namespace qqimpl;
 static std::string generate_clientid();
 
 ///low level special char mapping
-static std::string parse_unescape( std::string source );
+static std::string parse_unescape(const std::string &);
 
 static std::string create_post_data( std::string vfwebqq )
 {
@@ -939,25 +940,61 @@ void WebQQ::join_group(qqGroup_ptr group, std::string vfcode, webqq::join_group_
 	async_http_download(stream, url, boost::bind(&WebQQ::cb_join_group, this, group, _1, _2, _3, handler));
 }
 
-
-static std::string parse_unescape( std::string source )
+// 把 boost::u8_to_u32_iterator 封装一下，提供 * 解引用操作符.
+struct u8_u32_iterator: public boost::u8_to_u32_iterator<std::string::const_iterator>
 {
-	boost::replace_all( source, "\\", "\\\\\\\\" );
-	boost::replace_all( source, "\r", "" );
-	boost::replace_all( source, "\n", "\\\\r\\\\n" );
-	boost::replace_all( source, "\t", "\\\\t" );
-	boost::replace_all( source, "\"", "\\\\u0022" );
-	boost::replace_all( source, "&", "\\\\u0026" );
-	boost::replace_all( source, "\'", "\\\\u0027" );
-	boost::replace_all( source, ":", "\\\\u003A" );
-	boost::replace_all( source, ";", "\\\\u003B" );
-	boost::replace_all( source, "+", "\\\\u002B" );
-	boost::replace_all( source, "%", "\\\\u0025" );
-	boost::replace_all( source, "`", "\\\\u0060" );
-	boost::replace_all( source, "[", "\\\\u005B" );
-	boost::replace_all( source, "]", "\\\\u005D" );
-	boost::replace_all( source, ",", "\\\\u002C" );
-	boost::replace_all( source, "{", "\\\\u007B" );
-	boost::replace_all( source, "}", "\\\\u007D" );
-	return source;
+	typedef boost::uint32_t reference;
+
+	reference operator* () const {return boost::u8_to_u32_iterator<std::string::const_iterator>::dereference();}
+	u8_u32_iterator(std::string::const_iterator b):
+		boost::u8_to_u32_iterator<std::string::const_iterator>(b){}
+};
+
+// 向后迭代，然后返回每个字符
+template<class BaseIterator>
+struct escape_iterator{
+	BaseIterator m_position;
+	typedef std::string reference;
+
+	escape_iterator(BaseIterator b):m_position(b){}
+
+	escape_iterator& operator ++()
+	{
+		++m_position;
+		return *this;
+	}
+
+	reference operator* () const
+	{
+		char buf[8]={0};
+
+		snprintf(buf, sizeof(buf), "\\\\u%04X", (boost::uint32_t)(* m_position));
+		// 好，解引用！
+		// 获得 代码点后，就是构造  \\\\uXXXX 了
+		return buf;
+	}
+
+	bool operator == (const escape_iterator & rhs) const
+	{
+		return m_position == rhs.m_position;
+	}
+
+	bool operator != (const escape_iterator & rhs) const
+	{
+		return m_position != rhs.m_position;
+	}
+};
+
+static std::string parse_unescape(const std::string & source )
+{
+	std::string result;
+	escape_iterator<u8_u32_iterator> ues(source.begin());
+	escape_iterator<u8_u32_iterator> end(source.end());
+
+	while (ues!=end)
+	{
+		result += * ues;
+		++ ues;
+	}
+	return result;
 }
