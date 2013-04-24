@@ -1003,8 +1003,7 @@ static std::string parse_unescape( const std::string & source )
 		}
 	}catch (const std::out_of_range &e)
 	{
-		std::cerr << __FILE__ <<  __LINE__<<  " "  <<  console_out_str("字符串包含非法字符") <<  std::endl;
-		std::cerr <<  source <<  std::endl;
+		std::cerr << __FILE__ <<  __LINE__<<  " "  <<  console_out_str("QQ消息字符串包含非法字符") <<  std::endl;
 	}
 
 	return result;
