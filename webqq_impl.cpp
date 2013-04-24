@@ -995,11 +995,16 @@ static std::string parse_unescape( const std::string & source )
 	std::string result;
 	escape_iterator<u8_u32_iterator> ues( source.begin() );
 	escape_iterator<u8_u32_iterator> end( source.end() );
-
-	while( ues != end )
+	try{
+		while( ues != end )
+		{
+			result += * ues;
+			++ ues;
+		}
+	}catch (const std::out_of_range &e)
 	{
-		result += * ues;
-		++ ues;
+		std::cerr << __FILE__ <<  __LINE__<<  " "  <<  console_out_str("字符串包含非法字符") <<  std::endl;
+		std::cerr <<  source <<  std::endl;
 	}
 
 	return result;
