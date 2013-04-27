@@ -100,7 +100,7 @@ static void async_fetch_cface_cb(const boost::system::error_code& ec,
 	callback(ec, buf);
 }
 
-void webqq::async_fetch_cface(std::string cface, boost::function<void(boost::system::error_code ec, boost::asio::streambuf & buf)> callback)
+void webqq::async_fetch_cface(boost::asio::io_service & io_service, std::string cface, boost::function<void(boost::system::error_code ec, boost::asio::streambuf & buf)> callback)
 {
 	std::string url = boost::str( 
 						boost::format( "http://w.qq.com/cgi-bin/get_group_pic?pic=%s" ) 
@@ -108,7 +108,7 @@ void webqq::async_fetch_cface(std::string cface, boost::function<void(boost::sys
 					);
 
 	read_streamptr stream;
-	stream.reset( new avhttp::http_stream( get_ioservice() ) );
+	stream.reset( new avhttp::http_stream( io_service ) );
 	async_http_download( stream, url, boost::bind(async_fetch_cface_cb, _1, _2, _3, callback));
 }
 

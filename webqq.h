@@ -147,7 +147,7 @@ public:
 
 	void update_group_member(boost::shared_ptr<qqGroup> group );
 
-	void async_fetch_cface(std::string cface, boost::function<void(boost::system::error_code ec, boost::asio::streambuf & buf)> callback);
+	static void async_fetch_cface(boost::asio::io_service & , std::string cface, boost::function<void(boost::system::error_code ec, boost::asio::streambuf & buf)> callback);
 
 	typedef boost::function<void(qqGroup_ptr group, bool needvc, const std::string & vc_img_data)>	search_group_handler;
 	// 查找群，如果要验证码，则获取后带vfcode参数进行调用.否则对  vfcode 是 ""
