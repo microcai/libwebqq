@@ -3,7 +3,7 @@ project(libwebqq)
 find_package(Boost 1.48 REQUIRED COMPONENTS system thread)
 
 include_directories(${Boost_INCLUDE_DIRS})
-include_directories(avhttp/include/)
+include_directories(../avhttp/include/)
 include_directories(..)
 
 add_library(webqq STATIC webqq.cpp webqq_face.cpp url.cpp md5.cpp webqq_impl.cpp)
