@@ -118,6 +118,7 @@ class corologin_vc;
 }
 
 class SYMBOL_HIDDEN WebQQ {
+	typedef boost::function0<void>		done_callback_handler;
 public:
 	WebQQ( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd);
 
@@ -131,8 +132,8 @@ public:
 	void send_group_message( std::string group, std::string msg, send_group_message_cb donecb );
 	void send_group_message( qqGroup &  group, std::string msg, send_group_message_cb donecb );
 	void update_group_list();
-	void update_group_qqmember(boost::shared_ptr<qqGroup> group);
-	void update_group_member(boost::shared_ptr<qqGroup> group);
+	void update_group_qqnumber(boost::shared_ptr<qqGroup> group);
+	void update_group_member(boost::shared_ptr<qqGroup> group, done_callback_handler);
 
 	// 查找群，如果要验证码，则获取后带vfcode参数进行调用.否则对  vfcode 是 ""
 	void search_group(std::string groupqqnum, std::string vfcode, webqq::search_group_handler handler);
@@ -160,6 +161,8 @@ public:// signals
 
 	// 获得一个群QQ号码的时候激发.
 	boost::signals2::signal< void ( qqGroup_ptr )> siggroupnumber;
+	// 新人入群的时候激发.
+	boost::signals2::signal< void ( qqGroup_ptr, qqBuddy * buddy) > signewbuddy;
 
 	// 有群消息的时候激发.
 	boost::signals2::signal< void ( const std::string group, const std::string who, const std::vector<qqMsg> & )> siggroupmessage;
@@ -179,8 +182,9 @@ private:
 	void process_group_message( const pt::wptree & jstree );
 	void cb_group_list( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& );
 	void cb_group_member_process_json(pt::ptree	&jsonobj, boost::shared_ptr<qqGroup>);
-	void cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, boost::shared_ptr<qqGroup> );
+	void cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, boost::shared_ptr<qqGroup>,  done_callback_handler );
 	void cb_group_qqnumber( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, boost::shared_ptr<qqGroup> );
+	void cb_newbee_group_join(qqGroup_ptr group, std::string uid);
 
 	void send_group_message_internal( std::string group, std::string msg, send_group_message_cb donecb );
 	void cb_send_msg( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, boost::function<void ( const boost::system::error_code& ec )> donecb );

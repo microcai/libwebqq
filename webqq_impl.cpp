@@ -42,6 +42,8 @@ namespace js = boost::property_tree::json_parser;
 #include "webqq_login.hpp"
 #include "boost/consolestr.hpp"
 
+static void dummy(){}
+
 using namespace qqimpl;
 
 static std::string generate_clientid();
@@ -215,7 +217,7 @@ void WebQQ::update_group_list()
 					   );
 }
 
-void WebQQ::update_group_qqmember(boost::shared_ptr<qqGroup> group )
+void WebQQ::update_group_qqnumber(boost::shared_ptr<qqGroup> group )
 {
 	std::string url;
 
@@ -239,7 +241,7 @@ void WebQQ::update_group_qqmember(boost::shared_ptr<qqGroup> group )
 					   );
 }
 
-void WebQQ::update_group_member(boost::shared_ptr<qqGroup> group )
+void WebQQ::update_group_member(boost::shared_ptr<qqGroup> group , done_callback_handler handler)
 {
 	read_streamptr stream( new avhttp::http_stream( m_io_service ) );
 
@@ -259,7 +261,7 @@ void WebQQ::update_group_member(boost::shared_ptr<qqGroup> group )
 	);
 
 	async_http_download( stream, url,
-						 boost::bind( &WebQQ::cb_group_member, this, boost::asio::placeholders::error, _2, _3, group)
+						 boost::bind( &WebQQ::cb_group_member, this, boost::asio::placeholders::error, _2, _3, group, handler)
 					   );
 }
 
@@ -336,11 +338,13 @@ public:
 		//我说了是一个一个的更新对吧，可不能一次发起　N 个连接同时更新，会被TX拉黑名单的.
 		reenter( this )
 		{
-			for( it = group->memberlist.begin();
-					it != group->memberlist.end(); it++ ) {
-				_yield buddy_uin_to_qqnumber( m_webqq, it->second.uin, *this );
-				if ( qqnum == "-1")
+			for( it = group->memberlist.begin(); it != group->memberlist.end(); it++ ) {
+				if (it->second.qqnum.empty())
+				{
+					_yield buddy_uin_to_qqnumber( m_webqq, it->second.uin, *this );
+					if ( qqnum == "-1")
 					return;
+				}
 				it->second.qqnum = qqnum;
 			}
 		}
@@ -459,13 +463,13 @@ void WebQQ::cb_poll_msg( const boost::system::error_code& ec, read_streamptr str
 		boost::delayedcallms( get_ioservice(), 5, boost::bind( &WebQQ::do_poll_one_msg, this, ptwebqq ) );
 
 	}
-	catch( const pt::json_parser_error & jserr )
+	catch( const pt::file_parser_error & jserr )
 	{
 		std::cerr <<  __FILE__ << " : " << __LINE__ << " : " << "parse json error : " <<  jserr.what() <<  std::endl;
 		// 网络可能出了点问题，延时重试.
 		boost::delayedcallsec( get_ioservice(), 5, boost::bind( &WebQQ::do_poll_one_msg, this, ptwebqq ) );
 	}
-	catch( const pt::ptree_bad_path & badpath )
+	catch( const pt::ptree_error & badpath )
 	{
 		std::cerr <<  __FILE__ << " : " << __LINE__ << " : " <<  "bad path" <<  badpath.what() << std::endl;
 		js::write_json( std::wcout, jsonobj );
@@ -590,13 +594,23 @@ void WebQQ::process_msg( const pt::wptree &jstree )
 	BOOST_FOREACH( const pt::wptree::value_type & result, jstree.get_child( L"result" ) ) {
 		std::string poll_type = wide_utf8( result.second.get<std::wstring>( L"poll_type" ) );
 
+		if (poll_type != "group_message"){
+			js::write_json( std::wcout, jstree );
+		}
 		if( poll_type == "group_message" ) {
 			process_group_message( result.second );
 		} else if( poll_type == "sys_g_msg" ) {
 			//群消息.
 			if( result.second.get<std::wstring>( L"value.type" ) == L"group_join" ) {
-				//新加列表，reload群列表.
-				update_group_list();
+				// 新人进来 !
+				// 检查一下新人.
+				// 这个是群号.
+				std::wstring groupnumber = result.second.get<std::wstring>(L"value.t_gcode");
+				std::wstring newuseruid = result.second.get<std::wstring>(L"value.new_member");
+				qqGroup_ptr group = get_Group_by_qq(wide_utf8(groupnumber));
+
+				// 报告一下新人入群!
+				update_group_member(group, boost::bind(&WebQQ::cb_newbee_group_join, this, group, wide_utf8(newuseruid)));
 			}
 		} else if( poll_type == "buddylist_change" ) {
 			//群列表变化了，reload列表.
@@ -653,8 +667,8 @@ void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr s
 	} else {
 		// fetching more budy info.
 		BOOST_FOREACH( grouplist::value_type & v, m_groups ) {
-			update_group_qqmember( v.second );
-			update_group_member( v.second );
+			update_group_qqnumber( v.second );
+			update_group_member( v.second , dummy);
 		}
 	}
 }
@@ -709,8 +723,14 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 		siggroupnumber(group);
 		return;
 	}catch (...){
-		boost::delayedcallsec( m_io_service, 50 + boost::rand48()() % 100 , boost::bind( &WebQQ::update_group_qqmember, this, group) );
+		boost::delayedcallsec( m_io_service, 50 + boost::rand48()() % 100 , boost::bind( &WebQQ::update_group_qqnumber, this, group) );
 	}
+}
+
+void WebQQ::cb_newbee_group_join( qqGroup_ptr group,  std::string uid )
+{
+	// 报告新人入群.
+	signewbuddy(group, group->get_Buddy_by_uin(uid));
 }
 
 void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, boost::shared_ptr<qqGroup> group)
@@ -751,7 +771,7 @@ void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, boost::shared_ptr<q
 }
 
 
-void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer, boost::shared_ptr<qqGroup> group)
+void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer, boost::shared_ptr<qqGroup> group, done_callback_handler handler)
 {
 	//处理!
 	try {
@@ -768,10 +788,12 @@ void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr
 		// 开始更新成员的 QQ 号码，一次更新一个，慢慢来.
 		this->update_group_member_qq( group );
 
+		get_ioservice().post(handler);
+
 	} catch( const pt::json_parser_error & jserr ) {
 		std::cerr <<  __FILE__ << " : " << __LINE__ << " : " <<  "parse json error : " <<  jserr.what() << std::endl;
 
-		boost::delayedcallsec( m_io_service, 20, boost::bind( &WebQQ::update_group_member, this, group) );
+		boost::delayedcallsec( m_io_service, 20, boost::bind( &WebQQ::update_group_member, this, group, dummy) );
 		// 在重试之前，获取缓存文件.
 		try{
 		pt::ptree jsonobj;
