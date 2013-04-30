@@ -46,6 +46,11 @@ void webqq::on_group_found( boost::function< void (qqGroup_ptr) > cb )
 	impl->siggroupnumber.connect(cb);
 }
 
+void webqq::on_group_newbee( boost::function< void > cb )
+{
+	impl->signewbuddy.connect(cb);
+}
+
 static void dummy(){}
 
 void webqq::update_group_member(boost::shared_ptr<qqGroup> group )
