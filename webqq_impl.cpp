@@ -41,6 +41,7 @@ namespace js = boost::property_tree::json_parser;
 #include "utf8.hpp"
 #include "webqq_login.hpp"
 #include "boost/consolestr.hpp"
+#include "clean_cache.hpp"
 
 static void dummy(){}
 
@@ -53,7 +54,7 @@ static std::string parse_unescape(const std::string &);
 
 static std::string create_post_data( std::string vfwebqq )
 {
-	std::string m = boost::str( boost::format( "{\"h\":\"hello\",\"vfwebqq\":\"%s\"}" ) % vfwebqq );
+	std::string m = boost::str( boost::format( "{\"vfwebqq\":\"%s\"}" ) % vfwebqq );
 	return std::string( "r=" ) + url_encode( m.c_str() );
 }
 
@@ -86,6 +87,11 @@ WebQQ::WebQQ( boost::asio::io_service& _io_service,
 #endif
 
 	init_face_map();
+
+	// 开启个程序去清理过期 cache_* 文件
+	// webqq 每天登录 uid 变化,  而不是每次都变化.
+	// 所以 cache 有效期只有一天.
+	clean_cache(get_ioservice());
 }
 
 /**login*/
@@ -205,7 +211,7 @@ void WebQQ::update_group_list()
 		avhttp::request_opts()
 		( avhttp::http_options::request_method, "POST" )
 		( avhttp::http_options::cookie, m_cookies.lwcookies )
-		( avhttp::http_options::referer, "http://s.web2.qq.com/proxy.html?v=20101025002" )
+		( avhttp::http_options::referer, "http://s.web2.qq.com/proxy.html?v=20110412001&callback=1&id=1" )
 		( avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8" )
 		( avhttp::http_options::request_body, postdata )
 		( avhttp::http_options::content_length, boost::lexical_cast<std::string>( postdata.length() ) )
@@ -283,7 +289,7 @@ public:
 			avhttp::request_opts()
 			( avhttp::http_options::http_version , "HTTP/1.0" )
 			( avhttp::http_options::cookie, _webqq.m_cookies.lwcookies )
-			( avhttp::http_options::referer, "http://s.web2.qq.com/proxy.html?v=20110412001&callback=1&id=3" )
+			( avhttp::http_options::referer, "http://s.web2.qq.com/proxy.html?v=201304220930&callback=1&id=3" )
 			( avhttp::http_options::content_type, "UTF-8" )
 			( avhttp::http_options::connection, "close" )
 		);
@@ -886,7 +892,7 @@ void WebQQ::search_group(std::string groupqqnum, std::string vfcode, webqq::sear
 	read_streamptr stream(new avhttp::http_stream(m_io_service));
 	stream->request_options(avhttp::request_opts()
 		(avhttp::http_options::content_type, "utf-8")
-		(avhttp::http_options::referer, "http://cgi.web2.qq.com/proxy.html?v=20110412001&callback=1&id=2")
+		(avhttp::http_options::referer, "http://cgi.web2.qq.com/proxy.html?v=201304220930&callback=1&id=2")
 		(avhttp::http_options::cookie, m_cookies.lwcookies)
 		(avhttp::http_options::connection, "close")
 	);
@@ -952,7 +958,7 @@ void WebQQ::join_group(qqGroup_ptr group, std::string vfcode, webqq::join_group_
 	stream->request_options(avhttp::request_opts()
 		(avhttp::http_options::http_version, "HTTP/1.0")
 		(avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8")
-		(avhttp::http_options::referer, "http://s.web2.qq.com/proxy.html?v=20110412001&callback=1&id=1")
+		(avhttp::http_options::referer, "http://s.web2.qq.com/proxy.html?v=201304220930&callback=1&id=1")
 		(avhttp::http_options::cookie, m_cookies.lwcookies)
 		(avhttp::http_options::connection, "close")
 		(avhttp::http_options::request_method, "POST")

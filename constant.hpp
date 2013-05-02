@@ -29,7 +29,7 @@
 /* URL for get webqq version */
 #define LWQQ_URL_VERSION "http://ui.ptlogin2.qq.com/cgi-bin/ver"
 
-#define LWQQ_URL_REFERER_QUN_DETAIL "http://s.web2.qq.com/proxy.html?v=20110412001&id=3"
-#define LWQQ_URL_REFERER_DISCU_DETAIL "http://d.web2.qq.com/proxy.html?v=20110331002&id=2"
+#define LWQQ_URL_REFERER_QUN_DETAIL "http://s.web2.qq.com/proxy.html?v=201304220930&id=3"
+#define LWQQ_URL_REFERER_DISCU_DETAIL "http://d.web2.qq.com/proxy.html?v=201304220930&id=2"
 
 #define LWQQ_URL_SEND_QUN_MSG "http://d.web2.qq.com/channel/send_qun_msg2"
