@@ -8,6 +8,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/async_dir_walk.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/timedcall.hpp>
 
 namespace detail
 {
@@ -67,5 +68,6 @@ void clean_cache( boost::asio::io_service &io_service )
 	boost::async_dir_walk( io_service, boost::filesystem::path( "." ),
 						   boost::bind( detail::clean_cache_dir_walk_handler, boost::ref( io_service ), _1, _2 )
 						 );
+
+	boost::delayedcallsec(io_service, 10000 , boost::bind(clean_cache, boost::ref(io_service)));
 }
-// kate: indent-mode cstyle; indent-width 4; replace-tabs off; tab-width 4;
