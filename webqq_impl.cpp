@@ -623,9 +623,11 @@ void WebQQ::process_msg( const pt::wptree &jstree )
 			js::write_json( std::wcout, result.second );
 		} else if( poll_type == "kick_message" ) {
 			js::write_json( std::wcout, result.second );
-			m_status = LWQQ_STATUS_OFFLINE;
 			//强制下线了，重登录.
-			boost::delayedcallsec( m_io_service, 15, boost::bind( &WebQQ::login, this ) );
+			if (m_status == LWQQ_STATUS_ONLINE){
+				m_status = LWQQ_STATUS_OFFLINE;
+				boost::delayedcallsec( m_io_service, 15, boost::bind( &WebQQ::login, this ) );
+			}
 		}
 	}
 }
