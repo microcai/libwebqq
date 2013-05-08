@@ -109,22 +109,14 @@ static void async_fetch_cface_cb(const boost::system::error_code& ec,
 	callback(ec, buf);
 }
 
-
-static std::string build_img_path(const std::string & cface)
+void webqq::async_fetch_cface_std_saver( boost::system::error_code ec, boost::asio::streambuf& buf, std::string cface, boost::filesystem::path parent_path)
 {
-	// 提取前2位.
-	std::string _cface = cface;
-	boost::replace_all( _cface, "{", "" );
-	boost::replace_all( _cface, "}", "" );
-	boost::replace_all( _cface, "-", "" );
-	return std::string("images/") + _cface.substr(0, 2) + "/" + cface;
-}
+	if (!fs::exists(parent_path)){
+		fs::create_directories(parent_path);
+	}
 
-void webqq::async_fetch_cface_std_saver( boost::system::error_code ec, boost::asio::streambuf& buf, std::string cface )
-{
 	if (!ec || ec == boost::asio::error::eof){
-		std::string imgfilename = build_img_path(cface);
-		fs::create_directories(fs::path(imgfilename).parent_path());
+		std::string imgfilename = (parent_path / cface).string();
 		std::ofstream cfaceimg(imgfilename.c_str(), std::ofstream::binary|std::ofstream::out);
 		cfaceimg.write(boost::asio::buffer_cast<const char*>(buf.data()), boost::asio::buffer_size(buf.data()));
 	}
