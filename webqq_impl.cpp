@@ -88,6 +88,9 @@ WebQQ::WebQQ( boost::asio::io_service& _io_service,
 
 	init_face_map();
 
+	if (!boost::filesystem::exists("cache"))
+		boost::filesystem::create_directories("cache");
+
 	// 开启个程序去清理过期 cache_* 文件
 	// webqq 每天登录 uid 变化,  而不是每次都变化.
 	// 所以 cache 有效期只有一天.
@@ -700,7 +703,7 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 			group->qqnum = jsonobj.get<std::string>( "result.account" );
 			std::cerr <<  "qq number of group" <<  console_out_str(group->name) << "is" <<  group->qqnum << std::endl;
 			// 写缓存
-			pt::json_parser::write_json(std::string("cache_group_qqnumber") + group->gid, jsonobj);
+			pt::json_parser::write_json(std::string("cache/group_qqnumber") + group->gid, jsonobj);
 			//start polling messages, 2 connections!
 			std::cerr << "start polling messages" <<  std::endl;
 
@@ -720,7 +723,7 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 
 	try{
 	// 读取缓存
-		pt::json_parser::read_json(std::string("cache_group_qqnumber") + group->gid, jsonobj);
+		pt::json_parser::read_json(std::string("cache/group_qqnumber") + group->gid, jsonobj);
 
 		group->qqnum = jsonobj.get<std::string>( "result.account" );
 		std::cerr <<  "(cached) qq number of group" <<  console_out_str(group->name) << "is" <<  group->qqnum << std::endl;
@@ -791,7 +794,7 @@ void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr
 
 		cb_group_member_process_json(jsonobj, group);
 
-		pt::json_parser::write_json( std::string("cache_group_") + console_out_str(group->name) , jsonobj );
+		pt::json_parser::write_json( std::string("cache/group_") + console_out_str(group->name) , jsonobj );
 
 		// 开始更新成员的 QQ 号码，一次更新一个，慢慢来.
 		this->update_group_member_qq( group );
@@ -805,7 +808,7 @@ void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr
 		// 在重试之前，获取缓存文件.
 		try{
 		pt::ptree jsonobj;
-		pt::json_parser::read_json(std::string("cache_group_") + group->name , jsonobj);
+		pt::json_parser::read_json(std::string("cache/group_") + group->name , jsonobj);
 		cb_group_member_process_json(jsonobj, group);
 		}catch (...){}
 	} catch( const pt::ptree_bad_path & badpath ) {
