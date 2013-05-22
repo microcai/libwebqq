@@ -117,6 +117,7 @@ struct process_group_message_op : boost::coro::coroutine
 						msg.cface.gchatpicurl = url;
 
 						messagecontent.push_back( msg );
+						m_iterator ++;
 					}
 				}
 				else
