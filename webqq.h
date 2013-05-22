@@ -111,6 +111,11 @@ struct qqGroup {
 
 typedef boost::shared_ptr<qqGroup> qqGroup_ptr;
 
+struct qqMsgCface{
+	std::string gid, uin, vfwebqq;
+	std::string name, file_id, key, server;
+};
+
 struct qqMsg {
 	enum {
 		LWQQ_MSG_FONT,
@@ -121,7 +126,7 @@ struct qqMsg {
 	std::string font;//font name, size color.
 	std::string text;
 	int face;
-	std::string cface;
+	struct qqMsgCface cface;
 	std::string	cface_data;
 };
 
@@ -150,7 +155,7 @@ public:
 
 	void update_group_member(boost::shared_ptr<qqGroup> group );
 
-	static void async_fetch_cface(boost::asio::io_service & , std::string cface, boost::function<void(boost::system::error_code ec, boost::asio::streambuf & buf)> callback);
+	static void async_fetch_cface(boost::asio::io_service & , const qqMsgCface & cface, boost::function<void(boost::system::error_code ec, boost::asio::streambuf & buf)> callback);
 	static void async_fetch_cface_std_saver(boost::system::error_code ec, boost::asio::streambuf & buf, std::string cface, boost::filesystem::path parent_path);
 
 	typedef boost::function<void(qqGroup_ptr group, bool needvc, const std::string & vc_img_data)>	search_group_handler;

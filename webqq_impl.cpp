@@ -517,8 +517,12 @@ public:
 			{
 				if ((*p_msg)[i].type == qqMsg::LWQQ_MSG_CFACE){
 					url = boost::str(
-						boost::format( "http://w.qq.com/cgi-bin/get_group_pic?pic=%s" )
-							% url_encode( (*p_msg)[i].cface )
+						boost::format( "http://web.qq.com/cgi-bin/get_group_pic?gid=%s&uin=%s&fid=%s&pic=%s&vfwebqq=%s" )
+												% (*p_msg)[i].cface.gid
+												% (*p_msg)[i].cface.uin
+												% (*p_msg)[i].cface.file_id
+												% url_encode( (*p_msg)[i].cface.name )
+												% (*p_msg)[i].cface.vfwebqq
 					);
 					// fetch url
 					stream.reset(new avhttp::http_stream(io_service));
@@ -569,7 +573,14 @@ void WebQQ::process_group_message( const boost::property_tree::wptree& jstree )
 			} else if( content.second.begin()->second.data() == L"cface" ) {
 				qqMsg msg;
 				msg.type = qqMsg::LWQQ_MSG_CFACE;
-				msg.cface = wide_utf8( content.second.rbegin()->second.get<std::wstring> ( L"name" ) );
+				msg.cface.gid = group_code;
+				msg.cface.uin = who;
+
+				msg.cface.file_id = wide_utf8( content.second.rbegin()->second.get<std::wstring> ( L"file_id" ) );
+				msg.cface.name = wide_utf8( content.second.rbegin()->second.get<std::wstring> ( L"name" ) );
+				msg.cface.vfwebqq = this->m_vfwebqq;
+				msg.cface.key = wide_utf8( content.second.rbegin()->second.get<std::wstring> ( L"key" ) );
+				msg.cface.server = wide_utf8( content.second.rbegin()->second.get<std::wstring> ( L"server" ) );
 				messagecontent.push_back( msg );
 				has_cface = true;
 			}
@@ -604,7 +615,7 @@ void WebQQ::process_msg( const pt::wptree &jstree )
 	BOOST_FOREACH( const pt::wptree::value_type & result, jstree.get_child( L"result" ) ) {
 		std::string poll_type = wide_utf8( result.second.get<std::wstring>( L"poll_type" ) );
 
-		if (poll_type != "group_message"){
+ 		if (poll_type != "group_message"){
 			js::write_json( std::wcout, jstree );
 		}
 		if( poll_type == "group_message" ) {

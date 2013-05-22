@@ -122,11 +122,15 @@ void webqq::async_fetch_cface_std_saver( boost::system::error_code ec, boost::as
 	}
 }
 
-void webqq::async_fetch_cface(boost::asio::io_service & io_service, std::string cface, boost::function<void(boost::system::error_code ec, boost::asio::streambuf & buf)> callback)
+void webqq::async_fetch_cface(boost::asio::io_service & io_service, const qqMsgCface & cface, boost::function<void(boost::system::error_code ec, boost::asio::streambuf & buf)> callback)
 {
 	std::string url = boost::str( 
-						boost::format( "http://w.qq.com/cgi-bin/get_group_pic?pic=%s" ) 
-							% url_encode( cface )
+						boost::format( "http://web.qq.com/cgi-bin/get_group_pic?gid=%s&uin=%s&fid=%s&pic=%s&vfwebqq=%s" )
+						% cface.gid
+						% cface.uin
+						% cface.file_id
+						% url_encode( cface.name )
+						% cface.vfwebqq
 					);
 
 	read_streamptr stream;
