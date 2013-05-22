@@ -135,6 +135,10 @@ void webqq::async_fetch_cface(boost::asio::io_service & io_service, const qqMsgC
 
 	read_streamptr stream;
 	stream.reset( new avhttp::http_stream( io_service ) );
+	stream->request_options(
+		avhttp::request_opts()
+			(avhttp::http_options::cookie, cface.cookie)
+	);
 	async_http_download( stream, url, boost::bind(async_fetch_cface_cb, _1, _2, _3, callback));
 }
 

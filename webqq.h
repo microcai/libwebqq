@@ -114,6 +114,7 @@ typedef boost::shared_ptr<qqGroup> qqGroup_ptr;
 struct qqMsgCface{
 	std::string gid, uin, vfwebqq;
 	std::string name, file_id, key, server;
+	std::string cookie;
 };
 
 struct qqMsg {

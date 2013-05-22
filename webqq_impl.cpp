@@ -573,14 +573,15 @@ void WebQQ::process_group_message( const boost::property_tree::wptree& jstree )
 			} else if( content.second.begin()->second.data() == L"cface" ) {
 				qqMsg msg;
 				msg.type = qqMsg::LWQQ_MSG_CFACE;
-				msg.cface.gid = group_code;
 				msg.cface.uin = who;
+				msg.cface.gid = get_Group_by_gid(group_code)->code;
 
 				msg.cface.file_id = wide_utf8( content.second.rbegin()->second.get<std::wstring> ( L"file_id" ) );
 				msg.cface.name = wide_utf8( content.second.rbegin()->second.get<std::wstring> ( L"name" ) );
 				msg.cface.vfwebqq = this->m_vfwebqq;
 				msg.cface.key = wide_utf8( content.second.rbegin()->second.get<std::wstring> ( L"key" ) );
 				msg.cface.server = wide_utf8( content.second.rbegin()->second.get<std::wstring> ( L"server" ) );
+				msg.cface.cookie = this->m_cookies.lwcookies;
 				messagecontent.push_back( msg );
 				has_cface = true;
 			}
