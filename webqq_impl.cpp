@@ -101,7 +101,8 @@ WebQQ::WebQQ( boost::asio::io_service& _io_service,
 void WebQQ::login()
 {
 	// start login process, will call login_withvc later
-	detail::corologin( *this );
+	if (m_status == LWQQ_STATUS_OFFLINE)
+		detail::corologin( *this );
 }
 
 // login to server with vc. called by login code or by user
