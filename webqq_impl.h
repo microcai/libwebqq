@@ -115,6 +115,7 @@ typedef std::map<std::string, boost::shared_ptr<qqGroup> > grouplist;
 namespace detail {
 class corologin;
 class corologin_vc;
+class process_group_message_op;
 }
 
 class SYMBOL_HIDDEN WebQQ {
@@ -215,13 +216,13 @@ private:
 	grouplist	m_groups;
 
 	bool		m_group_msg_insending;
-	bool		m_fetch_cface;
 	boost::circular_buffer<boost::tuple<std::string, std::string, send_group_message_cb> >	m_msg_queue;
 	std::map<int, int> facemap;
 
 	friend class ::webqq;
 	friend class detail::corologin;
 	friend class detail::corologin_vc;
+	friend class detail::process_group_message_op;
 };
 
 };

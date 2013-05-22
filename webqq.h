@@ -26,6 +26,7 @@
 #include <boost/asio.hpp>
 #include <boost/function.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/concept_check.hpp>
 
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef BUILDING_DLL
@@ -115,6 +116,7 @@ struct qqMsgCface{
 	std::string gid, uin, vfwebqq;
 	std::string name, file_id, key, server;
 	std::string cookie;
+	std::string gchatpicurl;
 };
 
 struct qqMsg {
@@ -158,6 +160,9 @@ public:
 
 	static void async_fetch_cface(boost::asio::io_service & , const qqMsgCface & cface, boost::function<void(boost::system::error_code ec, boost::asio::streambuf & buf)> callback);
 	static void async_fetch_cface_std_saver(boost::system::error_code ec, boost::asio::streambuf & buf, std::string cface, boost::filesystem::path parent_path);
+
+	// get final url of the cface image
+	static void async_cface_url_final(boost::asio::io_service & , const qqMsgCface & cface, boost::function<void(boost::system::error_code ec, std::string)> callback);
 
 	typedef boost::function<void(qqGroup_ptr group, bool needvc, const std::string & vc_img_data)>	search_group_handler;
 	// 查找群，如果要验证码，则获取后带vfcode参数进行调用.否则对  vfcode 是 ""

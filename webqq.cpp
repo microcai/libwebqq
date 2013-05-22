@@ -142,6 +142,33 @@ void webqq::async_fetch_cface(boost::asio::io_service & io_service, const qqMsgC
 	async_http_download( stream, url, boost::bind(async_fetch_cface_cb, _1, _2, _3, callback));
 }
 
+static void async_cface_url_final_cb(const boost::system::error_code& ec,
+								read_streamptr stream, boost::function<void(boost::system::error_code ec, std::string)> callback)
+{
+	callback(ec, stream->location());
+}
+
+void webqq::async_cface_url_final(boost::asio::io_service & io_service, const qqMsgCface & cface, boost::function<void(boost::system::error_code ec, std::string)> callback)
+{
+	std::string url = boost::str(
+						boost::format( "http://web.qq.com/cgi-bin/get_group_pic?gid=%s&uin=%s&fid=%s&pic=%s&vfwebqq=%s" )
+						% cface.gid
+						% cface.uin
+						% cface.file_id
+						% url_encode( cface.name )
+						% cface.vfwebqq
+					);
+
+	read_streamptr stream;
+	stream.reset( new avhttp::http_stream( io_service ) );
+	stream->request_options(
+		avhttp::request_opts()
+			(avhttp::http_options::cookie, cface.cookie)
+	);
+
+	stream->max_redirects(0);
+	stream->async_open(url, boost::bind(async_cface_url_final_cb, _1, stream, callback));
+}
 
 void webqq::search_group( std::string groupqqnum, std::string vfcode, webqq::search_group_handler handler )
 {
