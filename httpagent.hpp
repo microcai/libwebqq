@@ -18,6 +18,10 @@
  */
 
 #pragma once
+
+#ifndef __HTTP_AGENT_HPP__
+#define __HTTP_AGENT_HPP__
+
 #include <boost/function.hpp>
 #include <boost/asio.hpp>
 #include <avhttp.hpp>
@@ -25,6 +29,19 @@
 #include "boost/coro/coro.hpp"
 #include "boost/coro/yield.hpp"
 
+#ifndef SYMBOL_HIDDEN
+
+#if defined _WIN32 || defined __CYGWIN__
+#define SYMBOL_HIDDEN
+#else
+#if __GNUC__ >= 4
+#define SYMBOL_HIDDEN  __attribute__ ((visibility ("hidden")))
+#else
+#define SYMBOL_HIDDEN
+#endif
+#endif
+
+#endif // SYMBOL_HIDDEN
 
 typedef boost::shared_ptr<avhttp::http_stream> read_streamptr;
 
@@ -78,3 +95,4 @@ void async_http_download(read_streamptr _stream, const avhttp::url & url, httpst
 	detail::async_http_download_op<boost::function<void ( const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & ) > >(_stream, url, _handler);
 }
 
+#endif // __HTTP_AGENT_HPP__
