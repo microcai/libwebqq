@@ -135,16 +135,21 @@ void WebQQ::send_group_message( std::string group, std::string msg, send_group_m
 void WebQQ::send_group_message_internal( std::string group, std::string msg, send_group_message_cb donecb )
 {
 	//unescape for POST
-	std::string postdata = boost::str(
-							   boost::format( "r={\"group_uin\":\"%s\", "
-									   "\"content\":\"["
-									   "\\\"%s\\\","
-									   "[\\\"font\\\",{\\\"name\\\":\\\"宋体\\\",\\\"size\\\":\\\"9\\\",\\\"style\\\":[0,0,0],\\\"color\\\":\\\"000000\\\"}]"
-									   "]\","
-									   "\"msg_id\":%ld,"
-									   "\"clientid\":\"%s\","
-									   "\"psessionid\":\"%s\"}&clientid=%s&psessionid=%s" )
-							   % group % parse_unescape( msg ) % m_msg_id % m_clientid % m_psessionid
+	std::string messagejson = boost::str(
+					boost::format("{\"group_uin\":\"%s\", "
+									"\"content\":\"["
+									"\\\"%s\\\","
+									"[\\\"font\\\",{\\\"name\\\":\\\"宋体\\\",\\\"size\\\":\\\"9\\\",\\\"style\\\":[0,0,0],\\\"color\\\":\\\"000000\\\"}]"
+									"]\","
+									"\"msg_id\":%ld,"
+									"\"clientid\":\"%s\","
+									"\"psessionid\":\"%s\"}")
+							%group % parse_unescape( msg ) % m_msg_id % m_clientid % m_psessionid
+						);
+
+	std::string postdata =  boost::str(
+							   boost::format( "r=%s&clientid=%s&psessionid=%s" )
+							   % url_encode(messagejson)
 							   % m_clientid
 							   % m_psessionid
 						   );
