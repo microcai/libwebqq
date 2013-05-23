@@ -137,7 +137,7 @@ struct process_group_message_op : boost::coro::coroutine
 private:
 	WebQQ & webqqclient;
 	boost::shared_ptr<boost::property_tree::wptree> m_jstree;
-	boost::property_tree::basic_ptree< std::wstring, std::wstring >::iterator	m_iterator, m_iterator_end;
+	boost::property_tree::wptree::iterator	m_iterator, m_iterator_end;
 	std::vector<qqMsg>	messagecontent;
 	qqMsg msg;
 
