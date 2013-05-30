@@ -16,7 +16,6 @@ namespace detail
 void clean_cache_dir_walk_handler( boost::asio::io_service & io_service, const boost::filesystem::path & item, boost::function<void( const boost::system::error_code& )> handler )
 {
 	using namespace boost::system;
-	handler( error_code() );
 
 	//boost::function<void(const boost::system::error_code&)> h = io_service.wrap(handler);
 	if( boost::filesystem::is_regular_file( item ) )
@@ -43,14 +42,16 @@ void clean_cache_dir_walk_handler( boost::asio::io_service & io_service, const b
 			}
 		}
 	}
+
+	handler( error_code() );
 }
 
 }
 
-inline void clean_cache( boost::asio::io_service &io_service )
+inline void clean_cache( boost::asio::io_service &io_service, boost::system::error_code ec =   boost::system::error_code())
 {
 	boost::async_dir_walk( io_service, boost::filesystem::path( "cache" ),
-						   boost::bind( detail::clean_cache_dir_walk_handler, boost::ref( io_service ), _1, _2 )
+							boost::bind( detail::clean_cache_dir_walk_handler, boost::ref( io_service ), _1, _2 ),
+							boost::bind( &clean_cache, boost::ref( io_service ), _1)
 						 );
-	boost::delayedcallsec( io_service, 10000 , boost::bind( clean_cache, boost::ref( io_service ) ) );
 }
