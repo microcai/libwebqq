@@ -47,12 +47,8 @@ void clean_cache_dir_walk_handler( boost::asio::io_service & io_service, const b
 
 }
 
-void clean_cache( boost::asio::io_service &io_service )
+inline void clean_cache( boost::asio::io_service &io_service )
 {
-	boost::async_dir_walk( io_service, boost::filesystem::path( "." ),
-						   boost::bind( detail::clean_cache_dir_walk_handler, boost::ref( io_service ), _1, _2 )
-						 );
-
 	boost::async_dir_walk( io_service, boost::filesystem::path( "cache" ),
 						   boost::bind( detail::clean_cache_dir_walk_handler, boost::ref( io_service ), _1, _2 )
 						 );
