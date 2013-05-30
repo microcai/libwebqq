@@ -492,6 +492,7 @@ public:
 						m_webqq.m_status = LWQQ_STATUS_ONLINE;
 						//polling group list
 						m_webqq.update_group_list();
+
 					}
 				} catch( const pt::json_parser_error & jserr ) {
 					std::cerr <<  __FILE__ << " : " <<__LINE__ << " :" <<  "parse json error :" <<  jserr.what() <<  std::endl;

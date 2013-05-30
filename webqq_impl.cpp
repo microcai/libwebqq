@@ -596,6 +596,8 @@ void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr s
 			update_group_qqnumber( v.second );
 			update_group_member( v.second , dummy);
 		}
+
+		boost::delayedcallsec( get_ioservice(), 5, boost::bind( &WebQQ::do_poll_one_msg, this, m_cookies.ptwebqq ) );
 	}
 }
 
@@ -642,8 +644,6 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 
 		group->qqnum = jsonobj.get<std::string>( "result.account" );
 		std::cerr <<  "(cached) qq number of group" <<  console_out_str(group->name) << "is" <<  group->qqnum << std::endl;
-
-		boost::delayedcallsec( get_ioservice(), 3, boost::bind( &WebQQ::do_poll_one_msg, this, m_cookies.ptwebqq ) );
 
 		// 向用户报告一个 group 出来了.
 		siggroupnumber(group);
