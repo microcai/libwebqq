@@ -13,22 +13,6 @@
 namespace detail
 {
 
-class clean_cache
-{
-	boost::asio::io_service &io_service;
-public:
-	clean_cache( boost::asio::io_service &_io_service ): io_service( _io_service )
-	{
-		// 空闲时执行.
-		avloop_idle_post( io_service, *this );
-	}
-
-	void operator()()
-	{
-
-	}
-};
-
 void clean_cache_dir_walk_handler( boost::asio::io_service & io_service, const boost::filesystem::path & item, boost::function<void( const boost::system::error_code& )> handler )
 {
 	using namespace boost::system;
