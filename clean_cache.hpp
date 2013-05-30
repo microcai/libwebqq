@@ -48,7 +48,13 @@ void clean_cache_dir_walk_handler( boost::asio::io_service & io_service, const b
 
 }
 
-inline void clean_cache( boost::asio::io_service &io_service, boost::system::error_code ec =   boost::system::error_code())
+inline void clean_cache( boost::asio::io_service &io_service);
+inline void clean_cache( boost::asio::io_service &io_service, boost::system::error_code ec)
+{
+	boost::delayedcallsec(io_service, 4000, boost::bind( &clean_cache, boost::ref( io_service )));
+}
+
+inline void clean_cache( boost::asio::io_service &io_service)
 {
 	boost::async_dir_walk( io_service, boost::filesystem::path( "cache" ),
 							boost::bind( detail::clean_cache_dir_walk_handler, boost::ref( io_service ), _1, _2 ),
