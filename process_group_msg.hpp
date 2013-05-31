@@ -73,13 +73,11 @@ struct process_group_message_op : boost::coro::coroutine
 
 		pt::wptree::value_type * content;
 
-		m_iterator = m_jstree->get_child( L"value.content" ).begin();
-		m_iterator_end = m_jstree->get_child( L"value.content" ).end();
-
-
-
 		reenter(this)
 		{
+			m_iterator = m_jstree->get_child( L"value.content" ).begin();
+			m_iterator_end = m_jstree->get_child( L"value.content" ).end();
+
 			for( ; m_iterator != m_iterator_end; m_iterator ++ )
 			{
 				content = &(*m_iterator);
@@ -117,7 +115,6 @@ struct process_group_message_op : boost::coro::coroutine
 						msg.cface.gchatpicurl = url;
 
 						messagecontent.push_back( msg );
-						m_iterator ++;
 					}
 				}
 				else
@@ -137,6 +134,7 @@ struct process_group_message_op : boost::coro::coroutine
 private:
 	WebQQ & webqqclient;
 	boost::shared_ptr<boost::property_tree::wptree> m_jstree;
+	boost::property_tree::wptree * value_content;
 	boost::property_tree::wptree::iterator	m_iterator, m_iterator_end;
 	std::vector<qqMsg>	messagecontent;
 	qqMsg msg;
