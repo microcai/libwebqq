@@ -32,6 +32,7 @@ namespace js = boost::property_tree::json_parser;
 #include <boost/scope_exit.hpp>
 #include <boost/regex/pending/unicode_iterator.hpp>
 #include "boost/timedcall.hpp"
+#include "boost/multihandler.hpp"
 
 #include "constant.hpp"
 #include "webqq.h"
@@ -477,7 +478,7 @@ void WebQQ::cb_poll_msg( const boost::system::error_code& ec, read_streamptr str
 		pt::json_parser::read_json( jsondata, jsonobj );
 		process_msg( jsonobj );
 		//开启新的 poll
-		boost::delayedcallms( get_ioservice(), 5, boost::bind( &WebQQ::do_poll_one_msg, this, ptwebqq ) );
+		do_poll_one_msg(ptwebqq);
 
 	}
 	catch( const pt::file_parser_error & jserr )
@@ -543,6 +544,7 @@ void WebQQ::process_msg( const pt::wptree &jstree )
 			//强制下线了，重登录.
 			if (m_status == LWQQ_STATUS_ONLINE){
 				m_status = LWQQ_STATUS_OFFLINE;
+				m_cookies.ptwebqq = "";
 				boost::delayedcallsec( m_io_service, 15, boost::bind( &WebQQ::login, this ) );
 			}
 		}
@@ -590,13 +592,14 @@ void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr s
 	if( retry ) {
 		boost::delayedcallsec( m_io_service, 5, boost::bind( &WebQQ::update_group_list, this ) );
 	} else {
+		int groupcount = m_groups.size();
+
+		done_callback_handler groupmembercb = boost::bindmultihandler(groupcount, boost::bind( &WebQQ::do_poll_one_msg, this, m_cookies.ptwebqq ));
 		// fetching more budy info.
 		BOOST_FOREACH( grouplist::value_type & v, m_groups ) {
 			update_group_qqnumber( v.second );
-			update_group_member( v.second , dummy);
+			update_group_member( v.second , groupmembercb);
 		}
-
-		boost::delayedcallsec( get_ioservice(), 5, boost::bind( &WebQQ::do_poll_one_msg, this, m_cookies.ptwebqq ) );
 	}
 }
 
