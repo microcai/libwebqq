@@ -105,8 +105,7 @@ void WebQQ::login()
 {
 	m_cookies.clear();
 	// start login process, will call login_withvc later
-	if (m_status == LWQQ_STATUS_OFFLINE)
-		detail::corologin( *this );
+	detail::corologin( *this );
 }
 
 // login to server with vc. called by login code or by user
