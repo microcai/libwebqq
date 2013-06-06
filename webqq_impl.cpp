@@ -103,6 +103,7 @@ WebQQ::WebQQ( boost::asio::io_service& _io_service,
 /**login*/
 void WebQQ::login()
 {
+	m_cookies.ptwebqq.clear();
 	// start login process, will call login_withvc later
 	if (m_status == LWQQ_STATUS_OFFLINE)
 		detail::corologin( *this );
