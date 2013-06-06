@@ -103,7 +103,7 @@ WebQQ::WebQQ( boost::asio::io_service& _io_service,
 /**login*/
 void WebQQ::login()
 {
-	m_cookies.ptwebqq.clear();
+	m_cookies.clear();
 	// start login process, will call login_withvc later
 	if (m_status == LWQQ_STATUS_OFFLINE)
 		detail::corologin( *this );
@@ -463,6 +463,7 @@ void WebQQ::do_poll_one_msg( std::string ptwebqq )
 void WebQQ::cb_poll_msg( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf, std::string ptwebqq)
 {
 	if( ptwebqq != m_cookies.ptwebqq ) {
+		std::cerr << "stoped polling messages" <<  std::endl;
 		return ;
 	}
 
