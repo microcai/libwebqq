@@ -105,7 +105,8 @@ void WebQQ::login()
 {
 	m_cookies.clear();
 	// start login process, will call login_withvc later
-	detail::corologin( *this );
+	if (m_status == LWQQ_STATUS_OFFLINE)
+		detail::corologin( *this );
 }
 
 // login to server with vc. called by login code or by user
@@ -182,7 +183,8 @@ void WebQQ::cb_send_msg( const boost::system::error_code& ec, read_streamptr str
 
 		if( jstree.get<int>( "retcode" ) == 108 ) {
 			// 已经断线，重新登录
-			m_status = LWQQ_STATUS_UNKNOW;
+			m_status = LWQQ_STATUS_OFFLINE;
+			m_cookies.clear();
 			// 10s 后登录.
 			boost::delayedcallsec( m_io_service, 10, boost::bind( &WebQQ::login, this ) );
 			m_group_msg_insending = false;
@@ -405,6 +407,7 @@ qqGroup_ptr WebQQ::get_Group_by_qq( std::string qq )
 void WebQQ::get_verify_image( std::string vcimgid )
 {
 	if( vcimgid.length() < 8 ) {
+		m_status = LWQQ_STATUS_OFFLINE;
 		boost::delayedcallsec( m_io_service, 10, boost::bind( &WebQQ::login, this ) );
 		return ;
 	}
@@ -510,6 +513,8 @@ void WebQQ::process_msg( const pt::wptree &jstree )
 
 	if( retcode ) {
 		if( retcode != 102 ) {
+			m_status = LWQQ_STATUS_OFFLINE;
+			m_cookies.clear();
 			boost::delayedcallsec( m_io_service, 15, boost::bind( &WebQQ::login, this ) );
 		}
 
