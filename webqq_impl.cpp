@@ -531,7 +531,8 @@ void WebQQ::process_msg( const pt::wptree &jstree )
 			process_group_message( result.second );
 		} else if( poll_type == "sys_g_msg" ) {
 			//群消息.
-			if( result.second.get<std::wstring>( L"value.type" ) == L"group_join" ) {
+			if( result.second.get<std::wstring>( L"value.type" ) == L"group_join" )
+			{
 				// 新人进来 !
 				// 检查一下新人.
 				// 这个是群号.
@@ -541,6 +542,10 @@ void WebQQ::process_msg( const pt::wptree &jstree )
 
 				// 报告一下新人入群!
 				update_group_member(group, boost::bind(&WebQQ::cb_newbee_group_join, this, group, wide_utf8(newuseruid)));
+			}else if(result.second.get<std::wstring>( L"value.type" ) == L"group_leave")
+			{
+				// 旧人滚蛋.
+
 			}
 		} else if( poll_type == "buddylist_change" ) {
 			//群列表变化了，reload列表.
