@@ -20,7 +20,7 @@ void clean_cache_dir_walk_handler( boost::asio::io_service & io_service, const b
 	//boost::function<void(const boost::system::error_code&)> h = io_service.wrap(handler);
 	if( boost::filesystem::is_regular_file( item ) )
 	{
-		boost::regex ex( "cache_.*" );
+		boost::regex ex( "group_.*" );
 		boost::cmatch what;
 
 		std::string filename  =  boost::filesystem::basename( item );
