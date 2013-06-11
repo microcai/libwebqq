@@ -24,7 +24,6 @@
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include <boost/smart_ptr/make_shared_array.hpp>
 namespace js = boost::property_tree::json_parser;
 #include <boost/make_shared.hpp>
 
