@@ -116,6 +116,7 @@ namespace detail {
 class corologin;
 class corologin_vc;
 class lwqq_change_status;
+class lwqq_update_status;
 class process_group_message_op;
 }
 

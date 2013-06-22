@@ -456,6 +456,9 @@ public:
 		{
 			//polling group list
 			m_webqq.update_group_list();
+			
+			// 每 10 分钟修改一下在线状态.
+			lwqq_update_status(m_webqq, m_webqq.m_vfwebqq);
 
 			m_webqq.m_group_msg_insending = !m_webqq.m_msg_queue.empty();
 

@@ -6,6 +6,7 @@
 #include <boost/property_tree/json_parser.hpp>
 namespace js = boost::property_tree::json_parser;
 
+#include "boost/timedcall.hpp"
 #include "boost/coro/coro.hpp"
 #include "boost/coro/yield.hpp"
 
@@ -105,6 +106,34 @@ public:
 private:
 	qqimpl::WebQQ & m_webqq;
 	boost::function<void (boost::system::error_code) > m_handler;
+};
+
+// 用于更新在线状态, 每 10 分钟更新一下.
+class lwqq_update_status{
+public:
+	lwqq_update_status(qqimpl::WebQQ & webqq, std::string vfwebqq)
+		:m_webqq(webqq), m_vfwebqq(vfwebqq)
+	{
+		boost::delayedcallsec(m_webqq.get_ioservice(), 600, *this);
+	}
+
+	void operator()()
+	{
+		if(m_webqq.m_vfwebqq == m_vfwebqq)
+		{
+			lwqq_change_status(LWQQ_STATUS_ONLINE, *this);
+		}
+	}
+
+	void operator()(boost::system::error_code ec)
+	{
+		if(m_webqq.m_vfwebqq == m_vfwebqq)
+			boost::delayedcallsec(m_webqq.get_ioservice(), 600, *this);
+	}
+
+private:
+	qqimpl::WebQQ & m_webqq;
+	std::string m_vfwebqq;
 };
 
 }
