@@ -33,6 +33,7 @@ namespace js = boost::property_tree::json_parser;
 #include <boost/regex/pending/unicode_iterator.hpp>
 #include "boost/timedcall.hpp"
 #include "boost/multihandler.hpp"
+#include "boost/consolestr.hpp"
 
 #include "constant.hpp"
 #include "webqq.h"
@@ -41,7 +42,7 @@ namespace js = boost::property_tree::json_parser;
 #include "url.hpp"
 #include "utf8.hpp"
 #include "webqq_login.hpp"
-#include "boost/consolestr.hpp"
+#include "lwqq_status.hpp"
 #include "clean_cache.hpp"
 
 #include "process_group_msg.hpp"
@@ -116,6 +117,13 @@ void WebQQ::login_withvc( std::string vccode )
 {
 	std::cout << "vc code is \"" << vccode << "\"" << std::endl;
 	detail::corologin_vc( *this, vccode );
+}
+
+// last step of a login process
+// and this will be callded every other minutes to prevent foce kick off.
+void  WebQQ::change_status(LWQQ_STATUS status, boost::function<void (boost::system::error_code) > handler)
+{
+	detail::lwqq_change_status(*this, status, handler);
 }
 
 void WebQQ::send_group_message( qqGroup& group, std::string msg, send_group_message_cb donecb )

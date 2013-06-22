@@ -115,6 +115,7 @@ typedef std::map<std::string, boost::shared_ptr<qqGroup> > grouplist;
 namespace detail {
 class corologin;
 class corologin_vc;
+class lwqq_change_status;
 class process_group_message_op;
 }
 
@@ -128,6 +129,9 @@ public:
 	// login with vc, call this if you got signeedvc signal.
 	// in signeedvc signal, you can retreve images from server.
 	void login_withvc( std::string vccode );
+	
+	// change status. This is the last step of login process.
+	void change_status(LWQQ_STATUS status, boost::function<void (boost::system::error_code) > handler);
 
 	typedef boost::function<void ( const boost::system::error_code& ec )> send_group_message_cb;
 	void send_group_message( std::string group, std::string msg, send_group_message_cb donecb );
@@ -222,6 +226,7 @@ private:
 	friend class ::webqq;
 	friend class detail::corologin;
 	friend class detail::corologin_vc;
+	friend class detail::lwqq_change_status;
 	friend class detail::process_group_message_op;
 };
 

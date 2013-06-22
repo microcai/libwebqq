@@ -411,6 +411,8 @@ private:
 // qq 登录办法-验证码登录
 class SYMBOL_HIDDEN corologin_vc : boost::coro::coroutine {
 public:
+	typedef void result_type;
+
 	corologin_vc( WebQQ & webqq, std::string _vccode )
 		: m_webqq( webqq ), vccode( _vccode ) {
 		std::string md5 = lwqq_enc_pwd( m_webqq.m_passwd.c_str(), vccode.c_str(), m_webqq.m_verifycode.uin.c_str() );
@@ -442,74 +444,40 @@ public:
 	}
 
 	// 在这里实现　QQ 的登录.
-	void operator()( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buffer ) {
-		std::string msg;
-		pt::ptree json;
+	void operator()( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buffer )
+	{
 		std::istream response( &buffer );
-		//　登录步骤.
-		reenter( this ) {
-			//set_online_status(lc, lwqq_status_to_str(lc->stat), err);
-			if( ( check_login( ec, stream, buffer ) == 0 ) && ( m_webqq.m_status == LWQQ_STATUS_ONLINE ) ) {
-				m_webqq.siglogin();
-				m_webqq.m_clientid = generate_clientid();
+		if( ( check_login( ec, stream, buffer ) == 0 ) && ( m_webqq.m_status == LWQQ_STATUS_ONLINE ) )
+		{
+			m_webqq.siglogin();
+			m_webqq.m_clientid = generate_clientid();
+			//change status,  this is the last step for login
+			// 设定在线状态.
+			m_webqq.change_status(LWQQ_STATUS_ONLINE, *this);
+		}else
+		{
+			m_webqq.get_ioservice().post( boost::bind( &WebQQ::login, &m_webqq ) );
+		}
+	}
+	
+	void operator()(const boost::system::error_code& ec)
+	{
+		if(ec)
+		{
+			// 修改在线状态失败!
+		}
+		else
+		{
+			//polling group list
+			m_webqq.update_group_list();
 
-				//change status,  this is the last step for login
-				// 设定在线状态.
+			m_webqq.m_group_msg_insending = !m_webqq.m_msg_queue.empty();
 
-				msg = boost::str(
-						  boost::format( "{\"status\":\"%s\",\"ptwebqq\":\"%s\","
-										 "\"passwd_sig\":""\"\",\"clientid\":\"%s\""
-										 ", \"psessionid\":null}" )
-						  % lwqq_status_to_str( LWQQ_STATUS_ONLINE )
-						  % m_webqq.m_cookies.ptwebqq
-						  % m_webqq.m_clientid
-					  );
-
-				msg = boost::str( boost::format( "r=%s" ) % url_encode( msg.c_str() ) );
-
-				stream.reset( new avhttp::http_stream( m_webqq.get_ioservice() ) );
-				stream->request_options(
-					avhttp::request_opts()
-					( avhttp::http_options::request_method, "POST" )
-					( avhttp::http_options::cookie, m_webqq.m_cookies.lwcookies )
-					( avhttp::http_options::referer, "http://d.web2.qq.com/proxy.html?v=20110331002&callback=1&id=2" )
-					( avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8" )
-					( avhttp::http_options::request_body, msg )
-					( avhttp::http_options::content_length, boost::lexical_cast<std::string>( msg.length() ) )
-					( avhttp::http_options::connection, "close" )
-				);
-
-				_yield async_http_download( stream, LWQQ_URL_SET_STATUS , * this );
-
-				//处理!
-				try {
-					js::read_json( response, json );
-					js::write_json( std::cout, json );
-
-					if( json.get<std::string>( "retcode" ) == "0" ) {
-						m_webqq.m_psessionid = json.get_child( "result" ).get<std::string>( "psessionid" );
-						m_webqq.m_vfwebqq = json.get_child( "result" ).get<std::string>( "vfwebqq" );
-						m_webqq.m_status = LWQQ_STATUS_ONLINE;
-						//polling group list
-						m_webqq.update_group_list();
-
-					}
-				} catch( const pt::json_parser_error & jserr ) {
-					std::cerr <<  __FILE__ << " : " <<__LINE__ << " :" <<  "parse json error :" <<  jserr.what() <<  std::endl;
-				} catch( const pt::ptree_bad_path & jserr ) {
-					std::cerr <<  __FILE__ << " : " <<__LINE__ << " :" << "parse bad path error : " <<  jserr.what() <<  std::endl;
-				}
-
-				m_webqq.m_group_msg_insending = !m_webqq.m_msg_queue.empty();
-
-				if( m_webqq.m_group_msg_insending ) {
-					boost::tuple<std::string, std::string, WebQQ::send_group_message_cb> v = m_webqq.m_msg_queue.front();
-					boost::delayedcallms( m_webqq.get_ioservice(), 500, boost::bind( &WebQQ::send_group_message_internal, &m_webqq, boost::get<0>( v ), boost::get<1>( v ), boost::get<2>( v ) ) );
-					m_webqq.m_msg_queue.pop_front();
-				}
-
-			} else {
-				m_webqq.get_ioservice().post( boost::bind( &WebQQ::login, &m_webqq ) );
+			if( m_webqq.m_group_msg_insending )
+			{
+				boost::tuple<std::string, std::string, WebQQ::send_group_message_cb> v = m_webqq.m_msg_queue.front();
+				boost::delayedcallms( m_webqq.get_ioservice(), 500, boost::bind( &WebQQ::send_group_message_internal, &m_webqq, boost::get<0>( v ), boost::get<1>( v ), boost::get<2>( v ) ) );
+				m_webqq.m_msg_queue.pop_front();
 			}
 		}
 	}
