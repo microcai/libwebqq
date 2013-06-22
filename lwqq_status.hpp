@@ -121,7 +121,7 @@ public:
 	{
 		if(m_webqq.m_vfwebqq == m_vfwebqq)
 		{
-			lwqq_change_status(LWQQ_STATUS_ONLINE, *this);
+			lwqq_change_status(m_webqq, LWQQ_STATUS_ONLINE, *this);
 		}
 	}
 
