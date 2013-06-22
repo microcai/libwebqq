@@ -111,15 +111,15 @@ private:
 // 用于更新在线状态, 每 10 分钟更新一下.
 class lwqq_update_status{
 public:
-	lwqq_update_status(qqimpl::WebQQ & webqq, std::string vfwebqq)
-		:m_webqq(webqq), m_vfwebqq(vfwebqq)
+	lwqq_update_status(qqimpl::WebQQ & webqq, std::string ptwebqq)
+		:m_webqq(webqq), m_ptwebqq(ptwebqq)
 	{
 		boost::delayedcallsec(m_webqq.get_ioservice(), 600, *this);
 	}
 
 	void operator()()
 	{
-		if(m_webqq.m_vfwebqq == m_vfwebqq)
+		if(m_webqq.m_cookies.ptwebqq == m_ptwebqq)
 		{
 			lwqq_change_status(m_webqq, LWQQ_STATUS_ONLINE, *this);
 		}
@@ -127,13 +127,13 @@ public:
 
 	void operator()(boost::system::error_code ec)
 	{
-		if(m_webqq.m_vfwebqq == m_vfwebqq)
+		if(m_webqq.m_cookies.ptwebqq == m_ptwebqq)
 			boost::delayedcallsec(m_webqq.get_ioservice(), 600, *this);
 	}
 
 private:
 	qqimpl::WebQQ & m_webqq;
-	std::string m_vfwebqq;
+	std::string m_ptwebqq;
 };
 
 }
