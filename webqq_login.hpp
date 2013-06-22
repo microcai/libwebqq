@@ -283,20 +283,6 @@ static std::string generate_clientid()
 #endif
 }
 
-static std::string lwqq_status_to_str( LWQQ_STATUS status )
-{
-	switch( status ) {
-		case LWQQ_STATUS_ONLINE: return "online"; break;
-		case LWQQ_STATUS_OFFLINE: return "offline"; break;
-		case LWQQ_STATUS_AWAY: return "away"; break;
-		case LWQQ_STATUS_HIDDEN: return "hidden"; break;
-		case LWQQ_STATUS_BUSY: return "busy"; break;
-		case LWQQ_STATUS_CALLME: return "callme"; break;
-		case LWQQ_STATUS_SLIENT: return "slient"; break;
-		default: return "unknow"; break;
-	}
-}
-
 // qq 登录办法
 class SYMBOL_HIDDEN corologin : boost::coro::coroutine {
 public:
