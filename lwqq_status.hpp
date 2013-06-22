@@ -49,10 +49,11 @@ public:
 		std::string msg = boost::str(
 					boost::format( "{\"status\":\"%s\",\"ptwebqq\":\"%s\","
 									"\"passwd_sig\":""\"\",\"clientid\":\"%s\""
-									", \"psessionid\":null}" )
+									", \"psessionid\": \"%s\"}" )
 					% lwqq_status_to_str( LWQQ_STATUS_ONLINE )
 					% m_webqq.m_cookies.ptwebqq
 					% m_webqq.m_clientid
+					% (m_webqq.m_psessionid.empty() ? std::string("null") : m_webqq.m_psessionid)
 				);
 
 		msg = boost::str( boost::format( "r=%s" ) % url_encode( msg.c_str() ) );
