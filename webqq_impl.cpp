@@ -488,7 +488,7 @@ void WebQQ::cb_poll_msg( const boost::system::error_code& ec, read_streamptr str
 	try
 	{
 		pt::json_parser::read_json( jsondata, jsonobj );
-		process_msg( jsonobj );
+		process_msg( jsonobj, ptwebqq );
 		//开启新的 poll
 		do_poll_one_msg(ptwebqq);
 
@@ -514,13 +514,19 @@ void WebQQ::process_group_message( const boost::property_tree::wptree& jstree )
 	qqimpl::detail::process_group_message_op(*this, jstree);
 }
 
-void WebQQ::process_msg( const pt::wptree &jstree )
+void WebQQ::process_msg( const pt::wptree &jstree , std::string & ptwebqq )
 {
 	//在这里解析json数据.
 	int retcode = jstree.get<int>( L"retcode" );
 
 	if( retcode ) {
-		if( retcode != 102 ) {
+		if( retcode == 116)
+		{
+			// 更新 ptwebqq
+			ptwebqq = this->m_cookies.ptwebqq = wide_utf8( jstree.get<std::wstring>( L"p") );
+			
+		}else if( retcode != 102 )
+		{
 			m_status = LWQQ_STATUS_OFFLINE;
 			m_cookies.clear();
 			boost::delayedcallsec( m_io_service, 15, boost::bind( &WebQQ::login, this ) );

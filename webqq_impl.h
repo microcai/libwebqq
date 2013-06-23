@@ -184,7 +184,7 @@ private:
 	void do_poll_one_msg( std::string ptwebqq );
 	void cb_poll_msg( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf, std::string ptwebqq );
 
-	void process_msg( const pt::wptree & jstree );
+	void process_msg( const pt::wptree & jstree,std::string & ptwebqq );
 	void process_group_message( const pt::wptree & jstree );
 	void cb_group_list( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& );
 	void cb_group_member_process_json(pt::ptree	&jsonobj, boost::shared_ptr<qqGroup>);
