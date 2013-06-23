@@ -524,6 +524,7 @@ void WebQQ::process_msg( const pt::wptree &jstree )
 			m_status = LWQQ_STATUS_OFFLINE;
 			m_cookies.clear();
 			boost::delayedcallsec( m_io_service, 15, boost::bind( &WebQQ::login, this ) );
+			js::write_json(std::wcerr, jstree);
 		}
 
 		return;
