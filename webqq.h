@@ -136,6 +136,7 @@ struct qqMsg {
 class webqq {
 public:
 	webqq( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd);
+	~webqq();
 	// 设置受到群消息的回调.
 	void on_group_msg( boost::function<void ( const std::string group_code, const std::string who, const std::vector<qqMsg> & )> cb );
 	// 发现一个群就回调.
@@ -177,7 +178,8 @@ public:
 	qqGroup_ptr get_Group_by_qq( std::string qq );
 	boost::asio::io_service	&get_ioservice();
 private:
-	class qqimpl::WebQQ * const impl;
+	
+	boost::shared_ptr<qqimpl::WebQQ> impl;
 };
 
 #endif // WEBQQ_H

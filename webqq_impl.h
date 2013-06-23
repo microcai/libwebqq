@@ -159,7 +159,7 @@ class lwqq_update_status;
 class process_group_message_op;
 }
 
-class SYMBOL_HIDDEN WebQQ {
+class SYMBOL_HIDDEN WebQQ  : public boost::enable_shared_from_this<WebQQ> {
 	typedef boost::function0<void>		done_callback_handler;
 public:
 	WebQQ( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd);

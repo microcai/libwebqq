@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
+#include <boost/make_shared.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
@@ -27,8 +27,12 @@ namespace fs = boost::filesystem;
 #include "url.hpp"
 #include "httpagent.hpp"
 
-webqq::webqq( boost::asio::io_service& asioservice, std::string qqnum, std::string passwd)
-	: impl( new qqimpl::WebQQ( asioservice, qqnum, passwd) )
+webqq::webqq( boost::asio::io_service& asio_service, std::string qqnum, std::string passwd)
+{
+	impl = boost::make_shared<qqimpl::WebQQ>( boost::ref(asio_service), qqnum, passwd);
+}
+
+webqq::~webqq()
 {
 }
 
@@ -36,7 +40,6 @@ void webqq::on_verify_code( boost::function< void ( const boost::asio::const_buf
 {
 	impl->signeedvc.connect( cb );
 }
-
 
 void webqq::on_group_msg( boost::function< void( const std::string, const std::string, const std::vector<qqMsg>& )> cb )
 {
