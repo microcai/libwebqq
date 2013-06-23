@@ -524,6 +524,7 @@ void WebQQ::process_msg( const pt::wptree &jstree , std::string & ptwebqq )
 		{
 			// 更新 ptwebqq
 			ptwebqq = this->m_cookies.ptwebqq = wide_utf8( jstree.get<std::wstring>( L"p") );
+			m_cookies.update();
 			
 		}else if( retcode != 102 )
 		{

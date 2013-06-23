@@ -108,6 +108,45 @@ typedef struct LwqqCookies {
 		verifysession.clear();
 		lwcookies.clear();
 	}
+	void update(){
+		this->lwcookies.clear();
+
+		if( this->ptvfsession.length() ) {
+			this->lwcookies += "ptvfsession=" + this->ptvfsession + "; ";
+		}
+
+		if( this->ptcz.length() ) {
+			this->lwcookies += "ptcz=" + this->ptcz + "; ";
+		}
+
+		if( this->skey.length() ) {
+			this->lwcookies += "skey=" + this->skey + "; ";
+		}
+
+		if( this->ptwebqq.length() ) {
+			this->lwcookies += "ptwebqq=" + this->ptwebqq + "; ";
+		}
+
+		if( this->ptuserinfo.length() ) {
+			this->lwcookies += "ptuserinfo=" + this->ptuserinfo + "; ";
+		}
+
+		if( this->uin.length() ) {
+			this->lwcookies += "uin=" + this->uin + "; ";
+		}
+
+		if( this->ptisp.length() ) {
+			this->lwcookies += "ptisp=" + this->ptisp + "; ";
+		}
+
+		if( this->pt2gguin.length() ) {
+			this->lwcookies += "pt2gguin=" + this->pt2gguin + "; ";
+		}
+
+		if( this->verifysession.length() ) {
+			this->lwcookies += "verifysession=" + this->verifysession + "; ";
+		}
+	}
 } LwqqCookies;
 
 typedef std::map<std::string, boost::shared_ptr<qqGroup> > grouplist;

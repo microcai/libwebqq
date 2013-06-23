@@ -208,44 +208,7 @@ static void update_cookies(  LwqqCookies *cookies, const std::string & httpheade
 #undef FREE_AND_STRDUP
 
 	if( update_cache ) {
-
-		cookies->lwcookies.clear();
-
-		if( cookies->ptvfsession.length() ) {
-			cookies->lwcookies += "ptvfsession=" + cookies->ptvfsession + "; ";
-		}
-
-		if( cookies->ptcz.length() ) {
-			cookies->lwcookies += "ptcz=" + cookies->ptcz + "; ";
-		}
-
-		if( cookies->skey.length() ) {
-			cookies->lwcookies += "skey=" + cookies->skey + "; ";
-		}
-
-		if( cookies->ptwebqq.length() ) {
-			cookies->lwcookies += "ptwebqq=" + cookies->ptwebqq + "; ";
-		}
-
-		if( cookies->ptuserinfo.length() ) {
-			cookies->lwcookies += "ptuserinfo=" + cookies->ptuserinfo + "; ";
-		}
-
-		if( cookies->uin.length() ) {
-			cookies->lwcookies += "uin=" + cookies->uin + "; ";
-		}
-
-		if( cookies->ptisp.length() ) {
-			cookies->lwcookies += "ptisp=" + cookies->ptisp + "; ";
-		}
-
-		if( cookies->pt2gguin.length() ) {
-			cookies->lwcookies += "pt2gguin=" + cookies->pt2gguin + "; ";
-		}
-
-		if( cookies->verifysession.length() ) {
-			cookies->lwcookies += "verifysession=" + cookies->verifysession + "; ";
-		}
+		cookies->update();
 	}
 }
 
