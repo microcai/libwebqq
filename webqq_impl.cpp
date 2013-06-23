@@ -107,7 +107,7 @@ void WebQQ::login()
 	m_cookies.clear();
 	// start login process, will call login_withvc later
 	if (m_status == LWQQ_STATUS_OFFLINE)
-		detail::corologin( shared_from_this() );
+		detail::corologin op( shared_from_this() );
 }
 
 // login to server with vc. called by login code or by user
@@ -116,14 +116,14 @@ void WebQQ::login()
 void WebQQ::login_withvc( std::string vccode )
 {
 	std::cout << "vc code is \"" << vccode << "\"" << std::endl;
-	detail::corologin_vc( shared_from_this(), vccode );
+	detail::corologin_vc op( shared_from_this(), vccode );
 }
 
 // last step of a login process
 // and this will be callded every other minutes to prevent foce kick off.
 void  WebQQ::change_status(LWQQ_STATUS status, boost::function<void (boost::system::error_code) > handler)
 {
-	detail::lwqq_change_status(shared_from_this(), status, handler);
+	detail::lwqq_change_status op(shared_from_this(), status, handler);
 }
 
 void WebQQ::send_group_message( qqGroup& group, std::string msg, send_group_message_cb donecb )
