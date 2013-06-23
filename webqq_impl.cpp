@@ -352,7 +352,7 @@ private:
 	boost::asio::io_service& _io_service;
 };
 
-class SYMBOL_HIDDEN update_group_member_qq : boost::coro::coroutine {
+class SYMBOL_HIDDEN update_group_member_qq : boost::asio::coroutine {
 public:
 	typedef void result_type;
 
@@ -369,7 +369,7 @@ public:
 			for( it = group->memberlist.begin(); it != group->memberlist.end(); it++ ) {
 				if (it->second.qqnum.empty())
 				{
-					_yield buddy_uin_to_qqnumber( m_webqq, it->second.uin, *this );
+					yield buddy_uin_to_qqnumber( m_webqq, it->second.uin, *this );
 					if ( qqnum == "-1")
 					return;
 				}

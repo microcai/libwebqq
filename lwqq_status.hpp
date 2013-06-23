@@ -5,10 +5,10 @@
 #include <boost/asio.hpp>
 #include <boost/property_tree/json_parser.hpp>
 namespace js = boost::property_tree::json_parser;
+#include <boost/asio/yield.hpp>
 
 #include "boost/timedcall.hpp"
-#include "boost/coro/coro.hpp"
-#include "boost/coro/yield.hpp"
+
 
 #include "webqq.h"
 

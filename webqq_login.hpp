@@ -26,10 +26,10 @@
 namespace js = boost::property_tree::json_parser;
 
 #include <avhttp.hpp>
+#include <boost/asio/yield.hpp>
 
 #include "boost/timedcall.hpp"
-#include "boost/coro/coro.hpp"
-#include "boost/coro/yield.hpp"
+
 
 #include "httpagent.hpp"
 
@@ -247,7 +247,7 @@ static std::string generate_clientid()
 }
 
 // qq 登录办法
-class SYMBOL_HIDDEN corologin : boost::coro::coroutine {
+class SYMBOL_HIDDEN corologin : boost::asio::coroutine {
 public:
 	corologin( boost::shared_ptr<qqimpl::WebQQ> webqq )
 		: m_webqq( webqq ) {
@@ -263,7 +263,7 @@ public:
 			stream.reset( new avhttp::http_stream( m_webqq->get_ioservice() ) );
 			std::cout << "Get webqq version from " <<  LWQQ_URL_VERSION <<  std::endl;
 			// 首先获得版本.
-			_yield async_http_download( stream, LWQQ_URL_VERSION, *this );
+			yield async_http_download( stream, LWQQ_URL_VERSION, *this );
 
 			m_webqq->m_version = parse_version( buf );
 
@@ -284,7 +284,7 @@ public:
 				( avhttp::http_options::connection, "close" )
 			);
 
-			_yield async_http_download( stream,
+			yield async_http_download( stream,
 										/*url*/ boost::str( boost::format( "%s%s?uin=%s&appid=%s" ) % LWQQ_URL_CHECK_HOST % VCCHECKPATH % m_webqq->m_qqnum % APPID ),
 										*this );
 
@@ -358,7 +358,7 @@ private:
 };
 
 // qq 登录办法-验证码登录
-class SYMBOL_HIDDEN corologin_vc : boost::coro::coroutine {
+class SYMBOL_HIDDEN corologin_vc : boost::asio::coroutine {
 public:
 	typedef void result_type;
 

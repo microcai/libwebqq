@@ -26,8 +26,7 @@
 #include <boost/asio.hpp>
 #include <avhttp.hpp>
 
-#include "boost/coro/coro.hpp"
-#include "boost/coro/yield.hpp"
+#include <boost/asio/yield.hpp>
 
 #ifndef SYMBOL_HIDDEN
 
@@ -48,7 +47,7 @@ typedef boost::shared_ptr<avhttp::http_stream> read_streamptr;
 namespace detail{
 
 template<class httpstreamhandler>
-class SYMBOL_HIDDEN async_http_download_op : boost::coro::coroutine {
+class SYMBOL_HIDDEN async_http_download_op : boost::asio::coroutine {
 public:
 	typedef void result_type;
 public:
@@ -64,7 +63,7 @@ public:
 				content_length = stream->response_options().find( avhttp::http_options::content_length );
 
 				while( !ec ) {
-					_yield stream->async_read_some( sb->prepare( 4096 ), *this );
+					yield stream->async_read_some( sb->prepare( 4096 ), *this );
 					sb->commit( length );
 					readed += length;
 

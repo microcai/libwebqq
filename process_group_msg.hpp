@@ -31,9 +31,9 @@ namespace js = boost::property_tree::json_parser;
 
 #include <avhttp.hpp>
 
+#include <boost/asio/yield.hpp>
+
 #include "boost/timedcall.hpp"
-#include "boost/coro/coro.hpp"
-#include "boost/coro/yield.hpp"
 
 #include "httpagent.hpp"
 
@@ -51,7 +51,7 @@ namespace qqimpl
 namespace detail
 {
 
-struct process_group_message_op : boost::coro::coroutine
+struct process_group_message_op : boost::asio::coroutine
 {
 	typedef void result_type;
 
@@ -110,7 +110,7 @@ struct process_group_message_op : boost::coro::coroutine
 						msg.cface.server = wide_utf8( content->second.rbegin()->second.get<std::wstring> ( L"server" ) );
 						msg.cface.cookie = webqqclient.m_cookies.lwcookies;
 
-						_yield webqq::async_cface_url_final(webqqclient.get_ioservice(), msg.cface, *this );
+						yield webqq::async_cface_url_final(webqqclient.get_ioservice(), msg.cface, *this );
 						msg.cface.gchatpicurl = url;
 
 						messagecontent.push_back( msg );
