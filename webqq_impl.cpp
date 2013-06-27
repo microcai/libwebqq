@@ -436,7 +436,8 @@ void WebQQ::get_verify_image( std::string vcimgid )
 
 void WebQQ::cb_get_verify_image( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer )
 {
-	detail::update_cookies( &m_cookies, stream->response_options().header_string() , "verifysession", 1 );
+	detail::update_cookies( &m_cookies, stream->response_options().header_string() , "verifysession");
+	m_cookies.update();
 
 	// verify image is now in response
 	signeedvc( buffer.data() );
@@ -764,7 +765,8 @@ void WebQQ::cb_fetch_aid(const boost::system::error_code& ec, read_streamptr str
 	if (!ec || ec == boost::asio::error::eof)
 	{
 		// 获取到咯, 更新 verifysession
-		detail::update_cookies(&m_cookies, stream->response_options().header_string(), "verifysession", 1);
+		detail::update_cookies(&m_cookies, stream->response_options().header_string(), "verifysession");
+		m_cookies.update();
 
 		handler(boost::system::error_code(), std::string(boost::asio::buffer_cast<const char*>(buf.data()), boost::asio::buffer_size(buf.data())));
 		return;

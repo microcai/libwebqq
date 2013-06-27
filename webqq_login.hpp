@@ -173,54 +173,80 @@ static std::string get_cookie( const std::string & cookie, std::string key )
 	return cookie.substr( keyindex , valend - keyindex );
 }
 
-static void update_cookies(  LwqqCookies *cookies, const std::string & httpheader,
-							std::string key, int update_cache )
+static void update_cookies(LwqqCookies *cookies, const std::string & httpheader,
+							std::string key)
 {
 	std::string value = get_cookie( httpheader, key );
 
 	if( value.empty() )
 		return ;
 
-#define FREE_AND_STRDUP(a, b)    a = b
-
-	if( key ==  "ptvfsession" ) {
-		FREE_AND_STRDUP( cookies->ptvfsession, value );
-	} else if( ( key == "ptcz" ) ) {
-		FREE_AND_STRDUP( cookies->ptcz, value );
-	} else if( ( key == "skey" ) ) {
-		FREE_AND_STRDUP( cookies->skey, value );
-	} else if( ( key == "ptwebqq" ) ) {
-		FREE_AND_STRDUP( cookies->ptwebqq, value );
-	} else if( ( key == "ptuserinfo" ) ) {
-		FREE_AND_STRDUP( cookies->ptuserinfo, value );
-	} else if( ( key == "uin" ) ) {
-		FREE_AND_STRDUP( cookies->uin, value );
-	} else if( ( key == "ptisp" ) ) {
-		FREE_AND_STRDUP( cookies->ptisp, value );
-	} else if( ( key == "pt2gguin" ) ) {
-		FREE_AND_STRDUP( cookies->pt2gguin, value );
-	} else if( ( key == "verifysession" ) ) {
-		FREE_AND_STRDUP( cookies->verifysession, value );
-	} else {
-		std::cerr <<  "warring: No this cookie: " <<  key <<  std::endl;
+	if( key ==  "ptvfsession" )
+	{
+		cookies->ptvfsession, value ;
 	}
-
-#undef FREE_AND_STRDUP
-
-	if( update_cache ) {
-		cookies->update();
+	else if( ( key == "ptcz" ) )
+	{
+		cookies->ptcz = value ;
+	}
+	else if( ( key == "skey" ) )
+	{
+		cookies->skey = value ;
+	}
+	else if( ( key == "ptwebqq" ) )
+	{
+		cookies->ptwebqq = value ;
+	}
+	else if( ( key == "ptuserinfo" ) )
+	{
+		cookies->ptuserinfo = value ;
+	}
+	else if( ( key == "uin" ) )
+	{
+		cookies->uin = value ;
+	}
+	else if( ( key == "ptisp" ) )
+	{
+		cookies->ptisp = value ;
+	}
+	else if( ( key == "pt2gguin" ) )
+	{
+		cookies->pt2gguin = value ;
+	}
+	else if( ( key == "pt4_token" ) )
+	{
+		cookies->pt4_token = value;
+	}
+	else if( ( key == "pt4_token" ) )
+	{
+		cookies->pt4_token =  value;
+	}
+	else if( ( key == "verifysession" ) )
+	{
+		cookies->verifysession = value ;
+	}
+	else if( ( key == "rv2" ) )
+	{
+		cookies->rv2 = value ;
+	}	else
+	{
+		std::cerr <<  "warring: No this cookie: " <<  key <<  std::endl;
 	}
 }
 
 static void save_cookie( LwqqCookies * cookies, const std::string & httpheader )
 {
-	update_cookies( cookies, httpheader, "ptcz", 0 );
-	update_cookies( cookies, httpheader, "skey",  0 );
-	update_cookies( cookies, httpheader, "ptwebqq", 0 );
-	update_cookies( cookies, httpheader, "ptuserinfo", 0 );
-	update_cookies( cookies, httpheader, "uin", 0 );
-	update_cookies( cookies, httpheader, "ptisp", 0 );
-	update_cookies( cookies, httpheader, "pt2gguin", 1 );
+	update_cookies( cookies, httpheader, "ptcz" );
+	update_cookies( cookies, httpheader, "skey" );
+	update_cookies( cookies, httpheader, "ptwebqq" );
+	update_cookies( cookies, httpheader, "ptuserinfo" );
+	update_cookies( cookies, httpheader, "uin" );
+	update_cookies( cookies, httpheader, "ptisp" );
+	update_cookies( cookies, httpheader, "pt2gguin" );
+	update_cookies( cookies, httpheader, "pt4_token" );
+	update_cookies( cookies, httpheader, "ptui_loginuin" );
+	update_cookies( cookies, httpheader, "rv2" );
+	cookies->update();
 }
 
 
@@ -333,7 +359,8 @@ public:
 			*c = '\0';
 
 			/* We need get the ptvfsession from the header "Set-Cookie" */
-			update_cookies( &( m_webqq->m_cookies ), stream->response_options().header_string(), "ptvfsession", 1 );
+			update_cookies( &( m_webqq->m_cookies ), stream->response_options().header_string(), "ptvfsession" );
+			m_webqq->m_cookies.update();
 
 			m_webqq->login_withvc( s );
 		} else if( *c == '1' ) {
