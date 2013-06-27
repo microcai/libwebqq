@@ -181,9 +181,12 @@ static void update_cookies(LwqqCookies *cookies, const std::string & httpheader,
 	if( value.empty() )
 		return ;
 
-	if( key ==  "ptvfsession" )
+	if( key ==  "RK" )
 	{
-		cookies->ptvfsession, value ;
+		cookies->RK =  value ;
+	}else if( key ==  "ptvfsession" )
+	{
+		cookies->ptvfsession = value ;
 	}
 	else if( ( key == "ptcz" ) )
 	{
@@ -225,6 +228,14 @@ static void update_cookies(LwqqCookies *cookies, const std::string & httpheader,
 	{
 		cookies->verifysession = value ;
 	}
+	else if( ( key == "superkey" ) )
+	{
+		cookies->superkey = value ;
+	}
+	else if( ( key == "superuin" ) )
+	{
+		cookies->superuin = value ;
+	}
 	else if( ( key == "rv2" ) )
 	{
 		cookies->rv2 = value ;
@@ -246,6 +257,9 @@ static void save_cookie( LwqqCookies * cookies, const std::string & httpheader )
 	update_cookies( cookies, httpheader, "pt4_token" );
 	update_cookies( cookies, httpheader, "ptui_loginuin" );
 	update_cookies( cookies, httpheader, "rv2" );
+	update_cookies( cookies, httpheader, "RK" );
+	update_cookies( cookies, httpheader, "superkey" );
+	update_cookies( cookies, httpheader, "superuin" );
 	cookies->update();
 }
 

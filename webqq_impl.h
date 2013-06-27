@@ -100,6 +100,9 @@ typedef struct LwqqCookies {
 	std::string lwcookies;
 	std::string rv2;
 
+	std::string RK;
+	std::string superkey, superuin;
+
 	void clear() {
 		ptvfsession.clear();          /**< ptvfsession */
 		ptcz.clear();
@@ -114,9 +117,15 @@ typedef struct LwqqCookies {
 		verifysession.clear();
 		lwcookies.clear();
 		rv2.clear();
+		superkey.clear();
+		superuin.clear();
 	}
 	void update(){
 		this->lwcookies.clear();
+
+		if( this->RK.length() ) {
+			this->lwcookies += "RK=" + this->RK + "; ";
+		}
 
 		if( this->ptvfsession.length() ) {
 			this->lwcookies += "ptvfsession=" + this->ptvfsession + "; ";
@@ -161,6 +170,12 @@ typedef struct LwqqCookies {
 		}
 		if( this->rv2.length() ) {
 			this->lwcookies += "rv2=" + this->rv2 + "; ";
+		}
+		if( this->superkey.length() ) {
+			this->lwcookies += "superkey=" + this->superkey + "; ";
+		}
+ 		if( this->superuin.length() ) {
+			this->lwcookies += "superuin=" + this->superuin + "; ";
 		}
 	}
 } LwqqCookies;
