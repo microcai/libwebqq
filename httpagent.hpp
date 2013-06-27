@@ -91,7 +91,7 @@ private:
 template<class httpstreamhandler>
 void async_http_download(read_streamptr _stream, const avhttp::url & url, httpstreamhandler _handler)
 {
-	detail::async_http_download_op<boost::function<void ( const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & ) > >(_stream, url, _handler);
+	::detail::async_http_download_op<boost::function<void ( const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & ) > >(_stream, url, _handler);
 }
 
 #endif // __HTTP_AGENT_HPP__

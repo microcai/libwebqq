@@ -47,6 +47,25 @@ namespace js = boost::property_tree::json_parser;
 
 #include "process_group_msg.hpp"
 
+#ifdef WIN32
+
+#include <stdarg.h>
+
+// '_vsnprintf': This function or variable may be unsafe
+#pragma warning(disable:4996)
+
+inline int snprintf(char* buf, int len, char const* fmt, ...)
+{
+	va_list lp;
+	va_start(lp, fmt);
+	int ret = _vsnprintf(buf, len, fmt, lp);
+	va_end(lp);
+	if (ret < 0) { buf[len-1] = 0; ret = len-1; }
+	return ret;
+}
+
+#endif // WIN32
+
 static void dummy(){}
 
 using namespace qqimpl;
@@ -604,7 +623,7 @@ void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr s
 				}
 
 				this->m_groups.insert( std::make_pair( newgroup->gid, newgroup ) );
-				std::cerr <<  __FILE__ << " : " << __LINE__ << " : " << console_out_str("qq群") << console_out_str(newgroup->gid) <<  console_out_str(newgroup->name) << std::endl;
+				std::cerr <<  __FILE__ << " : " << __LINE__ << " : " << console_out_str("qq群 ") << console_out_str(newgroup->gid) <<  console_out_str(newgroup->name) << std::endl;
 
 			}
 		}
@@ -874,7 +893,7 @@ void WebQQ::cb_join_group( qqGroup_ptr group, const boost::system::error_code& e
 			// 获取群的其他信息
 			// GET http://s.web2.qq.com/api/get_group_public_info2?gcode=3272859045&vfwebqq=f08e7a200fd0be375d753d3fedfd24e99f6ba0a8063005030bb95f9fa4b7e0c30415ae74e77709e3&t=1365161430494 HTTP/1.1
 		}else if(jsobj.get<int>("retcode") == 100001){
-			std::cout << console_out_str("原因：") <<   jsobj.get<std::string>("tips") <<  std::endl;
+			std::cout << console_out_str("原因： ") <<   jsobj.get<std::string>("tips") <<  std::endl;
 			// 需要验证码, 先获取验证码图片，然后回调
 			fetch_aid(boost::str(boost::format("aid=%s&_=%ld") % APPID % std::time(NULL)), boost::bind(cb_join_group_vcode, _1, _2, handler, group) );
 		}else{
@@ -980,7 +999,7 @@ static std::string parse_unescape( const std::string & source )
 		}
 	}catch (const std::out_of_range &e)
 	{
-		std::cerr << __FILE__ <<  __LINE__<<  " "  <<  console_out_str("QQ消息字符串包含非法字符") <<  std::endl;
+		std::cerr << __FILE__ <<  __LINE__<<  " "  <<  console_out_str("QQ消息字符串包含非法字符 ") <<  std::endl;
 	}
 
 	return result;
