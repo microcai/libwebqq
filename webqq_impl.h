@@ -94,8 +94,15 @@ typedef struct LwqqCookies {
 	std::string uin;
 	std::string ptisp;
 	std::string pt2gguin;
+	std::string pt4_token;
+	std::string ptui_loginuin;
 	std::string verifysession;
 	std::string lwcookies;
+	std::string rv2;
+
+	std::string RK;
+	std::string superkey, superuin;
+
 	void clear() {
 		ptvfsession.clear();          /**< ptvfsession */
 		ptcz.clear();
@@ -105,11 +112,20 @@ typedef struct LwqqCookies {
 		uin.clear();
 		ptisp.clear();
 		pt2gguin.clear();
+		pt4_token.clear();
+		ptui_loginuin.clear();
 		verifysession.clear();
 		lwcookies.clear();
+		rv2.clear();
+		superkey.clear();
+		superuin.clear();
 	}
 	void update(){
 		this->lwcookies.clear();
+
+		if( this->RK.length() ) {
+			this->lwcookies += "RK=" + this->RK + "; ";
+		}
 
 		if( this->ptvfsession.length() ) {
 			this->lwcookies += "ptvfsession=" + this->ptvfsession + "; ";
@@ -142,9 +158,24 @@ typedef struct LwqqCookies {
 		if( this->pt2gguin.length() ) {
 			this->lwcookies += "pt2gguin=" + this->pt2gguin + "; ";
 		}
+		if( this->pt4_token.length() ) {
+			this->lwcookies += "pt4_token=" + this->pt4_token + "; ";
+		}
+		if( this->ptui_loginuin.length() ) {
+			this->lwcookies += "ptui_loginuin=" + this->ptui_loginuin + "; ";
+		}
 
 		if( this->verifysession.length() ) {
 			this->lwcookies += "verifysession=" + this->verifysession + "; ";
+		}
+		if( this->rv2.length() ) {
+			this->lwcookies += "rv2=" + this->rv2 + "; ";
+		}
+		if( this->superkey.length() ) {
+			this->lwcookies += "superkey=" + this->superkey + "; ";
+		}
+ 		if( this->superuin.length() ) {
+			this->lwcookies += "superuin=" + this->superuin + "; ";
 		}
 	}
 } LwqqCookies;
