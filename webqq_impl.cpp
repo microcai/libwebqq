@@ -462,6 +462,11 @@ void WebQQ::cb_get_verify_image( const boost::system::error_code& ec, read_strea
 	signeedvc( buffer.data() );
 }
 
+static void cb_get_msg_tip( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf)
+{
+	// 忽略错误.
+}
+
 void WebQQ::do_poll_one_msg( std::string ptwebqq )
 {
 	/* Create a POST request */
@@ -486,8 +491,23 @@ void WebQQ::do_poll_one_msg( std::string ptwebqq )
 							   );
 
 	async_http_download( pollstream, "http://d.web2.qq.com/channel/poll2",
-						 boost::bind( &WebQQ::cb_poll_msg, this, _1, _2, _3, ptwebqq )
+							boost::bind( &WebQQ::cb_poll_msg, this, _1, _2, _3, ptwebqq )
 					   );
+	// 搞一个 GET 的长维护
+	read_streamptr get_msg_tip(new avhttp::http_stream( m_io_service ));
+	get_msg_tip->request_options( avhttp::request_opts()
+								 ( avhttp::http_options::request_method, "POST" )
+								 ( avhttp::http_options::cookie, m_cookies.lwcookies )
+								 ( "cookie2", "$Version=1" )
+								 ( avhttp::http_options::referer, "http://d.web2.qq.com/proxy.html?v=20101025002" )
+								 ( avhttp::http_options::request_body, msg )
+								 ( avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8" )
+								 ( avhttp::http_options::content_length, boost::lexical_cast<std::string>( msg.length() ) )
+								 ( avhttp::http_options::connection, "close" )
+								);
+
+	async_http_download(get_msg_tip, "http://webqq.qq.com/web2/get_msg_tip?uin=&tp=1&id=0&retype=1&rc=1&lv=3&t=1348458711542",
+							cb_get_msg_tip);
 }
 
 void WebQQ::cb_poll_msg( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf, std::string ptwebqq)
