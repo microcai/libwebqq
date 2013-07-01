@@ -79,6 +79,7 @@ public:
 		pt::ptree json;
 		std::istream response( &buffer );
 
+		if (!ec){
 		//　登录步骤.
 		//处理!
 		try {
@@ -98,11 +99,9 @@ public:
 		} catch( const pt::ptree_bad_path & jserr ) {
 			std::cerr <<  __FILE__ << " : " <<__LINE__ << " :" << "parse bad path error : " <<  jserr.what() <<  std::endl;
 		}
+		}
 
-		if(ec)
-			m_handler(ec);
-		else
-			m_handler(boost::system::errc::make_error_code(boost::system::errc::protocol_error));
+		m_handler(boost::system::errc::make_error_code(boost::system::errc::protocol_error));
 	}
 private:
 	boost::shared_ptr<qqimpl::WebQQ> m_webqq;
