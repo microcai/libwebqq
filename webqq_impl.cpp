@@ -517,6 +517,13 @@ void WebQQ::cb_poll_msg( const boost::system::error_code& ec, read_streamptr str
 		return ;
 	}
 
+	if ( ec ){
+		// 出现网络错误, 重试.
+		//开启新的 poll
+		do_poll_one_msg(ptwebqq);
+		return;
+	}
+
 	std::wstring response = utf8_wide( std::string( boost::asio::buffer_cast<const char*>( buf.data() ) , buf.size() ) );
 
 	pt::wptree	jsonobj;
@@ -624,37 +631,40 @@ void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr s
 	std::istream jsondata( &buffer );
 	bool retry = false;
 
-	//处理!
-	try {
-		pt::json_parser::read_json( jsondata, jsonobj );
+	if (!ec){
+		//处理!
+		try {
+			pt::json_parser::read_json( jsondata, jsonobj );
 
-		//TODO, group list
-		if( !( retry = !( jsonobj.get<int>( "retcode" ) == 0 ) ) ) {
-			BOOST_FOREACH( pt::ptree::value_type result,
-						   jsonobj.get_child( "result" ).get_child( "gnamelist" ) ) {
-				boost::shared_ptr<qqGroup>	newgroup(new qqGroup);
-				newgroup->gid = result.second.get<std::string>( "gid" );
-				newgroup->name = result.second.get<std::string>( "name" );
-				newgroup->code = result.second.get<std::string>( "code" );
+			//TODO, group list
+			if( !( retry = !( jsonobj.get<int>( "retcode" ) == 0 ) ) ) {
+				BOOST_FOREACH( pt::ptree::value_type result,
+							jsonobj.get_child( "result" ).get_child( "gnamelist" ) ) {
+					boost::shared_ptr<qqGroup>	newgroup(new qqGroup);
+					newgroup->gid = result.second.get<std::string>( "gid" );
+					newgroup->name = result.second.get<std::string>( "name" );
+					newgroup->code = result.second.get<std::string>( "code" );
 
-				if( newgroup->gid[0] == '-' ) {
-					retry = true;
-					std::cerr <<  __FILE__ << " : " << __LINE__ << " : " <<  "qqGroup get error" << std::endl;
-					continue;
+					if( newgroup->gid[0] == '-' ) {
+						retry = true;
+						std::cerr <<  __FILE__ << " : " << __LINE__ << " : " <<  "qqGroup get error" << std::endl;
+						continue;
+					}
+
+					this->m_groups.insert( std::make_pair( newgroup->gid, newgroup ) );
+					std::cerr <<  __FILE__ << " : " << __LINE__ << " : " << console_out_str("qq群 ") << console_out_str(newgroup->gid) <<  console_out_str(newgroup->name) << std::endl;
+
 				}
-
-				this->m_groups.insert( std::make_pair( newgroup->gid, newgroup ) );
-				std::cerr <<  __FILE__ << " : " << __LINE__ << " : " << console_out_str("qq群 ") << console_out_str(newgroup->gid) <<  console_out_str(newgroup->name) << std::endl;
-
 			}
+		} catch( const pt::json_parser_error & jserr ) {
+			retry = true;
+			std::cerr << __FILE__ << " : " << __LINE__ << " : " <<  "parse json error : " <<  console_out_str(jserr.what()) << std::endl;
+		} catch( const pt::ptree_bad_path & badpath ) {
+			retry = true;
+			std::cerr << __FILE__ << " : " << __LINE__ << " : " <<   "bad path error " <<  badpath.what() << std::endl;
 		}
-	} catch( const pt::json_parser_error & jserr ) {
-		retry = true;
-		std::cerr << __FILE__ << " : " << __LINE__ << " : " <<  "parse json error : " <<  console_out_str(jserr.what()) << std::endl;
-	} catch( const pt::ptree_bad_path & badpath ) {
-		retry = true;
-		std::cerr << __FILE__ << " : " << __LINE__ << " : " <<   "bad path error " <<  badpath.what() << std::endl;
-	}
+	}else
+		retry = 1;
 
 	if( retry ) {
 		boost::delayedcallsec( m_io_service, 5, boost::bind( &WebQQ::update_group_list, shared_from_this() ) );
