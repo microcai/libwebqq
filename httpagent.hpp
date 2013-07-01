@@ -62,7 +62,7 @@ public:
 			if( !ec ) {
 				content_length = stream->response_options().find( avhttp::http_options::content_length );
 
-				while( !ec ) {
+				while( !ec && length >0) {
 					yield stream->async_read_some( sb->prepare( 4096 ), *this );
 					sb->commit( length );
 					readed += length;
