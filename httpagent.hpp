@@ -48,13 +48,27 @@ typedef boost::shared_ptr<avhttp::http_stream> read_streamptr;
 
 namespace detail{
 
+// match condition!
+static inline std::size_t async_http_download_condition(boost::system::error_code ec, std::size_t bytes_transferred, std::string content_length)
+{
+	if (ec)
+		return 0;
+
+	if ( content_length.empty() ){
+		return 4096;
+	}else{
+		// 读取到 content_length 是吧.
+		return boost::lexical_cast<std::size_t>( content_length ) - bytes_transferred;
+	}
+}
+
 template<class httpstreamhandler>
 class SYMBOL_HIDDEN async_http_download_op : boost::asio::coroutine {
 public:
 	typedef void result_type;
 public:
 	async_http_download_op( read_streamptr _stream, const avhttp::url & url, httpstreamhandler _handler )
-		: handler( _handler ), stream( _stream ), sb( new boost::asio::streambuf() ) , readed( 0 )
+		: handler( _handler ), stream( _stream ), sb( new boost::asio::streambuf() )
 	{
 		stream->async_open( url, *this );
 	}
@@ -65,19 +79,10 @@ public:
 			if( !ec ) {
 				content_length = stream->response_options().find( avhttp::http_options::content_length );
 
-				do{
-					yield stream->async_read_some( sb->prepare( 4096 ), *this );
-					sb->commit( length );
-					readed += length;
-
-					if( !content_length.empty() &&  readed == boost::lexical_cast<std::size_t>( content_length ) ) {
-						handler(boost::system::error_code(), stream, *sb );
-						return ;
-					}
-				}while( (!ec || ec == boost::asio::error::eof) && length >0 ) ;
+				yield boost::asio::async_read(*stream, *sb, boost::bind(async_http_download_condition, _1 , _2, content_length), *this );
 			}
 
-			if (ec == boost::asio::error::eof &&  !content_length.empty() && readed == boost::lexical_cast<std::size_t>( content_length ) )
+			if (ec == boost::asio::error::eof &&  !content_length.empty() && length == boost::lexical_cast<std::size_t>( content_length ) )
 			{
 				handler(boost::system::error_code(), stream, *sb );
 			}else{
@@ -88,7 +93,6 @@ public:
 	}
 
 private:
-	std::size_t	readed;
 	std::string content_length;
 	read_streamptr stream;
 	httpstreamhandler handler;

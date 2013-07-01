@@ -301,7 +301,6 @@ void WebQQ::update_group_member(boost::shared_ptr<qqGroup> group , done_callback
 					  );
 	stream->request_options(
 		avhttp::request_opts()
-		( avhttp::http_options::http_version , "HTTP/1.0" )
 		( avhttp::http_options::cookie, m_cookies.lwcookies )
 		( avhttp::http_options::referer, LWQQ_URL_REFERER_QUN_DETAIL )
 		( avhttp::http_options::connection, "close" )
