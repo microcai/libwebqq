@@ -22,6 +22,7 @@
 #ifndef __HTTP_AGENT_HPP__
 #define __HTTP_AGENT_HPP__
 
+#include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 #include <boost/asio.hpp>
 #include <avhttp.hpp>
@@ -41,6 +42,7 @@
 #endif
 
 #endif // SYMBOL_HIDDEN
+
 
 typedef boost::shared_ptr<avhttp::http_stream> read_streamptr;
 
@@ -63,7 +65,7 @@ public:
 			if( !ec ) {
 				content_length = stream->response_options().find( avhttp::http_options::content_length );
 
-				while( (!ec || ec == boost::asio::error::eof) && length >0  ) {
+				do{
 					yield stream->async_read_some( sb->prepare( 4096 ), *this );
 					sb->commit( length );
 					readed += length;
@@ -72,7 +74,7 @@ public:
 						handler(boost::system::error_code(), stream, *sb );
 						return ;
 					}
-				}
+				}while( (!ec || ec == boost::asio::error::eof) && length >0 ) ;
 			}
 
 			if (ec == boost::asio::error::eof &&  !content_length.empty() && readed == boost::lexical_cast<std::size_t>( content_length ) )
