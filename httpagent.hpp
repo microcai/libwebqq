@@ -68,13 +68,17 @@ public:
 					readed += length;
 
 					if( !content_length.empty() &&  readed == boost::lexical_cast<std::size_t>( content_length ) ) {
-						handler( boost::asio::error::make_error_code( boost::asio::error::eof ), stream, *sb );
+						handler(boost::system::error_code(), stream, *sb );
 						return ;
 					}
 				}
 			}
+			if (ec == boost::asio::error::eof){
+				handler( boost::system::error_code(), stream, *sb );
+			}else{
+				handler( ec, stream, *sb );
+			}
 
-			handler( ec, stream, *sb );
 		}
 	}
 
