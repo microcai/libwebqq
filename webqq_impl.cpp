@@ -343,7 +343,6 @@ public:
 			( avhttp::http_options::content_type, "UTF-8" )
 			( avhttp::http_options::connection, "close" )
 		);
-stream->content_length();
 
 		boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
 
