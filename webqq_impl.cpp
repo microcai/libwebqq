@@ -551,7 +551,7 @@ void WebQQ::process_group_message( const boost::property_tree::wptree& jstree )
 	qqimpl::detail::process_group_message_op(*this, jstree);
 }
 
-static void cb_get_msg_tip(const boost::system::error_code& ec, std::size_t bytes_transfered, read_streamptr stream)
+static void cb_get_msg_tip(const boost::system::error_code& ec, std::size_t bytes_transfered, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer)
 {
 	// 忽略错误.
 }
@@ -580,7 +580,7 @@ void WebQQ::process_msg( const pt::wptree &jstree , std::string & ptwebqq )
 			boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
 
 			avhttp::misc::async_read_body( *get_msg_tip, "http://webqq.qq.com/web2/get_msg_tip?uin=&tp=1&id=0&retype=1&rc=1&lv=3&t=1348458711542",
-								* buffer, boost::bind(&cb_get_msg_tip, _1, _2, get_msg_tip));
+								* buffer, boost::bind(&cb_get_msg_tip, _1, _2, get_msg_tip, buffer));
 		}
 		else
 		{
