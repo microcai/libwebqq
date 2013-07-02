@@ -9,3 +9,7 @@ include_directories(..)
 add_library(webqq STATIC webqq.cpp webqq_face.cpp url.cpp md5.cpp webqq_impl.cpp)
 
 target_link_libraries(webqq ${Boost_LIBRARIES})
+check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
+if(HAVE_CLOCK_GETTIME)
+        target_link_libraries(webqq -lrt)
+endif(HAVE_CLOCK_GETTIME)
