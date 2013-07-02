@@ -20,6 +20,8 @@
 #pragma once
 
 #include <iostream>
+
+#include <boost/log/trivial.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/function.hpp>
 #include <boost/asio.hpp>
@@ -71,7 +73,7 @@ static std::string parse_version( boost::asio::streambuf& buffer )
 		std::vector<char> v( t - s + 1 );
 		strncpy( v.data(), s, t - s );
 
-		std::cout << "Get webqq version: " <<  v.data() <<  std::endl;
+		BOOST_LOG_TRIVIAL(info) << "Get webqq version: " <<  v.data();
 		return v.data();
 	}
 
@@ -242,7 +244,7 @@ static void update_cookies(LwqqCookies *cookies, const std::string & httpheader,
 		cookies->rv2 = value ;
 	}	else
 	{
-		std::cerr <<  "warring: No this cookie: " <<  key <<  std::endl;
+		BOOST_LOG_TRIVIAL(warning) <<  " No this cookie: " <<  key;
 	}
 }
 
@@ -303,7 +305,7 @@ public:
 			stream = boost::make_shared<avhttp::http_stream>( boost::ref(m_webqq->get_ioservice()));
 			buffer = boost::make_shared<boost::asio::streambuf>();
 
-			std::cout << "Get webqq version from " <<  LWQQ_URL_VERSION <<  std::endl;
+			BOOST_LOG_TRIVIAL(debug) << "Get webqq version from " <<  LWQQ_URL_VERSION ;
 			// 首先获得版本.
 			yield avhttp::misc::async_read_body( *stream, LWQQ_URL_VERSION, * buffer,  *this );
 
@@ -489,7 +491,8 @@ private:
 	{
 		const char * response = boost::asio::buffer_cast<const char*>( buffer.data() );
 
-		std::cout << console_out_str(response) << std::endl;
+		BOOST_LOG_TRIVIAL(debug) << console_out_str(response);
+
 		char *p = strstr( ( char* )response, "\'" );
 
 		if( !p ) {
@@ -505,57 +508,57 @@ private:
 			case 0:
 				m_webqq->m_status = LWQQ_STATUS_ONLINE;
 				save_cookie( &( m_webqq->m_cookies ), stream->response_options().header_string() );
-				std::cerr <<  "login success!" << std::endl;
+				BOOST_LOG_TRIVIAL(info) <<  "login success!";
 				break;
 
 			case 1:
-				std::cerr << "Server busy! Please try again" <<  std::endl;
+				BOOST_LOG_TRIVIAL(info) << "Server busy! Please try again";
 
 				status = LWQQ_STATUS_OFFLINE;
 				break;
 			case 2:
-				std::cerr << "Out of date QQ number" <<  std::endl;
+				BOOST_LOG_TRIVIAL(info) << "Out of date QQ number";
 
 				status = LWQQ_STATUS_OFFLINE;
 				break;
 
 
 			case 3:
-				std::cerr << "Wrong QQ password" <<  std::endl;
+				BOOST_LOG_TRIVIAL(info) << "Wrong QQ password";
 				status = LWQQ_STATUS_OFFLINE;
 				exit(1);
 				break;
 
 			case 4:
-				std::cerr << "!!!!!!!!!! Wrong verify code !!!!!!!!" <<  std::endl;
+				BOOST_LOG_TRIVIAL(info) << "!!!!!!!!!! Wrong verify code !!!!!!!!";
 				status = LWQQ_STATUS_OFFLINE;
 				break;
 
 			case 5:
-   				std::cerr << "!!!!!!!!!! Verify failed !!!!!!!!" <<  std::endl;
+   				BOOST_LOG_TRIVIAL(info) << "!!!!!!!!!! Verify failed !!!!!!!!";
 				status = LWQQ_STATUS_OFFLINE;
 				break;
 
 
 			case 6:
-				std::cerr << "!!!!!!!!!! You may need to try login again !!!!!!!!" <<  std::endl;
+				BOOST_LOG_TRIVIAL(info) << "!!!!!!!!!! You may need to try login again !!!!!!!!";
 				status = LWQQ_STATUS_OFFLINE;
 				break;
 
 			case 7:
-				std::cerr << "!!!!!!!!!! Wrong input !!!!!!!!" <<  std::endl;
+				BOOST_LOG_TRIVIAL(info) << "!!!!!!!!!! Wrong input !!!!!!!!";
 				status = LWQQ_STATUS_OFFLINE;
 				break;
 
 
 			case 8:
-				std::cerr << "!!!!!!!!!! Too many logins on this IP. Please try again !!!!!!!!" <<  std::endl;
+				BOOST_LOG_TRIVIAL(info) << "!!!!!!!!!! Too many logins on this IP. Please try again !!!!!!!!";
 				status = LWQQ_STATUS_OFFLINE;
 				break;
 
 
 			default:
-				std::cerr << "!!!!!!!!!! Unknow error!!!!!!!!" <<  std::endl;
+				BOOST_LOG_TRIVIAL(error) << "!!!!!!!!!! Unknow error!!!!!!!!";
 				status = LWQQ_STATUS_OFFLINE;
 		}
 
