@@ -305,7 +305,7 @@ public:
 
 			std::cout << "Get webqq version from " <<  LWQQ_URL_VERSION <<  std::endl;
 			// 首先获得版本.
-			yield async_http_download( stream, LWQQ_URL_VERSION, * buffer,  *this );
+			yield avhttp::misc::async_read_body( *stream, LWQQ_URL_VERSION, * buffer,  *this );
 
 			m_webqq->m_version = parse_version( *buffer );
 
@@ -327,17 +327,17 @@ public:
 			);
 			buffer = boost::make_shared<boost::asio::streambuf>();
 
-			yield async_http_download( stream,
+			yield avhttp::misc::async_read_body( *stream,
 										/*url*/ boost::str( boost::format( "%s%s?uin=%s&appid=%s" ) % LWQQ_URL_CHECK_HOST % VCCHECKPATH % m_webqq->m_qqnum % APPID ),
 										*buffer,
 										*this );
 
 			// 解析验证码，然后带验证码登录.
-			parse_verify_code( ec, stream , *buffer );
+			parse_verify_code(*buffer );
 		}
 	}
 
-	void parse_verify_code( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer )
+	void parse_verify_code(boost::asio::streambuf& buffer )
 	{
 		/**
 		*
@@ -439,7 +439,7 @@ public:
 
 		buffer = boost::make_shared<boost::asio::streambuf>();
 
-		async_http_download( stream, url, *buffer, *this );
+		avhttp::misc::async_read_body( *stream, url, *buffer, *this );
 	}
 
 	// 在这里实现　QQ 的登录.

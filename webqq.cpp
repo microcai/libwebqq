@@ -143,7 +143,7 @@ void webqq::async_fetch_cface(boost::asio::io_service & io_service, const qqMsgC
 			(avhttp::http_options::cookie, cface.cookie)
 	);
 	boost::shared_ptr<boost::asio::streambuf> sb = boost::make_shared<boost::asio::streambuf>();
-	async_http_download( stream, url, *sb, boost::bind(async_fetch_cface_cb, _1, stream, sb, callback));
+	avhttp::misc::async_read_body(*stream, url, *sb, boost::bind(async_fetch_cface_cb, _1, stream, sb, callback));
 }
 
 static void async_cface_url_final_cb(const boost::system::error_code& ec,

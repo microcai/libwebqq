@@ -44,8 +44,6 @@ public:
 	lwqq_change_status(boost::shared_ptr<qqimpl::WebQQ> webqq, LWQQ_STATUS status, boost::function<void (boost::system::error_code) > handler)
 		: m_webqq(webqq), m_handler(handler)
 	{
-		read_streamptr stream;
-
 		std::string msg = boost::str(
 					boost::format( "{\"status\":\"%s\",\"ptwebqq\":\"%s\","
 									"\"passwd_sig\":""\"\",\"clientid\":\"%s\""
@@ -70,7 +68,7 @@ public:
 			( avhttp::http_options::connection, "close" )
 		);
 		buf = boost::make_shared<boost::asio::streambuf>();
-		async_http_download( stream, LWQQ_URL_SET_STATUS , * buf, * this );
+		avhttp::misc::async_read_body(* stream, LWQQ_URL_SET_STATUS , * buf, * this );
 	}
 
 	void operator()( const boost::system::error_code& ec, std::size_t bytes_transfered)
@@ -105,6 +103,7 @@ public:
 	}
 private:
 	boost::shared_ptr<qqimpl::WebQQ> m_webqq;
+	read_streamptr stream;
 	boost::function<void (boost::system::error_code) > m_handler;
 	boost::shared_ptr<boost::asio::streambuf> buf;
 };

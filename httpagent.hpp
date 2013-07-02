@@ -19,92 +19,99 @@
 
 #pragma once
 
-#ifndef __HTTP_AGENT_HPP__
-#define __HTTP_AGENT_HPP__
+#ifndef __AVHTTP_MISC_HTTP_READBODY_HPP__
+#define __AVHTTP_MISC_HTTP_READBODY_HPP__
 
-#include <boost/shared_ptr.hpp>
-#include <boost/function.hpp>
 #include <boost/asio.hpp>
 #include <avhttp.hpp>
 
-#include <boost/asio/yield.hpp>
-
-#ifndef SYMBOL_HIDDEN
-
-#if defined _WIN32 || defined __CYGWIN__
-#define SYMBOL_HIDDEN
-#else
-#if __GNUC__ >= 4
-#define SYMBOL_HIDDEN  __attribute__ ((visibility ("hidden")))
-#else
-#define SYMBOL_HIDDEN
-#endif
-#endif
-
-#endif // SYMBOL_HIDDEN
-
-
-typedef boost::shared_ptr<avhttp::http_stream> read_streamptr;
+namespace avhttp{
+namespace misc{
 
 namespace detail{
 
 // match condition!
-static inline std::size_t async_http_download_condition(boost::system::error_code ec, std::size_t bytes_transferred, std::string content_length)
+struct avhttp_async_read_body_condition
 {
-	if (ec)
-		return 0;
-
-	if ( content_length.empty() ){
-		return 4096;
-	}else{
-		// 读取到 content_length 是吧.
-		return boost::lexical_cast<std::size_t>( content_length ) - bytes_transferred;
+	avhttp_async_read_body_condition(std::string _content_length):content_length(_content_length)
+	{
 	}
-}
 
-template<class httpstreamhandler, class MutableBufferSequence>
-class SYMBOL_HIDDEN async_http_download_op : boost::asio::coroutine {
+	std::size_t operator()(boost::system::error_code ec, std::size_t bytes_transferred)
+	{
+		if (ec)
+			return 0;
+
+		if ( content_length.empty() ){
+			return 4096;
+		}else{
+			// 读取到 content_length 是吧.
+			return boost::lexical_cast<std::size_t>( content_length ) - bytes_transferred;
+		}
+	}
+	std::string content_length;
+};
+
+template<class avHttpStream, class MutableBufferSequence, class Handler>
+class async_read_body_op : boost::asio::coroutine {
 public:
 	typedef void result_type;
 public:
-	async_http_download_op( read_streamptr _stream, const avhttp::url & url, MutableBufferSequence &_buffers, httpstreamhandler _handler )
-		: handler( _handler ), stream( _stream ), buffers(_buffers)
+	async_read_body_op( avHttpStream &_stream, const avhttp::url & url, MutableBufferSequence &_buffers, Handler _handler )
+		: m_handler( _handler ), m_stream( _stream ), m_buffers(_buffers)
 	{
-		stream->async_open( url, *this );
+		m_stream.async_open( url, *this );
 	}
 
 	void operator()( const boost::system::error_code& ec , std::size_t length = 0 ) {
-		reenter( this )
+		BOOST_ASIO_CORO_REENTER( this )
 		{
 			if( !ec ) {
-				content_length = stream->response_options().find( avhttp::http_options::content_length );
+				content_length = m_stream.response_options().find( avhttp::http_options::content_length );
 
-				yield boost::asio::async_read(*stream, buffers, boost::bind(async_http_download_condition, _1 , _2, content_length), *this );
+				BOOST_ASIO_CORO_YIELD boost::asio::async_read(m_stream, m_buffers, avhttp_async_read_body_condition(content_length), *this );
 			}
 
 			if (ec == boost::asio::error::eof &&  !content_length.empty() && length == boost::lexical_cast<std::size_t>( content_length ) )
 			{
-				handler(boost::system::error_code(), length);
+				m_handler(boost::system::error_code(), length);
 			}else{
-				handler( ec, length);
+				m_handler( ec, length);
 			}
-
 		}
 	}
 
 private:
 	std::string content_length;
-	read_streamptr stream;
-	httpstreamhandler handler;
-	MutableBufferSequence &buffers;
+	avHttpStream & m_stream;
+	Handler m_handler;
+	MutableBufferSequence &m_buffers;
 };
 
-}
-
-template<class httpstreamhandler, class MutableBufferSequence>
-void async_http_download(read_streamptr _stream, const avhttp::url & url, MutableBufferSequence &buffers, httpstreamhandler _handler)
+template<class avHttpStream, class MutableBufferSequence, class Handler>
+async_read_body_op<avHttpStream, MutableBufferSequence, Handler> make_async_read_body_op(avHttpStream & stream, const avhttp::url & url, MutableBufferSequence &buffers, Handler _handler)
 {
-	::detail::async_http_download_op<boost::function<void ( const boost::system::error_code& ec, std::size_t ) >, MutableBufferSequence >(_stream, url, buffers, _handler);
+	return async_read_body_op<avHttpStream, MutableBufferSequence, Handler>(stream, url, buffers, _handler);
 }
 
-#endif // __HTTP_AGENT_HPP__
+} // namespace detail
+
+
+/**
+ * 用法, 先设置好 http_stream 的 options ,  然后调用
+ *   avhttp::misc::async_read_body(stream, url, buffer, handler);
+ * 注意,  stream 和 buffer 的生命周期要保持到调用handler.
+ *
+ * handler 的签名同 boost::asio::async_read
+ *
+ */
+template<class avHttpStream, class MutableBufferSequence, class Handler>
+void async_read_body(avHttpStream & stream, const avhttp::url & url, MutableBufferSequence &buffers, Handler _handler)
+{
+	detail::make_async_read_body_op(stream, url, buffers, _handler);
+}
+
+} // namespace misc
+} // namespace avhttp
+
+#endif // __AVHTTP_MISC_HTTP_READBODY_HPP__
