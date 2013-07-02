@@ -32,17 +32,9 @@ namespace detail {
 // match condition!
 struct read_all_t
 {
-  read_all_t(std::string content_length_str)
-		: has_content_length(false)
+  read_all_t(boost::int64_t content_length)
+		: m_content_length(content_length)
 	{
-
-		if(!content_length_str.empty())
-		{
-			// 转化为 content_length
-			has_content_length = true;
-			// cast 失败肯定是严重的 bug
-			m_content_length = boost::lexical_cast<std::size_t>(content_length_str);
-		}
 	}
 
 	template <typename Error>
@@ -62,11 +54,10 @@ struct read_all_t
 		}
 	}
 
-	bool has_content_length;
 	boost::int64_t m_content_length;
 };
 
-inline read_all_t read_all(std::string content_length)
+inline read_all_t read_all(boost::int64_t content_length)
 {
 	return read_all_t(content_length);
 }
@@ -106,8 +97,8 @@ public:
 		{
 			if(!ec)
 			{
-				BOOST_ASIO_CORO_YIELD boost::asio::async_read( m_stream, m_buffers,
-						read_all(m_stream.response_options().find(avhttp::http_options::content_length)), *this);
+				BOOST_ASIO_CORO_YIELD boost::asio::async_read(
+						m_stream, m_buffers, read_all(m_stream.content_length()), *this);
 			}
 			else
 			{
