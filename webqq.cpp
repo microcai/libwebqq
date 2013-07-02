@@ -20,12 +20,12 @@
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
 namespace fs = boost::filesystem;
+#include <avhttp.hpp>
+#include <avhttp/async_read_body.hpp>
 
 #include "webqq.h"
 #include "webqq_impl.h"
-#include "avhttp.hpp"
 #include "url.hpp"
-#include "httpagent.hpp"
 
 webqq::webqq( boost::asio::io_service& asio_service, std::string qqnum, std::string passwd)
 {

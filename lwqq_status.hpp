@@ -8,14 +8,14 @@
 namespace js = boost::property_tree::json_parser;
 #include <boost/asio/yield.hpp>
 
+#include <avhttp/async_read_body.hpp>
+
 #include "boost/timedcall.hpp"
 
 
 #include "webqq.h"
 
 #include "webqq_impl.h"
-
-#include "httpagent.hpp"
 
 #include "constant.hpp"
 #include "md5.hpp"
