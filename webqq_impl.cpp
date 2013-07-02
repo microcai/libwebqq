@@ -18,6 +18,8 @@
 #include <string.h>
 #include <string>
 #include <iostream>
+
+#include <boost/log/trivial.hpp>
 #include <boost/random.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/bind.hpp>
@@ -31,6 +33,7 @@ namespace js = boost::property_tree::json_parser;
 #include <boost/assign.hpp>
 #include <boost/scope_exit.hpp>
 #include <boost/regex/pending/unicode_iterator.hpp>
+
 #include "boost/timedcall.hpp"
 #include "boost/multihandler.hpp"
 #include "boost/consolestr.hpp"
@@ -222,11 +225,11 @@ void WebQQ::cb_send_msg( const boost::system::error_code& ec, read_streamptr str
 
 	} catch( const pt::json_parser_error & jserr ) {
 		std::istream	response( buffer.get() );
-		std::cerr <<  __FILE__ << " : " << __LINE__ << " : " << "parse json error : " << jserr.what()
- 			<<  "\n=========\n" <<  jserr.message() << "\n=========" <<  std::endl;
+		BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : " << "parse json error : " << jserr.what()
+ 			<<  "\n=========\n" <<  jserr.message() << "\n=========" ;
 		m_msg_queue.pop_front();
 	} catch( const pt::ptree_bad_path & badpath ) {
-		std::cerr << __FILE__ << " : " << __LINE__ << " : " <<  "bad path " <<  badpath.what() <<  std::endl;
+		BOOST_LOG_TRIVIAL(error) << __FILE__ << " : " << __LINE__ << " : " <<  "bad path " <<  badpath.what();
 	}
 
 	if (!m_msg_queue.empty())
@@ -368,9 +371,9 @@ stream->content_length();
 			}
 			return ;
 		} catch( const pt::json_parser_error & jserr ) {
-			std::cerr <<  __FILE__ << " : " << __LINE__ << " : " << "parse json error : " <<  jserr.what() <<  std::endl;
+			BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : " << "parse json error : " <<  jserr.what();
 		} catch( const pt::ptree_bad_path & badpath ) {
-			std::cerr <<  __FILE__ << " : " << __LINE__ << " : " <<  "bad path" <<  badpath.what() << std::endl;
+			BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : " <<  "bad path" <<  badpath.what();
 			js::write_json( std::cout, jsonobj );
 		}
 
@@ -504,7 +507,7 @@ void WebQQ::do_poll_one_msg( std::string ptwebqq )
 void WebQQ::cb_poll_msg( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buf, std::string ptwebqq)
 {
 	if( ptwebqq != m_cookies.ptwebqq ) {
-		std::cerr << "stoped polling messages" <<  std::endl;
+		BOOST_LOG_TRIVIAL(info) << "stoped polling messages" <<  std::endl;
 		return ;
 	}
 
@@ -533,13 +536,13 @@ void WebQQ::cb_poll_msg( const boost::system::error_code& ec, read_streamptr str
 	}
 	catch( const pt::file_parser_error & jserr )
 	{
-		std::cerr <<  __FILE__ << " : " << __LINE__ << " : " << "parse json error : " <<  jserr.what() <<  std::endl;
+		BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : " << "parse json error : " <<  jserr.what();
 		// 网络可能出了点问题，延时重试.
 		boost::delayedcallsec( get_ioservice(), 5, boost::bind( &WebQQ::do_poll_one_msg, this, ptwebqq ) );
 	}
 	catch( const pt::ptree_error & badpath )
 	{
-		std::cerr <<  __FILE__ << " : " << __LINE__ << " : " <<  "bad path" <<  badpath.what() << std::endl;
+		BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : " <<  "bad path" <<  badpath.what();
 		js::write_json( std::wcout, jsonobj );
 		//开启新的 poll
 		boost::delayedcallsec( get_ioservice(), 1, boost::bind( &WebQQ::do_poll_one_msg, this, ptwebqq ) );
@@ -657,21 +660,21 @@ void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr s
 
 					if( newgroup->gid[0] == '-' ) {
 						retry = true;
-						std::cerr <<  __FILE__ << " : " << __LINE__ << " : " <<  "qqGroup get error" << std::endl;
+						BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : " <<  "qqGroup get error" << std::endl;
 						continue;
 					}
 
 					this->m_groups.insert( std::make_pair( newgroup->gid, newgroup ) );
-					std::cerr <<  __FILE__ << " : " << __LINE__ << " : " << console_out_str("qq群 ") << console_out_str(newgroup->gid) <<  console_out_str(newgroup->name) << std::endl;
+					BOOST_LOG_TRIVIAL(info) <<  __FILE__ << " : " << __LINE__ << " : " << console_out_str("qq群 ") << console_out_str(newgroup->gid) <<  console_out_str(newgroup->name);
 
 				}
 			}
 		} catch( const pt::json_parser_error & jserr ) {
 			retry = true;
-			std::cerr << __FILE__ << " : " << __LINE__ << " : " <<  "parse json error : " <<  console_out_str(jserr.what()) << std::endl;
+			BOOST_LOG_TRIVIAL(error) << __FILE__ << " : " << __LINE__ << " : " <<  "parse json error : " <<  console_out_str(jserr.what());
 		} catch( const pt::ptree_bad_path & badpath ) {
 			retry = true;
-			std::cerr << __FILE__ << " : " << __LINE__ << " : " <<   "bad path error " <<  badpath.what() << std::endl;
+			BOOST_LOG_TRIVIAL(error) << __FILE__ << " : " << __LINE__ << " : " <<   "bad path error " <<  badpath.what();
 		}
 	}else
 		retry = 1;
@@ -707,11 +710,11 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 		//TODO, group members
 		if( jsonobj.get<int>( "retcode" ) == 0 ) {
 			group->qqnum = jsonobj.get<std::string>( "result.account" );
-			std::cerr <<  "qq number of group" <<  console_out_str(group->name) << "is" <<  group->qqnum << std::endl;
+			BOOST_LOG_TRIVIAL(debug) <<  "qq number of group " <<  console_out_str(group->name) << " is " <<  group->qqnum;
 			// 写缓存
 			pt::json_parser::write_json(std::string("cache/group_qqnumber") + group->gid, jsonobj);
 			//start polling messages, 2 connections!
-			std::cerr << "start polling messages" <<  std::endl;
+			BOOST_LOG_TRIVIAL(info) << "start polling messages";
 
 			boost::delayedcallsec( get_ioservice(), 3, boost::bind( &WebQQ::do_poll_one_msg, shared_from_this(), m_cookies.ptwebqq ) );
 
@@ -719,7 +722,7 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 
 			return ;
 		}else{
-			std::cerr << console_out_str("获取群的QQ号码失败") <<  std::endl;
+			BOOST_LOG_TRIVIAL(error) << console_out_str("获取群的QQ号码失败");
 			pt::json_parser::write_json(std::cerr, jsonobj);
 		}
 	} catch( const pt::json_parser_error & jserr ) {
@@ -732,7 +735,7 @@ void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamp
 		pt::json_parser::read_json(std::string("cache/group_qqnumber") + group->gid, jsonobj);
 
 		group->qqnum = jsonobj.get<std::string>( "result.account" );
-		std::cerr <<  "(cached) qq number of group" <<  console_out_str(group->name) << "is" <<  group->qqnum << std::endl;
+		BOOST_LOG_TRIVIAL(debug) <<  "(cached) qq number of group" <<  console_out_str(group->name) << "is" <<  group->qqnum << std::endl;
 
 		// 向用户报告一个 group 出来了.
 		siggroupnumber(group);
@@ -806,7 +809,7 @@ void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr
 		get_ioservice().post(handler);
 
 	} catch( const pt::json_parser_error & jserr ) {
-		std::cerr <<  __FILE__ << " : " << __LINE__ << " : " <<  "parse json error : " <<  jserr.what() << std::endl;
+		BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : " <<  "parse json error : " <<  jserr.what();
 
 		boost::delayedcallsec( m_io_service, 20, boost::bind( &WebQQ::update_group_member, shared_from_this(), group, dummy) );
 		// 在重试之前，获取缓存文件.
@@ -1046,7 +1049,7 @@ static std::string parse_unescape( const std::string & source )
 		}
 	}catch (const std::out_of_range &e)
 	{
-		std::cerr << __FILE__ <<  __LINE__<<  " "  <<  console_out_str("QQ消息字符串包含非法字符 ") <<  std::endl;
+		BOOST_LOG_TRIVIAL(error) << __FILE__ <<  __LINE__<<  " "  <<  console_out_str("QQ消息字符串包含非法字符 ");
 	}
 
 	return result;
