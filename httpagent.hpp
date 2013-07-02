@@ -37,7 +37,7 @@ namespace detail
 struct avhttp_async_read_body_condition
 {
 	avhttp_async_read_body_condition(std::string content_length_str)
-		:has_content_length(false)
+		: has_content_length(false)
 	{
 		if(!content_length_str.empty())
 		{
@@ -72,7 +72,8 @@ template<class avHttpStream, class MutableBufferSequence, class Handler>
 class async_read_body_op : boost::asio::coroutine
 {
 public:
-	async_read_body_op(avHttpStream &_stream, const avhttp::url & url, MutableBufferSequence &_buffers, Handler _handler)
+	async_read_body_op(avHttpStream &_stream, const avhttp::url & url,
+					   MutableBufferSequence &_buffers, Handler _handler)
 		: m_handler(_handler), m_stream(_stream), m_buffers(_buffers)
 	{
 		m_stream.async_open(url, *this);
@@ -86,10 +87,14 @@ public:
 			{
 				content_length = m_stream.response_options().find(avhttp::http_options::content_length);
 
-				BOOST_ASIO_CORO_YIELD boost::asio::async_read(m_stream, m_buffers, avhttp_async_read_body_condition(content_length), *this);
+				BOOST_ASIO_CORO_YIELD boost::asio::async_read(m_stream, m_buffers,
+															  avhttp_async_read_body_condition(content_length),
+															  *this);
+			}else{
+				m_handler(ec, length);
 			}
 
-			if(ec == boost::asio::error::eof &&  !content_length.empty() && length == boost::lexical_cast<std::size_t> (content_length))
+			if(ec == boost::asio::error::eof && content_length.empty())
 			{
 				m_handler(boost::system::error_code(), length);
 			}
