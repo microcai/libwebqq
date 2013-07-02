@@ -69,15 +69,15 @@ public:
 			( avhttp::http_options::content_length, boost::lexical_cast<std::string>( msg.length() ) )
 			( avhttp::http_options::connection, "close" )
 		);
-
-		async_http_download( stream, LWQQ_URL_SET_STATUS , * this );
+		buf = boost::make_shared<boost::asio::streambuf>();
+		async_http_download( stream, LWQQ_URL_SET_STATUS , * buf, * this );
 	}
 
-	void operator()( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buffer )
+	void operator()( const boost::system::error_code& ec, std::size_t bytes_transfered)
 	{
 		std::string msg;
 		pt::ptree json;
-		std::istream response( &buffer );
+		std::istream response( buf.get() );
 
 		if (!ec){
 		//　登录步骤.
@@ -106,6 +106,7 @@ public:
 private:
 	boost::shared_ptr<qqimpl::WebQQ> m_webqq;
 	boost::function<void (boost::system::error_code) > m_handler;
+	boost::shared_ptr<boost::asio::streambuf> buf;
 };
 
 // 用于更新在线状态, 每 10 分钟更新一下.

@@ -250,28 +250,28 @@ private:
 	void update_group_member_qq(boost::shared_ptr<qqGroup> group );
 
 	void get_verify_image( std::string vcimgid );
-	void cb_get_verify_image( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& );
+	void cb_get_verify_image( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> );
 
 	void do_poll_one_msg( std::string ptwebqq );
-	void cb_poll_msg( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf, std::string ptwebqq );
+	void cb_poll_msg( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buf, std::string ptwebqq );
 
 	void process_msg( const pt::wptree & jstree,std::string & ptwebqq );
 	void process_group_message( const pt::wptree & jstree );
-	void cb_group_list( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& );
+	void cb_group_list( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> );
 	void cb_group_member_process_json(pt::ptree	&jsonobj, boost::shared_ptr<qqGroup>);
-	void cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, boost::shared_ptr<qqGroup>,  done_callback_handler );
-	void cb_group_qqnumber( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, boost::shared_ptr<qqGroup> );
+	void cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf>, boost::shared_ptr<qqGroup>,  done_callback_handler );
+	void cb_group_qqnumber( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf>, boost::shared_ptr<qqGroup> );
 	void cb_newbee_group_join(qqGroup_ptr group, std::string uid);
 
 	void send_group_message_internal( std::string group, std::string msg, send_group_message_cb donecb );
-	void cb_send_msg( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf&, boost::function<void ( const boost::system::error_code& ec )> donecb );
+	void cb_send_msg( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf>, boost::function<void ( const boost::system::error_code& ec )> donecb );
 
-	void cb_search_group(std::string, const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buf, webqq::search_group_handler handler);
+	void cb_search_group(std::string, const boost::system::error_code& ec, read_streamptr stream,  boost::shared_ptr<boost::asio::streambuf> buf, webqq::search_group_handler handler);
 	
 	void fetch_aid(std::string arg, boost::function<void(const boost::system::error_code&, std::string)> handler);
-	void cb_fetch_aid(const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buf, boost::function<void(const boost::system::error_code&, std::string)> handler);
+	void cb_fetch_aid(const boost::system::error_code& ec, read_streamptr stream,  boost::shared_ptr<boost::asio::streambuf> buf, boost::function<void(const boost::system::error_code&, std::string)> handler);
 
-	void cb_join_group(qqGroup_ptr, const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buf, webqq::join_group_handler handler);
+	void cb_join_group(qqGroup_ptr, const boost::system::error_code& ec, read_streamptr stream,  boost::shared_ptr<boost::asio::streambuf> buf, webqq::join_group_handler handler);
 
 public:
 	std::string	m_vfwebqq;

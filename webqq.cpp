@@ -105,11 +105,11 @@ bool webqq::is_online()
 }
 
 static void async_fetch_cface_cb(const boost::system::error_code& ec,
-								read_streamptr stream,  boost::asio::streambuf & buf,
+								read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buf,
 								boost::function<void(boost::system::error_code ec, boost::asio::streambuf & buf)> callback)
 {
 // store result to cface_data
-	callback(ec, buf);
+	callback(ec, *buf);
 }
 
 void webqq::async_fetch_cface_std_saver( boost::system::error_code ec, boost::asio::streambuf& buf, std::string cface, boost::filesystem::path parent_path)
@@ -142,7 +142,8 @@ void webqq::async_fetch_cface(boost::asio::io_service & io_service, const qqMsgC
 		avhttp::request_opts()
 			(avhttp::http_options::cookie, cface.cookie)
 	);
-	async_http_download( stream, url, boost::bind(async_fetch_cface_cb, _1, _2, _3, callback));
+	boost::shared_ptr<boost::asio::streambuf> sb = boost::make_shared<boost::asio::streambuf>();
+	async_http_download( stream, url, *sb, boost::bind(async_fetch_cface_cb, _1, stream, sb, callback));
 }
 
 static void async_cface_url_final_cb(const boost::system::error_code& ec,

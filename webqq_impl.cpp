@@ -195,15 +195,17 @@ void WebQQ::send_group_message_internal( std::string group, std::string msg, sen
 		( avhttp::http_options::connection, "close" )
 	);
 
-	async_http_download( stream, LWQQ_URL_SEND_QUN_MSG,
-						 boost::bind( &WebQQ::cb_send_msg, this, boost::asio::placeholders::error, _2, _3, donecb )
+	boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
+
+	async_http_download( stream, LWQQ_URL_SEND_QUN_MSG, *buffer,
+						 boost::bind( &WebQQ::cb_send_msg, this, _1, stream, buffer, donecb )
 					   );
 }
 
-void WebQQ::cb_send_msg( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buffer, boost::function<void ( const boost::system::error_code& ec )> donecb )
+void WebQQ::cb_send_msg( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer, boost::function<void ( const boost::system::error_code& ec )> donecb )
 {
 	pt::ptree jstree;
-	std::istream	response( &buffer );
+	std::istream	response( buffer.get() );
 
 	try {
 		js::read_json( response, jstree );
@@ -219,7 +221,7 @@ void WebQQ::cb_send_msg( const boost::system::error_code& ec, read_streamptr str
 		}
 
 	} catch( const pt::json_parser_error & jserr ) {
-		std::istream	response( &buffer );
+		std::istream	response( buffer.get() );
 		std::cerr <<  __FILE__ << " : " << __LINE__ << " : " << "parse json error : " << jserr.what()
  			<<  "\n=========\n" <<  jserr.message() << "\n=========" <<  std::endl;
 		m_msg_queue.pop_front();
@@ -259,8 +261,10 @@ void WebQQ::update_group_list()
 		( avhttp::http_options::connection, "close" )
 	);
 
-	async_http_download( stream, url,
-						 boost::bind( &WebQQ::cb_group_list, this, boost::asio::placeholders::error, _2, _3 )
+	boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
+
+	async_http_download( stream, url, *buffer,
+						 boost::bind( &WebQQ::cb_group_list, this, _1, stream, buffer )
 					   );
 }
 
@@ -282,9 +286,10 @@ void WebQQ::update_group_qqnumber(boost::shared_ptr<qqGroup> group )
 		( avhttp::http_options::referer, LWQQ_URL_REFERER_QUN_DETAIL )
 		( avhttp::http_options::connection, "close" )
 	);
+	boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
 
-	async_http_download( stream, url,
-						 boost::bind( &WebQQ::cb_group_qqnumber, this, boost::asio::placeholders::error, _2, _3, group)
+	async_http_download( stream, url, *buffer,
+						 boost::bind( &WebQQ::cb_group_qqnumber, this, _1, stream, buffer, group)
 					   );
 }
 
@@ -306,8 +311,10 @@ void WebQQ::update_group_member(boost::shared_ptr<qqGroup> group , done_callback
 		( avhttp::http_options::connection, "close" )
 	);
 
-	async_http_download( stream, url,
-						 boost::bind( &WebQQ::cb_group_member, this, boost::asio::placeholders::error, _2, _3, group, handler)
+	boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
+
+	async_http_download( stream, url, * buffer,
+						 boost::bind( &WebQQ::cb_group_member, this, _1, stream, buffer, group, handler)
 					   );
 }
 
@@ -334,16 +341,18 @@ public:
 			( avhttp::http_options::connection, "close" )
 		);
 
-		async_http_download( stream, url, boost::bind( *this, _1, _2, _3, handler ) );
+		boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
+
+		async_http_download( stream, url, *buffer, boost::bind( *this, _1, stream, buffer, handler ) );
 	}
 
 	template <class Handler>
-	void operator()( const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buffer, Handler handler )
+	void operator()( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer, Handler handler )
 	{
 		// 获得的返回代码类似
 		// {"retcode":0,"result":{"uiuin":"","account":2664046919,"uin":721281587}}
 		pt::ptree jsonobj;
-		std::iostream resultjson( &buffer );
+		std::iostream resultjson( buffer.get() );
 
 		try {
 			// 处理.
@@ -448,17 +457,18 @@ void WebQQ::get_verify_image( std::string vcimgid )
 		( avhttp::http_options::cookie, std::string( "chkuin=" ) + m_qqnum )
 		( avhttp::http_options::connection, "close" )
 	);
-	async_http_download( stream, url,
-						 boost::bind( &WebQQ::cb_get_verify_image, this, boost::asio::placeholders::error, _2, _3 ) );
+	boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
+	async_http_download( stream, url, * buffer,
+						 boost::bind( &WebQQ::cb_get_verify_image, this, _1, stream, buffer ) );
 }
 
-void WebQQ::cb_get_verify_image( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer )
+void WebQQ::cb_get_verify_image( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer )
 {
 	detail::update_cookies( &m_cookies, stream->response_options().header_string() , "verifysession");
 	m_cookies.update();
 
 	// verify image is now in response
-	signeedvc( buffer.data() );
+	signeedvc( buffer->data() );
 }
 
 void WebQQ::do_poll_one_msg( std::string ptwebqq )
@@ -483,13 +493,14 @@ void WebQQ::do_poll_one_msg( std::string ptwebqq )
 								 ( avhttp::http_options::content_length, boost::lexical_cast<std::string>( msg.length() ) )
 								 ( avhttp::http_options::connection, "close" )
 							   );
+	boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
 
-	async_http_download( pollstream, "http://d.web2.qq.com/channel/poll2",
-							boost::bind( &WebQQ::cb_poll_msg, this, _1, _2, _3, ptwebqq )
+	async_http_download( pollstream, "http://d.web2.qq.com/channel/poll2", * buffer,
+							boost::bind( &WebQQ::cb_poll_msg, this, _1, pollstream, buffer, ptwebqq )
 					   );
 }
 
-void WebQQ::cb_poll_msg( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf, std::string ptwebqq)
+void WebQQ::cb_poll_msg( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buf, std::string ptwebqq)
 {
 	if( ptwebqq != m_cookies.ptwebqq ) {
 		std::cerr << "stoped polling messages" <<  std::endl;
@@ -503,7 +514,7 @@ void WebQQ::cb_poll_msg( const boost::system::error_code& ec, read_streamptr str
 		return;
 	}
 
-	std::wstring response = utf8_wide( std::string( boost::asio::buffer_cast<const char*>( buf.data() ) , buf.size() ) );
+	std::wstring response = utf8_wide( std::string( boost::asio::buffer_cast<const char*>( buf->data() ) , buf->size() ) );
 
 	pt::wptree	jsonobj;
 
@@ -540,7 +551,7 @@ void WebQQ::process_group_message( const boost::property_tree::wptree& jstree )
 	qqimpl::detail::process_group_message_op(*this, jstree);
 }
 
-static void cb_get_msg_tip( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf)
+static void cb_get_msg_tip(const boost::system::error_code& ec, std::size_t bytes_transfered)
 {
 	// 忽略错误.
 }
@@ -566,8 +577,10 @@ void WebQQ::process_msg( const pt::wptree &jstree , std::string & ptwebqq )
 										  ( avhttp::http_options::referer, "http://d.web2.qq.com/proxy.html?v=20101025002" )
 										  ( avhttp::http_options::connection, "close" )
 										);
+			boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
 
 			async_http_download( get_msg_tip, "http://webqq.qq.com/web2/get_msg_tip?uin=&tp=1&id=0&retype=1&rc=1&lv=3&t=1348458711542",
+								* buffer,
 								 cb_get_msg_tip );
 		}
 		else
@@ -622,10 +635,10 @@ void WebQQ::process_msg( const pt::wptree &jstree , std::string & ptwebqq )
 	}
 }
 
-void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer )
+void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer )
 {
 	pt::ptree	jsonobj;
-	std::istream jsondata( &buffer );
+	std::istream jsondata( buffer.get() );
 	bool retry = false;
 
 	if (!ec){
@@ -677,10 +690,10 @@ void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr s
 	}
 }
 
-void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer, boost::shared_ptr<qqGroup> group)
+void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer, boost::shared_ptr<qqGroup> group)
 {
 	pt::ptree	jsonobj;
-	std::istream jsondata( &buffer );
+	std::istream jsondata( buffer.get() );
 
 	/**
 	 * Here, we got a json object like this:
@@ -773,13 +786,13 @@ void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, boost::shared_ptr<q
 }
 
 
-void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buffer, boost::shared_ptr<qqGroup> group, done_callback_handler handler)
+void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer, boost::shared_ptr<qqGroup> group, done_callback_handler handler)
 {
 	//处理!
 	try {
 
 		pt::ptree jsonobj;
-		std::istream jsondata( &buffer );
+		std::istream jsondata( buffer.get() );
 
 		pt::json_parser::read_json( jsondata, jsonobj );
 
@@ -806,15 +819,15 @@ void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr
 	}
 }
 
-void WebQQ::cb_fetch_aid(const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buf, boost::function<void(const boost::system::error_code&, std::string)> handler)
+void WebQQ::cb_fetch_aid(const boost::system::error_code& ec, read_streamptr stream,  boost::shared_ptr<boost::asio::streambuf> buf, boost::function<void(const boost::system::error_code&, std::string)> handler)
 {
-	if (!ec || ec == boost::asio::error::eof)
+	if (!ec)
 	{
 		// 获取到咯, 更新 verifysession
 		detail::update_cookies(&m_cookies, stream->response_options().header_string(), "verifysession");
 		m_cookies.update();
 
-		handler(boost::system::error_code(), std::string(boost::asio::buffer_cast<const char*>(buf.data()), boost::asio::buffer_size(buf.data())));
+		handler(boost::system::error_code(), std::string(boost::asio::buffer_cast<const char*>(buf->data()), boost::asio::buffer_size(buf->data())));
 		return;
 	}
 	handler(ec, std::string());
@@ -834,7 +847,8 @@ void WebQQ::fetch_aid(std::string arg, boost::function<void(const boost::system:
 			(avhttp::http_options::connection, "close")
 	);
 
-	async_http_download(stream, url, boost::bind(&WebQQ::cb_fetch_aid, shared_from_this(), _1, _2, _3, handler ));
+	boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
+	async_http_download(stream, url,*buffer, boost::bind(&WebQQ::cb_fetch_aid, shared_from_this(), _1, stream, buffer, handler ));
 }
 
 static void cb_search_group_vcode(const boost::system::error_code& ec, std::string vcodedata, webqq::search_group_handler handler, qqGroup_ptr group)
@@ -847,13 +861,13 @@ static void cb_search_group_vcode(const boost::system::error_code& ec, std::stri
 	}
 }
 
-void WebQQ::cb_search_group(std::string groupqqnum, const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & buf, webqq::search_group_handler handler)
+void WebQQ::cb_search_group(std::string groupqqnum, const boost::system::error_code& ec, read_streamptr stream,  boost::shared_ptr<boost::asio::streambuf> buf, webqq::search_group_handler handler)
 {
 	pt::ptree	jsobj;
-	std::istream jsondata(&buf);
+	std::istream jsondata(buf.get());
 	qqGroup_ptr  group;
 
-	if (!ec || ec == boost::asio::error::eof){
+	if (!ec){
 		// 读取 json 格式
 		js::read_json(jsondata, jsobj);
 		group.reset(new qqGroup);
@@ -893,7 +907,9 @@ void WebQQ::search_group(std::string groupqqnum, std::string vfcode, webqq::sear
 		(avhttp::http_options::cookie, m_cookies.lwcookies)
 		(avhttp::http_options::connection, "close")
 	);
-	async_http_download(stream, url, boost::bind(&WebQQ::cb_search_group, shared_from_this(), groupqqnum, _1, _2, _3, handler));
+
+	boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
+	async_http_download(stream, url, * buffer, boost::bind(&WebQQ::cb_search_group, shared_from_this(), groupqqnum, _1, stream, buffer, handler));
 }
 
 static void cb_join_group_vcode(const boost::system::error_code& ec, std::string vcodedata, webqq::join_group_handler handler, qqGroup_ptr group)
@@ -907,11 +923,11 @@ static void cb_join_group_vcode(const boost::system::error_code& ec, std::string
 }
 
 
-void WebQQ::cb_join_group( qqGroup_ptr group, const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf& buf, webqq::join_group_handler handler )
+void WebQQ::cb_join_group( qqGroup_ptr group, const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buf, webqq::join_group_handler handler )
 {
 	// 检查返回值是不是 retcode == 0
 	pt::ptree	jsobj;
-	std::istream jsondata(&buf);
+	std::istream jsondata(buf.get());
 	try{
 		js::read_json(jsondata, jsobj);
 		js::write_json(std::cerr, jsobj);
@@ -962,7 +978,10 @@ void WebQQ::join_group(qqGroup_ptr group, std::string vfcode, webqq::join_group_
 		(avhttp::http_options::request_body, postdata)
 		(avhttp::http_options::content_length, boost::lexical_cast<std::string>(postdata.length()))
 	);
-	async_http_download(stream, url, boost::bind(&WebQQ::cb_join_group, shared_from_this(), group, _1, _2, _3, handler));
+
+	boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
+
+	async_http_download(stream, url, * buffer, boost::bind(&WebQQ::cb_join_group, shared_from_this(), group, _1, stream, buffer, handler));
 }
 
 // 把 boost::u8_to_u32_iterator 封装一下，提供 * 解引用操作符.

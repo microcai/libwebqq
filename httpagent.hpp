@@ -62,13 +62,13 @@ static inline std::size_t async_http_download_condition(boost::system::error_cod
 	}
 }
 
-template<class httpstreamhandler>
+template<class httpstreamhandler, class MutableBufferSequence>
 class SYMBOL_HIDDEN async_http_download_op : boost::asio::coroutine {
 public:
 	typedef void result_type;
 public:
-	async_http_download_op( read_streamptr _stream, const avhttp::url & url, httpstreamhandler _handler )
-		: handler( _handler ), stream( _stream ), sb( new boost::asio::streambuf() )
+	async_http_download_op( read_streamptr _stream, const avhttp::url & url, MutableBufferSequence &_buffers, httpstreamhandler _handler )
+		: handler( _handler ), stream( _stream ), buffers(_buffers)
 	{
 		stream->async_open( url, *this );
 	}
@@ -79,14 +79,14 @@ public:
 			if( !ec ) {
 				content_length = stream->response_options().find( avhttp::http_options::content_length );
 
-				yield boost::asio::async_read(*stream, *sb, boost::bind(async_http_download_condition, _1 , _2, content_length), *this );
+				yield boost::asio::async_read(*stream, buffers, boost::bind(async_http_download_condition, _1 , _2, content_length), *this );
 			}
 
 			if (ec == boost::asio::error::eof &&  !content_length.empty() && length == boost::lexical_cast<std::size_t>( content_length ) )
 			{
-				handler(boost::system::error_code(), stream, *sb );
+				handler(boost::system::error_code(), length);
 			}else{
-				handler( ec, stream, *sb );
+				handler( ec, length);
 			}
 
 		}
@@ -96,15 +96,15 @@ private:
 	std::string content_length;
 	read_streamptr stream;
 	httpstreamhandler handler;
-	boost::shared_ptr<boost::asio::streambuf> sb;
+	MutableBufferSequence &buffers;
 };
 
 }
 
-template<class httpstreamhandler>
-void async_http_download(read_streamptr _stream, const avhttp::url & url, httpstreamhandler _handler)
+template<class httpstreamhandler, class MutableBufferSequence>
+void async_http_download(read_streamptr _stream, const avhttp::url & url, MutableBufferSequence &buffers, httpstreamhandler _handler)
 {
-	::detail::async_http_download_op<boost::function<void ( const boost::system::error_code& ec, read_streamptr stream,  boost::asio::streambuf & ) > >(_stream, url, _handler);
+	::detail::async_http_download_op<boost::function<void ( const boost::system::error_code& ec, std::size_t ) >, MutableBufferSequence >(_stream, url, buffers, _handler);
 }
 
 #endif // __HTTP_AGENT_HPP__

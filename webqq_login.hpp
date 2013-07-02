@@ -20,6 +20,7 @@
 #pragma once
 
 #include <iostream>
+#include <boost/make_shared.hpp>
 #include <boost/function.hpp>
 #include <boost/asio.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -292,23 +293,24 @@ public:
 	corologin( boost::shared_ptr<qqimpl::WebQQ> webqq )
 		: m_webqq( webqq ) {
 		read_streamptr stream;
-		boost::asio::streambuf buf;
-		( *this )( boost::system::error_code(), stream, buf );
+		( *this )( boost::system::error_code(), 0 );
 	}
 
 	// 在这里实现　QQ 的登录.
-	void operator()( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buf ) {
+	void operator()( const boost::system::error_code& ec, std::size_t bytes_transfered ) {
 		//　登录步骤.
 		reenter( this ) {
-			stream.reset( new avhttp::http_stream( m_webqq->get_ioservice() ) );
+			stream = boost::make_shared<avhttp::http_stream>( boost::ref(m_webqq->get_ioservice()));
+			buffer = boost::make_shared<boost::asio::streambuf>();
+
 			std::cout << "Get webqq version from " <<  LWQQ_URL_VERSION <<  std::endl;
 			// 首先获得版本.
-			yield async_http_download( stream, LWQQ_URL_VERSION, *this );
+			yield async_http_download( stream, LWQQ_URL_VERSION, * buffer,  *this );
 
-			m_webqq->m_version = parse_version( buf );
+			m_webqq->m_version = parse_version( *buffer );
 
 			// 接着获得验证码.
-			stream.reset( new avhttp::http_stream( m_webqq->get_ioservice() ) );
+			stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
 
 			m_webqq->m_clientid.clear();
 			m_webqq->m_cookies.clear();
@@ -323,13 +325,15 @@ public:
 				( avhttp::http_options::cookie, boost::str( boost::format( "chkuin=%s" ) % m_webqq->m_qqnum ) )
 				( avhttp::http_options::connection, "close" )
 			);
+			buffer = boost::make_shared<boost::asio::streambuf>();
 
 			yield async_http_download( stream,
 										/*url*/ boost::str( boost::format( "%s%s?uin=%s&appid=%s" ) % LWQQ_URL_CHECK_HOST % VCCHECKPATH % m_webqq->m_qqnum % APPID ),
+										*buffer,
 										*this );
 
 			// 解析验证码，然后带验证码登录.
-			parse_verify_code( ec, stream , buf );
+			parse_verify_code( ec, stream , *buffer );
 		}
 	}
 
@@ -396,6 +400,8 @@ public:
 	}
 private:
 	boost::shared_ptr<qqimpl::WebQQ> m_webqq;
+	read_streamptr stream;
+	boost::shared_ptr<boost::asio::streambuf> buffer;
 };
 
 // qq 登录办法-验证码登录
@@ -424,20 +430,23 @@ public:
 							  % APPID
 						  );
 
-		read_streamptr stream( new avhttp::http_stream( m_webqq->get_ioservice() ) );
+		stream = boost::make_shared<avhttp::http_stream>( boost::ref( m_webqq->get_ioservice() ) );
 		stream->request_options(
 			avhttp::request_opts()
 			( avhttp::http_options::cookie, m_webqq->m_cookies.lwcookies )
 			( avhttp::http_options::connection, "close" )
 		);
-		async_http_download( stream, url , *this );
+
+		buffer = boost::make_shared<boost::asio::streambuf>();
+
+		async_http_download( stream, url, *buffer, *this );
 	}
 
 	// 在这里实现　QQ 的登录.
-	void operator()( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buffer )
+	void operator()( const boost::system::error_code& ec, std::size_t bytes_transfered)
 	{
-		std::istream response( &buffer );
-		if( ( check_login( ec, stream, buffer ) == 0 ) && ( m_webqq->m_status == LWQQ_STATUS_ONLINE ) )
+		std::istream response( buffer.get());
+		if( ( check_login( ec, *buffer ) == 0 ) && ( m_webqq->m_status == LWQQ_STATUS_ONLINE ) )
 		{
 			m_webqq->siglogin();
 			m_webqq->m_clientid = generate_clientid();
@@ -476,7 +485,8 @@ public:
 	}
 
 private:
-	int check_login( const boost::system::error_code& ec, read_streamptr stream, boost::asio::streambuf & buffer ) {
+	int check_login( const boost::system::error_code& ec, boost::asio::streambuf & buffer )
+	{
 		const char * response = boost::asio::buffer_cast<const char*>( buffer.data() );
 
 		std::cout << console_out_str(response) << std::endl;
@@ -554,6 +564,8 @@ private:
 
 private:
 	boost::shared_ptr<qqimpl::WebQQ> m_webqq;
+	read_streamptr stream;
+	boost::shared_ptr<boost::asio::streambuf> buffer;
 	std::string vccode;
 };
 
