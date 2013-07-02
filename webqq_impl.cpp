@@ -889,7 +889,6 @@ void WebQQ::cb_search_group(std::string groupqqnum, const boost::system::error_c
 		}
 	}
 	handler(group, 0, "");
-
 }
 
 void WebQQ::search_group(std::string groupqqnum, std::string vfcode, webqq::search_group_handler handler)
