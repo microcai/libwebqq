@@ -88,20 +88,16 @@ public:
 				content_length = m_stream.response_options().find(avhttp::http_options::content_length);
 
 				BOOST_ASIO_CORO_YIELD boost::asio::async_read(m_stream, m_buffers,
-															  avhttp_async_read_body_condition(content_length),
-															  *this);
-			}else{
-				m_handler(ec, length);
-			}
+														avhttp_async_read_body_condition(content_length),
+														*this);
 
-			if(ec == boost::asio::error::eof && content_length.empty())
-			{
-				m_handler(boost::system::error_code(), length);
+				if(ec == boost::asio::error::eof && content_length.empty())
+				{
+					m_handler(boost::system::error_code(), length);
+					return;
+				}
 			}
-			else
-			{
-				m_handler(ec, length);
-			}
+			m_handler(ec, length);
 		}
 	}
 
@@ -115,7 +111,8 @@ private:
 template<class avHttpStream, class MutableBufferSequence, class Handler>
 async_read_body_op<avHttpStream, MutableBufferSequence, Handler> make_async_read_body_op(avHttpStream & stream, const avhttp::url & url, MutableBufferSequence &buffers, Handler _handler)
 {
-	return async_read_body_op<avHttpStream, MutableBufferSequence, Handler>(stream, url, buffers, _handler);
+	return async_read_body_op<avHttpStream, MutableBufferSequence, Handler>
+				(stream, url, buffers, _handler);
 }
 
 } // namespace detail
@@ -130,7 +127,8 @@ async_read_body_op<avHttpStream, MutableBufferSequence, Handler> make_async_read
  *
  */
 template<class avHttpStream, class MutableBufferSequence, class Handler>
-void async_read_body(avHttpStream & stream, const avhttp::url & url, MutableBufferSequence &buffers, Handler _handler)
+void async_read_body(avHttpStream & stream, const avhttp::url & url,
+					 MutableBufferSequence &buffers, Handler _handler)
 {
 	detail::make_async_read_body_op(stream, url, buffers, _handler);
 }
