@@ -307,7 +307,7 @@ public:
 
 			BOOST_LOG_TRIVIAL(debug) << "Get webqq version from " <<  LWQQ_URL_VERSION ;
 			// 首先获得版本.
-			yield avhttp::misc::async_read_body( *stream, LWQQ_URL_VERSION, * buffer,  *this );
+			yield avhttp::async_read_body( *stream, LWQQ_URL_VERSION, * buffer,  *this );
 
 			m_webqq->m_version = parse_version( *buffer );
 
@@ -329,7 +329,7 @@ public:
 			);
 			buffer = boost::make_shared<boost::asio::streambuf>();
 
-			yield avhttp::misc::async_read_body( *stream,
+			yield avhttp::async_read_body( *stream,
 										/*url*/ boost::str( boost::format( "%s%s?uin=%s&appid=%s" ) % LWQQ_URL_CHECK_HOST % VCCHECKPATH % m_webqq->m_qqnum % APPID ),
 										*buffer,
 										*this );
@@ -441,7 +441,7 @@ public:
 
 		buffer = boost::make_shared<boost::asio::streambuf>();
 
-		avhttp::misc::async_read_body( *stream, url, *buffer, *this );
+		avhttp::async_read_body( *stream, url, *buffer, *this );
 	}
 
 	// 在这里实现　QQ 的登录.

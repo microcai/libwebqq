@@ -69,7 +69,7 @@ public:
 			( avhttp::http_options::connection, "close" )
 		);
 		buf = boost::make_shared<boost::asio::streambuf>();
-		avhttp::misc::async_read_body(* stream, LWQQ_URL_SET_STATUS , * buf, * this );
+		avhttp::async_read_body(* stream, LWQQ_URL_SET_STATUS , * buf, * this );
 	}
 
 	void operator()( const boost::system::error_code& ec, std::size_t bytes_transfered)
