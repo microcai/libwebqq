@@ -6,7 +6,7 @@ AM_CPPFLAGS = -I${top_srcdir}/avhttp/include -I${top_srcdir}/avproxy/include -I$
 noinst_LTLIBRARIES = libwebqq.la
 
 libwebqq_la_SOURCES = process_group_msg.hpp webqq.cpp webqq.h md5.cpp  url.cpp  webqq_face.cpp  webqq_impl.h webqq_impl.cpp \
-		constant.hpp  httpagent.hpp  md5.hpp  url.hpp  utf8.hpp  webqq_login.hpp clean_cache.hpp lwqq_status.hpp
+		constant.hpp md5.hpp  url.hpp  utf8.hpp  webqq_login.hpp clean_cache.hpp lwqq_status.hpp
 
 libwebqq_la_LDFLAGS = -static
 
