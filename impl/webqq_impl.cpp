@@ -81,7 +81,7 @@ static std::string parse_unescape(const std::string &);
 static std::string create_post_data( std::string vfwebqq )
 {
 	std::string m = boost::str( boost::format( "{\"vfwebqq\":\"%s\"}" ) % vfwebqq );
-	return std::string( "r=" ) + url_encode( m.c_str() );
+	return std::string( "r=" ) + url_encode(m);
 }
 
 static pt::wptree json_parse( const wchar_t * doc )
@@ -483,7 +483,7 @@ void WebQQ::do_poll_one_msg( std::string ptwebqq )
 						  % m_psessionid
 					  );
 
-	msg = boost::str( boost::format( "r=%s\r\n" ) %  url_encode( msg.c_str() ) );
+	msg = boost::str( boost::format( "r=%s\r\n" ) %  url_encode(msg) );
 
 	read_streamptr pollstream( new avhttp::http_stream( m_io_service ) );
 	pollstream->request_options( avhttp::request_opts()

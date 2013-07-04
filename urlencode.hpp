@@ -19,7 +19,6 @@
  *
  * @return A url-encoded version of str
  */
-std::string url_encode( const char *str );
 std::string url_encode( const std::string str );
 
 #endif  /* ___LWQQ_URL_H___ */
