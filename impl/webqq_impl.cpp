@@ -1008,10 +1008,9 @@ struct escape_iterator
 
 	escape_iterator( BaseIterator b ): m_position( b ) {}
 
-	escape_iterator& operator ++()
+	void operator ++()
 	{
 		++m_position;
-		return *this;
 	}
 
 	reference operator* () const
