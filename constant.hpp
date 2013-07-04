@@ -20,7 +20,7 @@
 #pragma once
 
 /* URL for webqq login */
-#define LWQQ_URL_LOGIN_HOST "http://ptlogin2.qq.com"
+#define LWQQ_URL_LOGIN_HOST "https://ssl.ptlogin2.qq.com"
 #define LWQQ_URL_CHECK_HOST "http://check.ptlogin2.qq.com"
 #define LWQQ_URL_VERIFY_IMG "http://captcha.qq.com/getimage?aid=%s&uin=%s"
 #define VCCHECKPATH "/check"
