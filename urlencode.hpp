@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef ___LWQQ_URL_H
-#define ___LWQQ_URL_H
+#ifndef ___LWQQ_URL_H___
+#define ___LWQQ_URL_H___
 
 /**
  * NB: be sure to free() the returned string after use
@@ -22,16 +22,4 @@
 std::string url_encode( const char *str );
 std::string url_encode( const std::string str );
 
-/**
- * NB: be sure to free() the returned string after use
- *
- * @param str
- *
- * @return A url-decoded version of str
- */
-std::string url_decode( const char *str );
-std::string url_whole_encode( const char *str );
-
-//char* to_gbk(const char* utf8);
-
-#endif  /* ___LWQQ_URL_H */
+#endif  /* ___LWQQ_URL_H___ */

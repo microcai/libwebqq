@@ -18,7 +18,7 @@
 
 #include <boost/assign.hpp>
 
-#include "webqq_impl.h"
+#include "webqq_impl.hpp"
 
 void qqimpl::WebQQ::init_face_map()
 {

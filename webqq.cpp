@@ -24,8 +24,8 @@ namespace fs = boost::filesystem;
 #include <avhttp/async_read_body.hpp>
 
 #include "webqq.h"
-#include "webqq_impl.h"
-#include "url.hpp"
+#include "impl/webqq_impl.hpp"
+#include "urlencode.hpp"
 
 webqq::webqq( boost::asio::io_service& asio_service, std::string qqnum, std::string passwd)
 {
