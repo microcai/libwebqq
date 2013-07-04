@@ -22,10 +22,11 @@
 namespace fs = boost::filesystem;
 #include <avhttp.hpp>
 #include <avhttp/async_read_body.hpp>
+#include "boost/urlencode.hpp"
 
 #include "webqq.h"
 #include "impl/webqq_impl.hpp"
-#include "urlencode.hpp"
+
 
 webqq::webqq( boost::asio::io_service& asio_service, std::string qqnum, std::string passwd)
 {
@@ -132,7 +133,7 @@ void webqq::async_fetch_cface(boost::asio::io_service & io_service, const qqMsgC
 						% cface.gid
 						% cface.uin
 						% cface.file_id
-						% url_encode( cface.name )
+						% boost::url_encode( cface.name )
 						% cface.vfwebqq
 					);
 
@@ -159,7 +160,7 @@ void webqq::async_cface_url_final(boost::asio::io_service & io_service, const qq
 						% cface.gid
 						% cface.uin
 						% cface.file_id
-						% url_encode( cface.name )
+						% boost::url_encode( cface.name )
 						% cface.vfwebqq
 					);
 

@@ -37,10 +37,11 @@ namespace js = boost::property_tree::json_parser;
 #include "boost/timedcall.hpp"
 #include "boost/multihandler.hpp"
 #include "boost/consolestr.hpp"
+#include "boost/urlencode.hpp"
 
 #include "constant.hpp"
 #include "../webqq.h"
-#include "../urlencode.hpp"
+
 #include "webqq_impl.hpp"
 #include "md5.hpp"
 #include "utf8.hpp"
@@ -81,7 +82,7 @@ static std::string parse_unescape(const std::string &);
 static std::string create_post_data( std::string vfwebqq )
 {
 	std::string m = boost::str( boost::format( "{\"vfwebqq\":\"%s\"}" ) % vfwebqq );
-	return std::string( "r=" ) + url_encode(m);
+	return std::string( "r=" ) + boost::url_encode(m);
 }
 
 static pt::wptree json_parse( const wchar_t * doc )
@@ -181,7 +182,7 @@ void WebQQ::send_group_message_internal( std::string group, std::string msg, sen
 
 	std::string postdata =  boost::str(
 							   boost::format( "r=%s&clientid=%s&psessionid=%s" )
-							   % url_encode(messagejson)
+							   % boost::url_encode(messagejson)
 							   % m_clientid
 							   % m_psessionid
 						   );
@@ -483,7 +484,7 @@ void WebQQ::do_poll_one_msg( std::string ptwebqq )
 						  % m_psessionid
 					  );
 
-	msg = boost::str( boost::format( "r=%s\r\n" ) %  url_encode(msg) );
+	msg = boost::str( boost::format( "r=%s\r\n" ) %  boost::url_encode(msg) );
 
 	read_streamptr pollstream( new avhttp::http_stream( m_io_service ) );
 	pollstream->request_options( avhttp::request_opts()
@@ -966,7 +967,7 @@ void WebQQ::join_group(qqGroup_ptr group, std::string vfcode, webqq::join_group_
 								% group->code % vfcode % m_cookies.verifysession % m_vfwebqq
 							);
 
-	postdata = std::string("r=") + url_encode(postdata);
+	postdata = std::string("r=") + boost::url_encode(postdata);
 
 	read_streamptr stream(new avhttp::http_stream(m_io_service));
 	stream->request_options(avhttp::request_opts()

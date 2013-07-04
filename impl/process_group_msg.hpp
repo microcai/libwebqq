@@ -35,13 +35,13 @@ namespace js = boost::property_tree::json_parser;
 #include <boost/asio/yield.hpp>
 
 #include "boost/timedcall.hpp"
+#include "boost/urlencode.hpp"
+#include "boost/consolestr.hpp"
 
 #include "webqq_impl.hpp"
 
 #include "constant.hpp"
 #include "md5.hpp"
-#include "../urlencode.hpp"
-#include "boost/consolestr.hpp"
 
 #include "utf8.hpp"
 

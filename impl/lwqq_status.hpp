@@ -11,10 +11,9 @@ namespace js = boost::property_tree::json_parser;
 #include <avhttp/async_read_body.hpp>
 
 #include "boost/timedcall.hpp"
-
+#include "boost/urlencode.hpp"
 
 #include "../webqq.h"
-#include "../urlencode.hpp"
 
 #include "webqq_impl.hpp"
 
@@ -55,7 +54,7 @@ public:
 					% (m_webqq->m_psessionid.empty() ? std::string("null") : m_webqq->m_psessionid)
 				);
 
-		msg = boost::str( boost::format( "r=%s" ) % url_encode( msg.c_str() ) );
+		msg = boost::str( boost::format( "r=%s" ) % boost::url_encode(msg) );
 
 		stream.reset( new avhttp::http_stream( m_webqq->get_ioservice() ) );
 		stream->request_options(
