@@ -1013,6 +1013,11 @@ struct escape_iterator
 		++m_position;
 	}
 
+	void operator ++(int)
+	{
+		++m_position;
+	}
+
 	reference operator* () const
 	{
 		char buf[8] = {0};
