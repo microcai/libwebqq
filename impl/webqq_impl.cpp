@@ -362,7 +362,7 @@ public:
 			// 处理.
 			pt::json_parser::read_json( resultjson, jsonobj );
 			int retcode = jsonobj.get<int>("retcode");
-			if (retcode ==  99999 ){
+			if (retcode ==  99999 || retcode ==  100000 ){
 				_io_service.post( boost::asio::detail::bind_handler( handler, std::string("-1") ) );
 			}else{
 				std::string qqnum = jsonobj.get<std::string>( "result.account" );
