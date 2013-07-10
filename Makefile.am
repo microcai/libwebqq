@@ -1,5 +1,5 @@
 
-EXTRA_DIST = impl utf CMakeLists.txt
+EXTRA_DIST = impl utf CMakeLists.txt README.md
 
 AM_CPPFLAGS = -I${top_srcdir}/avhttp/include -I${top_srcdir}/avproxy/include -I${top_srcdir}
 
