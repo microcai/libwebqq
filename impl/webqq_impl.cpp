@@ -40,7 +40,7 @@ namespace js = boost::property_tree::json_parser;
 #include "boost/urlencode.hpp"
 
 #include "constant.hpp"
-#include "../webqq.h"
+#include "../webqq.hpp"
 
 #include "webqq_impl.hpp"
 #include "md5.hpp"

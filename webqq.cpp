@@ -24,7 +24,7 @@ namespace fs = boost::filesystem;
 #include <avhttp/async_read_body.hpp>
 #include "boost/urlencode.hpp"
 
-#include "webqq.h"
+#include "webqq.hpp"
 #include "impl/webqq_impl.hpp"
 
 

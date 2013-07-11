@@ -13,7 +13,7 @@ namespace js = boost::property_tree::json_parser;
 #include "boost/timedcall.hpp"
 #include "boost/urlencode.hpp"
 
-#include "../webqq.h"
+#include "../webqq.hpp"
 
 #include "webqq_impl.hpp"
 
