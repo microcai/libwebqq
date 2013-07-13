@@ -96,8 +96,8 @@ static pt::wptree json_parse( const wchar_t * doc )
 
 // build webqq and setup defaults
 WebQQ::WebQQ( boost::asio::io_service& _io_service,
-			  std::string _qqnum, std::string _passwd)
-	: m_io_service( _io_service ), m_qqnum( _qqnum ), m_passwd( _passwd ), m_status( LWQQ_STATUS_OFFLINE ),
+		std::string _qqnum, std::string _passwd)
+: m_io_service( _io_service ), m_qqnum( _qqnum ), m_passwd( _passwd ), m_status( LWQQ_STATUS_OFFLINE ),
 	m_msg_queue( 20 ) //　最多保留最后的20条未发送消息.
 {
 #ifndef _WIN32
@@ -169,41 +169,41 @@ void WebQQ::send_group_message_internal( std::string group, std::string msg, sen
 {
 	//unescape for POST
 	std::string messagejson = boost::str(
-					boost::format("{\"group_uin\":\"%s\", "
-									"\"content\":\"["
-									"\\\"%s\\\","
-									"[\\\"font\\\",{\\\"name\\\":\\\"宋体\\\",\\\"size\\\":\\\"9\\\",\\\"style\\\":[0,0,0],\\\"color\\\":\\\"000000\\\"}]"
-									"]\","
-									"\"msg_id\":%ld,"
-									"\"clientid\":\"%s\","
-									"\"psessionid\":\"%s\"}")
-							%group % parse_unescape( msg ) % m_msg_id % m_clientid % m_psessionid
-						);
+			boost::format("{\"group_uin\":\"%s\", "
+				"\"content\":\"["
+				"\\\"%s\\\","
+				"[\\\"font\\\",{\\\"name\\\":\\\"宋体\\\",\\\"size\\\":\\\"9\\\",\\\"style\\\":[0,0,0],\\\"color\\\":\\\"000000\\\"}]"
+				"]\","
+				"\"msg_id\":%ld,"
+				"\"clientid\":\"%s\","
+				"\"psessionid\":\"%s\"}")
+			%group % parse_unescape( msg ) % m_msg_id % m_clientid % m_psessionid
+			);
 
 	std::string postdata =  boost::str(
-							   boost::format( "r=%s&clientid=%s&psessionid=%s" )
-							   % boost::url_encode(messagejson)
-							   % m_clientid
-							   % m_psessionid
-						   );
+			boost::format( "r=%s&clientid=%s&psessionid=%s" )
+			% boost::url_encode(messagejson)
+			% m_clientid
+			% m_psessionid
+			);
 
 	read_streamptr stream( new avhttp::http_stream( m_io_service ) );
 	stream->request_options(
-		avhttp::request_opts()
-		( avhttp::http_options::request_method, "POST" )
-		( avhttp::http_options::cookie, m_cookies.lwcookies )
-		( avhttp::http_options::referer, "http://d.web2.qq.com/proxy.html?v=20101025002" )
-		( avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8" )
-		( avhttp::http_options::request_body, postdata )
-		( avhttp::http_options::content_length, boost::lexical_cast<std::string>( postdata.length() ) )
-		( avhttp::http_options::connection, "close" )
-	);
+			avhttp::request_opts()
+			( avhttp::http_options::request_method, "POST" )
+			( avhttp::http_options::cookie, m_cookies.lwcookies )
+			( avhttp::http_options::referer, "http://d.web2.qq.com/proxy.html?v=20101025002" )
+			( avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8" )
+			( avhttp::http_options::request_body, postdata )
+			( avhttp::http_options::content_length, boost::lexical_cast<std::string>( postdata.length() ) )
+			( avhttp::http_options::connection, "close" )
+			);
 
 	boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
 
 	avhttp::async_read_body( *stream, LWQQ_URL_SEND_QUN_MSG, *buffer,
-						 boost::bind( &WebQQ::cb_send_msg, this, _1, stream, buffer, donecb )
-					   );
+			boost::bind( &WebQQ::cb_send_msg, this, _1, stream, buffer, donecb )
+			);
 }
 
 void WebQQ::cb_send_msg( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer, boost::function<void ( const boost::system::error_code& ec )> donecb )
@@ -227,7 +227,7 @@ void WebQQ::cb_send_msg( const boost::system::error_code& ec, read_streamptr str
 	} catch( const pt::json_parser_error & jserr ) {
 		std::istream	response( buffer.get() );
 		BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : " << "parse json error : " << jserr.what()
- 			<<  "\n=========\n" <<  jserr.message() << "\n=========" ;
+			<<  "\n=========\n" <<  jserr.message() << "\n=========" ;
 		m_msg_queue.pop_front();
 	} catch( const pt::ptree_bad_path & badpath ) {
 		BOOST_LOG_TRIVIAL(error) << __FILE__ << " : " << __LINE__ << " : " <<  "bad path " <<  badpath.what();
@@ -552,7 +552,7 @@ void WebQQ::cb_poll_msg( const boost::system::error_code& ec, read_streamptr str
 
 void WebQQ::process_group_message( const boost::property_tree::wptree& jstree )
 {
-	qqimpl::detail::process_group_message_op(*this, jstree);
+	qqimpl::detail::process_group_message_op(shared_from_this(), jstree);
 }
 
 static void cb_get_msg_tip(const boost::system::error_code& ec, std::size_t bytes_transfered, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer)

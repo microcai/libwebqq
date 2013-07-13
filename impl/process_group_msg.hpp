@@ -52,12 +52,10 @@ namespace detail
 
 struct process_group_message_op : boost::asio::coroutine
 {
-	typedef void result_type;
-
-	process_group_message_op(WebQQ & _webqqclient, const boost::property_tree::wptree& jstree )
-		: m_jstree(boost::make_shared<boost::property_tree::wptree>(jstree) ), webqqclient(_webqqclient)
+	process_group_message_op(boost::shared_ptr<WebQQ> webqq, const boost::property_tree::wptree& jstree/*, webqq::webqq_poll_handler_t handler*/)
+		: m_jstree(boost::make_shared<boost::property_tree::wptree>(jstree) ), m_webqq(webqq) //, m_handler(handler)
 	{
-		avloop_idle_post(webqqclient.get_ioservice(), boost::bind(*this, boost::system::error_code(), std::string("") ) );
+		avloop_idle_post(m_webqq->get_ioservice(), boost::asio::detail::bind_handler(*this, boost::system::error_code(), std::string("") ) );
 	}
 
 	void operator()(boost::system::error_code ec, std::string url)
@@ -93,23 +91,24 @@ struct process_group_message_op : boost::asio::coroutine
 					{
 						msg.type = qqMsg::LWQQ_MSG_FACE;
 						int wface = boost::lexical_cast<int>( content->second.rbegin()->second.data() );
-						msg.face = webqqclient.facemap[wface];
+						msg.face = m_webqq->facemap[wface];
 						messagecontent.push_back( msg );
 					}
 					else if( content->second.begin()->second.data() == L"cface" )
 					{
 						msg.type = qqMsg::LWQQ_MSG_CFACE;
 						msg.cface.uin = who;
-						msg.cface.gid = webqqclient.get_Group_by_gid( group_code )->code;
+						msg.cface.gid = m_webqq->get_Group_by_gid( group_code )->code;
 
 						msg.cface.file_id = wide_utf8( content->second.rbegin()->second.get<std::wstring> ( L"file_id" ) );
 						msg.cface.name = wide_utf8( content->second.rbegin()->second.get<std::wstring> ( L"name" ) );
-						msg.cface.vfwebqq = webqqclient.m_vfwebqq;
+						msg.cface.vfwebqq = m_webqq->m_vfwebqq;
 						msg.cface.key = wide_utf8( content->second.rbegin()->second.get<std::wstring> ( L"key" ) );
 						msg.cface.server = wide_utf8( content->second.rbegin()->second.get<std::wstring> ( L"server" ) );
-						msg.cface.cookie = webqqclient.m_cookies.lwcookies;
+						msg.cface.cookie = m_webqq->m_cookies.lwcookies;
 
-						yield webqq::async_cface_url_final(webqqclient.get_ioservice(), msg.cface, *this );
+						BOOST_ASIO_CORO_YIELD
+							webqq::async_cface_url_final(m_webqq->get_ioservice(), msg.cface, *this );
 						msg.cface.gchatpicurl = url;
 
 						messagecontent.push_back( msg );
@@ -124,13 +123,13 @@ struct process_group_message_op : boost::asio::coroutine
 				}
 			}
 
-			webqqclient.siggroupmessage( group_code, who, messagecontent );
+			m_webqq->siggroupmessage( group_code, who, messagecontent );
 		}
 
 	}
 
 private:
-	WebQQ & webqqclient;
+	boost::shared_ptr<WebQQ> m_webqq;
 	boost::shared_ptr<boost::property_tree::wptree> m_jstree;
 	boost::property_tree::wptree * value_content;
 	boost::property_tree::wptree::iterator	m_iterator, m_iterator_end;
