@@ -31,8 +31,6 @@ namespace js = boost::property_tree::json_parser;
 #include <avhttp.hpp>
 #include <avhttp/async_read_body.hpp>
 
-#include <boost/asio/yield.hpp>
-
 #include "boost/timedcall.hpp"
 #include "boost/urlencode.hpp"
 #include "boost/consolestr.hpp"
@@ -300,13 +298,13 @@ public:
 	// 在这里实现　QQ 的登录.
 	void operator()( const boost::system::error_code& ec, std::size_t bytes_transfered ) {
 		//　登录步骤.
-		reenter( this ) {
+		BOOST_ASIO_CORO_REENTER( this ) {
 			stream = boost::make_shared<avhttp::http_stream>( boost::ref(m_webqq->get_ioservice()));
 			buffer = boost::make_shared<boost::asio::streambuf>();
 
 			BOOST_LOG_TRIVIAL(debug) << "Get webqq version from " <<  LWQQ_URL_VERSION ;
 			// 首先获得版本.
-			yield avhttp::async_read_body( *stream, LWQQ_URL_VERSION, * buffer,  *this );
+			BOOST_ASIO_CORO_YIELD avhttp::async_read_body( *stream, LWQQ_URL_VERSION, * buffer,  *this );
 
 			m_webqq->m_version = parse_version( *buffer );
 
@@ -328,7 +326,7 @@ public:
 			);
 			buffer = boost::make_shared<boost::asio::streambuf>();
 
-			yield avhttp::async_read_body( *stream,
+			BOOST_ASIO_CORO_YIELD avhttp::async_read_body( *stream,
 										/*url*/ boost::str( boost::format( "%s%s?uin=%s&appid=%s" ) % LWQQ_URL_CHECK_HOST % VCCHECKPATH % m_webqq->m_qqnum % APPID ),
 										*buffer,
 										*this );
