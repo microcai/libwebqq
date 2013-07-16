@@ -31,6 +31,8 @@ namespace js = boost::property_tree::json_parser;
 #include <avhttp.hpp>
 #include <avhttp/async_read_body.hpp>
 
+#include <boost/hash.hpp>
+
 #include "boost/timedcall.hpp"
 #include "boost/urlencode.hpp"
 #include "boost/consolestr.hpp"
@@ -38,10 +40,24 @@ namespace js = boost::property_tree::json_parser;
 #include "webqq_impl.hpp"
 
 #include "constant.hpp"
-#include "md5.hpp"
 
 namespace qqimpl {
 namespace detail {
+
+
+inline std::string lutil_md5_data(const std::string & data)
+{
+	boost::hashes::md5::digest_type md5sum ;
+	md5sum = boost::hashes::compute_digest<boost::hashes::md5>(data);
+	return md5sum.str();
+}
+
+inline std::string lutil_md5_digest(const std::string & data)
+{
+	boost::hashes::md5::digest_type md5sum ;
+	md5sum = boost::hashes::compute_digest<boost::hashes::md5>(data);
+	return std::string(reinterpret_cast<const char*>(md5sum.c_array()), md5sum.static_size);
+}
 
 static void upcase_string( char *str, int len )
 {

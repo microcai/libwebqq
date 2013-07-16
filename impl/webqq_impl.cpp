@@ -43,7 +43,6 @@ namespace js = boost::property_tree::json_parser;
 #include "../webqq.hpp"
 
 #include "webqq_impl.hpp"
-#include "md5.hpp"
 #include "utf8.hpp"
 #include "lwqq_status.hpp"
 #include "webqq_login.hpp"
