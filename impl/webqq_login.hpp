@@ -117,7 +117,6 @@ static std::string lwqq_enc_pwd( const std::string & pwd, const std::string & vc
 {
 	int i;
 	int uin_byte_length;
-	char buf[128] = {0};
 	char _uin[9] = {0};
 
 	/* Calculate the length of uin (it must be 8?) */
@@ -143,21 +142,17 @@ static std::string lwqq_enc_pwd( const std::string & pwd, const std::string & vc
 	}
 
 	/* Equal to "var I=hexchar2bin(md5(M));" */
-	lutil_md5_digest( ( unsigned char * )pwd.c_str(), pwd.length(), ( char * )buf );
+	std::string I =  lutil_md5_digest( pwd);
 
 	/* Equal to "var H=md5(I+pt.uin);" */
-	memcpy( buf + 16, _uin, uin_byte_length );
-	lutil_md5_data( ( unsigned char * )buf, 16 + uin_byte_length, ( char * )buf );
+	std::string H = lutil_md5_data( I + std::string(_uin, uin_byte_length));
 
 	/* Equal to var G=md5(H+C.verifycode.value.toUpperCase()); */
-	std::sprintf( buf + strlen( buf ), /*sizeof(buf) - strlen(buf),*/ "%s", vc.c_str() );
-	upcase_string( buf, strlen( buf ) );
-
-	lutil_md5_data( ( unsigned char * )buf, strlen( buf ), ( char * )buf );
-	upcase_string( buf, strlen( buf ) );
-
-	/* OK, seems like every is OK */
-	return buf;
+	std::string G = H + (vc);
+	boost::to_upper(G);
+	std::string final =  lutil_md5_data(G);
+	boost::to_upper(final);
+	return final;
 }
 
 static std::string get_cookie( const std::string & cookie, std::string key )
