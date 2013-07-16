@@ -20,10 +20,11 @@ namespace js = boost::property_tree::json_parser;
 #include "constant.hpp"
 #include "boost/consolestr.hpp"
 
+namespace webqq {
 namespace qqimpl {
 namespace detail {
 
-static std::string lwqq_status_to_str( LWQQ_STATUS status )
+static std::string lwqq_status_to_str(LWQQ_STATUS status )
 {
 	switch( status ) {
 		case LWQQ_STATUS_ONLINE: return "online"; break;
@@ -137,3 +138,4 @@ private:
 
 }
 }
+} // namespace webqq

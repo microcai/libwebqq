@@ -69,6 +69,8 @@ inline int snprintf(char* buf, int len, char const* fmt, ...)
 
 #endif // WIN32
 
+namespace webqq{
+
 static void dummy(){}
 
 using namespace qqimpl;
@@ -382,11 +384,11 @@ private:
 	boost::asio::io_service& _io_service;
 };
 
-class SYMBOL_HIDDEN update_group_member_qq : boost::asio::coroutine {
+class SYMBOL_HIDDEN update_group_member_qq_op : boost::asio::coroutine {
 public:
 	typedef void result_type;
 
-	update_group_member_qq( boost::shared_ptr<WebQQ>  _webqq, boost::shared_ptr<qqGroup> _group )
+	update_group_member_qq_op( boost::shared_ptr<WebQQ>  _webqq, boost::shared_ptr<qqGroup> _group )
 		: group( _group ), m_webqq( _webqq ) {
 		m_webqq->get_ioservice().post( boost::bind( *this, "" ) );
 	}
@@ -416,7 +418,7 @@ private:
 //　将组成员的 QQ 号码一个一个更新过来.
 void WebQQ::update_group_member_qq(boost::shared_ptr<qqGroup> group )
 {
-	::update_group_member_qq( shared_from_this(), group );
+	update_group_member_qq_op op( shared_from_this(), group );
 }
 
 qqGroup_ptr WebQQ::get_Group_by_gid( std::string gid )
@@ -1057,3 +1059,5 @@ static std::string parse_unescape( const std::string & source )
 
 	return result;
 }
+
+} // namespace webqq

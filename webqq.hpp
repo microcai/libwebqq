@@ -17,8 +17,8 @@
  *
  */
 
-#ifndef WEBQQ_H
-#define WEBQQ_H
+#pragma once
+
 #include <string>
 #include <vector>
 #include <map>
@@ -53,6 +53,7 @@
 #endif
 #endif
 
+namespace webqq{
 namespace qqimpl {
 class WebQQ;
 };
@@ -182,4 +183,4 @@ private:
 	boost::shared_ptr<qqimpl::WebQQ> impl;
 };
 
-#endif // WEBQQ_H
+}

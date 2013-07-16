@@ -41,6 +41,7 @@ namespace js = boost::property_tree::json_parser;
 
 #include "constant.hpp"
 
+namespace webqq {
 namespace qqimpl {
 namespace detail {
 
@@ -580,5 +581,6 @@ private:
 	std::string vccode;
 };
 
+}
 }
 }

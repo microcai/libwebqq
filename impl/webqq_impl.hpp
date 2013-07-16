@@ -16,8 +16,7 @@
  *
  */
 
-#ifndef WEBQQ_IMPL_H
-#define WEBQQ_IMPL_H
+#pragma once
 
 #if defined _WIN32 || defined __CYGWIN__
 #define SYMBOL_HIDDEN
@@ -52,6 +51,7 @@ typedef boost::shared_ptr<avhttp::http_stream> read_streamptr;
 #pragma GCC visibility push(hidden)
 #endif
 
+namespace webqq{
 namespace qqimpl{
 
 typedef enum LwqqMsgType {
@@ -182,16 +182,10 @@ typedef struct LwqqCookies {
 
 typedef std::map<std::string, boost::shared_ptr<qqGroup> > grouplist;
 
-namespace detail {
-class corologin;
-class corologin_vc;
-class lwqq_change_status;
-class lwqq_update_status;
-class process_group_message_op;
-}
-
-class SYMBOL_HIDDEN WebQQ  : public boost::enable_shared_from_this<WebQQ> {
+class SYMBOL_HIDDEN WebQQ  : public boost::enable_shared_from_this<WebQQ>
+{
 	typedef boost::function0<void>		done_callback_handler;
+public:
 	using boost::enable_shared_from_this<WebQQ>::shared_from_this;
 public:
 	WebQQ( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd);
@@ -244,7 +238,7 @@ public:// signals
 	// 有群消息的时候激发.
 	boost::signals2::signal< void ( const std::string group, const std::string who, const std::vector<qqMsg> & )> siggroupmessage;
 
-private:
+public:
 	void init_face_map();
 
 	void update_group_member_qq(boost::shared_ptr<qqGroup> group );
@@ -277,7 +271,7 @@ public:
 	std::string	m_vfwebqq;
 	LwqqCookies m_cookies;
 
-private:
+public:
 	boost::asio::io_service & m_io_service;
 
 	std::string m_qqnum, m_passwd;
@@ -294,19 +288,12 @@ private:
 	bool		m_group_msg_insending;
 	boost::circular_buffer<boost::tuple<std::string, std::string, send_group_message_cb> >	m_msg_queue;
 	std::map<int, int> facemap;
-
-	friend class ::webqq;
-	friend class detail::corologin;
-	friend class detail::corologin_vc;
-	friend class detail::lwqq_change_status;
-	friend class detail::process_group_message_op;
 };
 
 };
+
+} // namespace webqq
 
 #if !defined(_MSC_VER)
 #pragma GCC visibility pop
 #endif
-
-
-#endif // WEBQQ_H

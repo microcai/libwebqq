@@ -20,7 +20,7 @@
 
 #include "webqq_impl.hpp"
 
-void qqimpl::WebQQ::init_face_map()
+void webqq::qqimpl::WebQQ::init_face_map()
 {
 	boost::assign::insert( facemap )
 	( 0, 14 )

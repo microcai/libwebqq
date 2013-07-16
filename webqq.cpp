@@ -27,6 +27,7 @@ namespace fs = boost::filesystem;
 #include "webqq.hpp"
 #include "impl/webqq_impl.hpp"
 
+namespace webqq{
 
 webqq::webqq( boost::asio::io_service& asio_service, std::string qqnum, std::string passwd)
 {
@@ -184,3 +185,5 @@ void webqq::join_group( qqGroup_ptr group, std::string vfcode, webqq::join_group
 {
 	impl->join_group(group, vfcode, handler);
 }
+
+} // namespace webqq

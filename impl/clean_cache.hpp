@@ -10,6 +10,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/timedcall.hpp>
 
+namespace webqq{
 namespace detail
 {
 
@@ -61,3 +62,5 @@ inline void clean_cache( boost::asio::io_service &io_service)
 							boost::bind( &clean_cache, boost::ref( io_service ), _1)
 						 );
 }
+
+} // namespace webqq

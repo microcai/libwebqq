@@ -44,10 +44,9 @@ namespace js = boost::property_tree::json_parser;
 
 #include "utf8.hpp"
 
-namespace qqimpl
-{
-namespace detail
-{
+namespace webqq{
+namespace qqimpl{
+namespace detail{
 
 struct process_group_message_op : boost::asio::coroutine
 {
@@ -139,3 +138,4 @@ private:
 
 }
 }
+} // namespace webqq
