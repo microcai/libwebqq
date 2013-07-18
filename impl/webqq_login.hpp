@@ -123,6 +123,12 @@ static std::string lwqq_enc_pwd( const std::string & pwd, const std::string & vc
 	return G;
 }
 
+inline std::string generate_clientid()
+{
+	srand( time( NULL ) );
+	return boost::str( boost::format( "%d%d%d" ) % (rand() % 90 + 10) % (rand() % 90 + 10) % (rand() % 90 + 10) );
+}
+
 // qq 登录办法-验证码登录
 class SYMBOL_HIDDEN corologin_vc : boost::asio::coroutine {
 public:

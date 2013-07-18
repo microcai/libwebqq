@@ -41,12 +41,6 @@ namespace webqq {
 namespace qqimpl {
 namespace detail {
 
-inline std::string generate_clientid()
-{
-	srand( time( NULL ) );
-	return boost::str( boost::format( "%d%d%d" ) % (rand() % 90 + 10) % (rand() % 90 + 10) % (rand() % 90 + 10) );
-}
-
 // qq 登录办法
 class SYMBOL_HIDDEN check_login_op : boost::asio::coroutine{
 public:
