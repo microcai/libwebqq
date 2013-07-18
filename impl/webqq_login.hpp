@@ -63,17 +63,7 @@ inline std::string lutil_md5_digest(const std::string & data)
 	return std::string(reinterpret_cast<const char*>(md5sum.c_array()), md5sum.static_size);
 }
 
-static void upcase_string( char *str, int len )
-{
-	int i;
-
-	for( i = 0; i < len; ++i ) {
-		if( islower( str[i] ) )
-			str[i] = toupper( str[i] );
-	}
-}
-
-static std::string parse_version(boost::asio::streambuf& buffer)
+inline std::string parse_version(boost::asio::streambuf& buffer)
 {
 	std::string response;
 	response.resize(buffer.size());
@@ -90,7 +80,7 @@ static std::string parse_version(boost::asio::streambuf& buffer)
 	return "";
 }
 
-static std::string uin_decode(const std::string &uin)
+inline std::string uin_decode(const std::string &uin)
 {
 	int i;
 	int uin_byte_length;
