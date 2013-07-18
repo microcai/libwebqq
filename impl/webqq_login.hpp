@@ -97,24 +97,7 @@ static std::string parse_version( boost::asio::streambuf& buffer )
 	return "";
 }
 
-/**
- * I hacked the javascript file named comm.js, which received from tencent
- * server, and find that fuck tencent has changed encryption algorithm
- * for password in webqq3 . The new algorithm is below(descripted with javascript):
- * var M=C.p.value; // M is the qq password
- * var I=hexchar2bin(md5(M)); // Make a md5 digest
- * var H=md5(I+pt.uin); // Make md5 with I and uin(see below)
- * var G=md5(H+C.verifycode.value.toUpperCase());
- *
- * @param pwd User's password
- * @param vc Verify Code. e.g. "!M6C"
- * @param uin A string like "\x00\x00\x00\x00\x54\xb3\x3c\x53", NB: it
- *        must contain 8 hexadecimal number, in this example, it equaled
- *        to "0x0,0x0,0x0,0x0,0x54,0xb3,0x3c,0x53"
- *
- * @return Encoded password on success, else NULL on failed
- */
-static std::string lwqq_enc_pwd( const std::string & pwd, const std::string & vc, const std::string &uin )
+static std::string uin_decode(const std::string &uin)
 {
 	int i;
 	int uin_byte_length;
@@ -141,12 +124,33 @@ static std::string lwqq_enc_pwd( const std::string & pwd, const std::string & vc
 
 		_uin[i] = tmp;
 	}
+	return std::string(_uin, 8);
+}
 
+/**
+ * I hacked the javascript file named comm.js, which received from tencent
+ * server, and find that fuck tencent has changed encryption algorithm
+ * for password in webqq3 . The new algorithm is below(descripted with javascript):
+ * var M=C.p.value; // M is the qq password
+ * var I=hexchar2bin(md5(M)); // Make a md5 digest
+ * var H=md5(I+pt.uin); // Make md5 with I and uin(see below)
+ * var G=md5(H+C.verifycode.value.toUpperCase());
+ *
+ * @param pwd User's password
+ * @param vc Verify Code. e.g. "!M6C"
+ * @param uin A string like "\x00\x00\x00\x00\x54\xb3\x3c\x53", NB: it
+ *        must contain 8 hexadecimal number, in this example, it equaled
+ *        to "0x0,0x0,0x0,0x0,0x54,0xb3,0x3c,0x53"
+ *
+ * @return Encoded password
+ */
+static std::string lwqq_enc_pwd( const std::string & pwd, const std::string & vc, const std::string & uin)
+{
 	/* Equal to "var I=hexchar2bin(md5(M));" */
-	std::string I =  lutil_md5_digest( pwd);
+	std::string I =  lutil_md5_digest(pwd);
 
 	/* Equal to "var H=md5(I+pt.uin);" */
-	std::string H = lutil_md5_data( I + std::string(_uin, uin_byte_length));
+	std::string H = lutil_md5_data( I + uin_decode(uin));
 
 	/* Equal to var G=md5(H+C.verifycode.value.toUpperCase()); */
 	std::string G = H + (vc);
