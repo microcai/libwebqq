@@ -286,18 +286,16 @@ public:
 				m_webqq->get_verify_image(vc ,  *this);
 				return;
 			}
-
 		}
 
 		// 未知错误.
 		m_handler(error::make_error_code(error::login_failed_other), std::string());
-
 	}
 
 	void operator()(boost::system::error_code ec, std::string vc)
 	{
 		if (!ec)
-			ec = error::login_failed_need_vc;
+			ec = error::login_check_need_vc;
 		m_handler(ec, vc);
 	}
 private:
@@ -341,16 +339,16 @@ public:
 			( avhttp::http_options::connection, "close" )
 		);
 
-		buffer = boost::make_shared<boost::asio::streambuf>();
+		m_buffer = boost::make_shared<boost::asio::streambuf>();
 
-		avhttp::async_read_body( *stream, url, *buffer, *this );
+		avhttp::async_read_body( *stream, url, *m_buffer, *this );
 	}
 
 	// 在这里实现　QQ 的登录.
-	void operator()( const boost::system::error_code& ec, std::size_t bytes_transfered)
+	void operator()(boost::system::error_code ec, std::size_t bytes_transfered)
 	{
-		std::istream response( buffer.get());
-		if( ( check_login( ec, *buffer ) == 0 ) && ( m_webqq->m_status == LWQQ_STATUS_ONLINE ) )
+		std::istream response( m_buffer.get());
+		if( ( check_login( ec, bytes_transfered ) == 0 ) && ( m_webqq->m_status == LWQQ_STATUS_ONLINE ) )
 		{
 			m_webqq->siglogin();
 			m_webqq->m_clientid = generate_clientid();
@@ -389,13 +387,15 @@ public:
 	}
 
 private:
-	int check_login( const boost::system::error_code& ec, boost::asio::streambuf & buffer )
+	int check_login(boost::system::error_code & ec, std::size_t bytes_transfered)
 	{
-		const char * response = boost::asio::buffer_cast<const char*>( buffer.data() );
+		std::string response;
+		response.resize(bytes_transfered);
+		m_buffer->sgetn(&response[0], bytes_transfered);
 
 		BOOST_LOG_TRIVIAL(debug) << console_out_str(response);
 
-		char *p = strstr( ( char* )response, "\'" );
+		char *p = strstr( ( char* )response.c_str(), "\'" );
 
 		if( !p ) {
 			return -1;
@@ -406,62 +406,18 @@ private:
 		strncpy( buf, p + 1, 1 );
 		int status = atoi( buf );
 
-		switch( status ) {
-			case 0:
-				m_webqq->m_status = LWQQ_STATUS_ONLINE;
-				save_cookie( &( m_webqq->m_cookies ), stream->response_options().header_string() );
-				BOOST_LOG_TRIVIAL(info) <<  "login success!";
-				break;
-
-			case 1:
-				BOOST_LOG_TRIVIAL(info) << "Server busy! Please try again";
-
-				status = LWQQ_STATUS_OFFLINE;
-				break;
-			case 2:
-				BOOST_LOG_TRIVIAL(info) << "Out of date QQ number";
-
-				status = LWQQ_STATUS_OFFLINE;
-				break;
-
-
-			case 3:
-				BOOST_LOG_TRIVIAL(info) << "Wrong QQ password";
-				status = LWQQ_STATUS_OFFLINE;
-				exit(1);
-				break;
-
-			case 4:
-				BOOST_LOG_TRIVIAL(info) << "!!!!!!!!!! Wrong verify code !!!!!!!!";
-				status = LWQQ_STATUS_OFFLINE;
-				break;
-
-			case 5:
-   				BOOST_LOG_TRIVIAL(info) << "!!!!!!!!!! Verify failed !!!!!!!!";
-				status = LWQQ_STATUS_OFFLINE;
-				break;
-
-
-			case 6:
-				BOOST_LOG_TRIVIAL(info) << "!!!!!!!!!! You may need to try login again !!!!!!!!";
-				status = LWQQ_STATUS_OFFLINE;
-				break;
-
-			case 7:
-				BOOST_LOG_TRIVIAL(info) << "!!!!!!!!!! Wrong input !!!!!!!!";
-				status = LWQQ_STATUS_OFFLINE;
-				break;
-
-
-			case 8:
-				BOOST_LOG_TRIVIAL(info) << "!!!!!!!!!! Too many logins on this IP. Please try again !!!!!!!!";
-				status = LWQQ_STATUS_OFFLINE;
-				break;
-
-
-			default:
-				BOOST_LOG_TRIVIAL(error) << "!!!!!!!!!! Unknow error!!!!!!!!";
-				status = LWQQ_STATUS_OFFLINE;
+		if ( status >= 0 && status <= 8){
+			ec = boost::system::error_code(status, error::error_category());
+		}else{
+			ec = error::login_failed_other;
+		}
+		if (!ec){
+			m_webqq->m_status = LWQQ_STATUS_ONLINE;
+			save_cookie( &( m_webqq->m_cookies ), stream->response_options().header_string() );
+			BOOST_LOG_TRIVIAL(info) <<  "login success!";
+		}else{
+			status = LWQQ_STATUS_OFFLINE;
+			BOOST_LOG_TRIVIAL(info) <<  "login failed!!!!  " <<  ec.message();
 		}
 
 		return status;
@@ -470,7 +426,7 @@ private:
 private:
 	boost::shared_ptr<qqimpl::WebQQ> m_webqq;
 	read_streamptr stream;
-	boost::shared_ptr<boost::asio::streambuf> buffer;
+	boost::shared_ptr<boost::asio::streambuf> m_buffer;
 	std::string vccode;
 };
 

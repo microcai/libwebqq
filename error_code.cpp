@@ -19,25 +19,27 @@ std::string webqq::error::error_category_impl::message(int e) const
 		case ok:
 			return "Sucess";
 
-		case login_failed_need_vc:
+		case login_check_need_vc:
 			return "Need Vercode";
-
-		case login_failed_wrong_vc:
-			return "wrong vc code";
-
-		case login_failed_wrong_passwd:
-			return "wrong password";
 
 		case login_failed_server_busy:
 			return "Server busy! Please try again";
-
 		case login_failed_qq_outdate:
 			return "QQ number outdate and disabled";
+		case login_failed_wrong_passwd:
+			return "wrong password";
+		case login_failed_wrong_vc:
+			return "wrong vc code";
+		case login_failed_verify_failed:
+			return "!!!!!!!!!! Verify failed !!!!!!!!";
+		case login_failed_try_again:
+			return "You may need to try login again !";
+		case login_failed_wrong_input:
+			return "Wrong input";
 		case login_failed_too_many_login:
 			return "too many login on this ip";
-
 		case login_failed_other:
-			return "Login failed";
+			return "Login failed unknow reason";
 
 		case fetch_verifycode_failed:
 			return "cannot fetch verifycode";

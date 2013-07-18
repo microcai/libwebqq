@@ -86,7 +86,7 @@ void webqq::login()
 
 void webqq::fireupneedvc(boost::system::error_code ec, std::string vc)
 {
-	if (ec == error::login_failed_need_vc)
+	if (ec == error::login_check_need_vc)
 	{
 		signeedvc(boost::asio::buffer(vc));
 		return;

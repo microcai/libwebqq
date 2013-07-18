@@ -35,21 +35,32 @@ enum errc_t
 {
 	ok = 0,
 
-	login_failed_need_vc = 1,
-
-	login_failed_wrong_vc,
-
-	login_failed_wrong_passwd,
-
-	login_failed_server_busy,
+	login_failed_server_busy = 1,
 
 	login_failed_qq_outdate,
 
-	login_failed_too_many_login, 
+	login_failed_wrong_passwd,
+
+	login_failed_wrong_vc,
+
+	login_failed_verify_failed,
+
+	login_failed_try_again,
+
+	login_failed_wrong_input,
+
+	login_failed_too_many_login,
 
 	login_failed_other,
 
+
+
+
+
+	login_check_need_vc,
+
 	fetch_verifycode_failed,
+
 
 	// 登录后的一些错误消息.
 
