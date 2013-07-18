@@ -118,11 +118,9 @@ static std::string lwqq_enc_pwd( const std::string & pwd, const std::string & vc
 	std::string H = lutil_md5_data( I + uin_decode(uin));
 
 	/* Equal to var G=md5(H+C.verifycode.value.toUpperCase()); */
-	std::string G = H + (vc);
+	std::string G =  lutil_md5_data(boost::to_upper_copy(H + vc));
 	boost::to_upper(G);
-	std::string final =  lutil_md5_data(G);
-	boost::to_upper(final);
-	return final;
+	return G;
 }
 
 // qq 登录办法-验证码登录
