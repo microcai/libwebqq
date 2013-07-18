@@ -265,7 +265,7 @@ public:
 		buffer->sgetn(&response[0], bytes_transfered);
 		boost::cmatch what;
 
-		boost::regex ex("ptui_checkVC\\('([0-9])',[ ]?'(.*)'\\)");
+		boost::regex ex("ptui_checkVC\\('([0-9])',[ ]?'([0-9a-zA-Z!]*)'");
 
 		if(boost::regex_search(response.c_str(), what, ex))
 		{
