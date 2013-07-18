@@ -42,7 +42,8 @@ namespace qqimpl {
 namespace detail {
 
 // qq 登录办法
-class SYMBOL_HIDDEN check_login_op : boost::asio::coroutine{
+class SYMBOL_HIDDEN check_login_op : boost::asio::coroutine
+{
 public:
 	check_login_op( boost::shared_ptr<qqimpl::WebQQ> webqq, webqq::webqq_handler_string_t handler)
 		: m_webqq( webqq ), m_handler(handler)
@@ -105,8 +106,8 @@ public:
 			*
 			* The http message body has two format:
 			*
-			* ptui_checkVC('1','9ed32e3f644d968809e8cbeaaf2cce42de62dfee12c14b74');
-			* ptui_checkVC('0','!LOB');
+			* ptui_checkVC('1','9ed32e3f644d968809e8cbeaaf2cce42de62dfee12c14b74', '\x00\x00\x00\x00\x54\xb3\x3c\x53');
+			* ptui_checkVC('0','!IJG', '\x00\x00\x00\x00\x54\xb3\x3c\x53');
 			* The former means we need verify code image and the second
 			* parameter is vc_type.
 			* The later means we don't need the verify code image. The second
@@ -114,12 +115,13 @@ public:
 			* "Set-Cookie".
 			*/
 
-			ex.set_expression("ptui_checkVC\\('([0-9])',[ ]?'([0-9a-zA-Z!]*)'");
+			ex.set_expression("ptui_checkVC\\('([0-9])',[ ]?'([0-9a-zA-Z!]*)',[ ]?'([0-9a-zA-Z\\\\]*)'");
 
 			if(boost::regex_search(response.c_str(), what, ex))
 			{
 				std::string type = what[1];
 				std::string vc = what[2];
+				m_webqq->m_verifycode.uin = what[3];
 
 				/* We need get the ptvfsession from the header "Set-Cookie" */
 				if(type == "0")
