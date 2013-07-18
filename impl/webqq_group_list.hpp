@@ -148,9 +148,14 @@ public:
 		// fetching more budy info.
 		BOOST_FOREACH(grouplist::value_type & v, m_webqq->m_groups)
 		{
-			m_webqq->update_group_qqnumber(v.second);
+			m_webqq->update_group_qqnumber(v.second, *this);
 			m_webqq->update_group_member(v.second , groupmembercb);
 		}
+
+	}
+
+	void operator()(boost::system::error_code ec)
+	{
 
 	}
 

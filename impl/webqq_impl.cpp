@@ -53,8 +53,8 @@ namespace js = boost::property_tree::json_parser;
 #include "clean_cache.hpp"
 #include "webqq_verify_image.hpp"
 #include "webqq_group_list.hpp"
+#include "webqq_group_qqnumber.hpp"
 #include "process_group_msg.hpp"
-
 
 #ifdef WIN32
 
@@ -248,29 +248,9 @@ void WebQQ::update_group_list(webqq::webqq_handler_t handler)
 	detail::update_group_list_op op(shared_from_this(), handler);
 }
 
-void WebQQ::update_group_qqnumber(boost::shared_ptr<qqGroup> group )
+void WebQQ::update_group_qqnumber(boost::shared_ptr<qqGroup> group, webqq::webqq_handler_t handler)
 {
-	std::string url;
-
-	url = boost::str(
-			  boost::format( "%s/api/get_friend_uin2?tuin=%s&verifysession=&type=1&code=&vfwebqq=%s&t=%ld" )
-			  % "http://s.web2.qq.com"
-			  % group->code
-			  % m_vfwebqq
-			  % time( NULL )
-		  );
-	read_streamptr stream( new avhttp::http_stream( m_io_service ) );
-	stream->request_options(
-		avhttp::request_opts()
-		( avhttp::http_options::cookie, m_cookies.lwcookies )
-		( avhttp::http_options::referer, LWQQ_URL_REFERER_QUN_DETAIL )
-		( avhttp::http_options::connection, "close" )
-	);
-	boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
-
-	avhttp::async_read_body( *stream, url, *buffer,
-						 boost::bind( &WebQQ::cb_group_qqnumber, this, _1, stream, buffer, group)
-					   );
+	detail::update_group_qqnumber_op op(shared_from_this(), group, handler);
 }
 
 void WebQQ::update_group_member(boost::shared_ptr<qqGroup> group , done_callback_handler handler)
@@ -583,58 +563,6 @@ void WebQQ::process_msg( const pt::wptree &jstree , std::string & ptwebqq )
 				boost::delayedcallsec( m_io_service, 15, m_funclogin);
 			}
 		}
-	}
-}
-
-void WebQQ::cb_group_qqnumber( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer, boost::shared_ptr<qqGroup> group)
-{
-	pt::ptree	jsonobj;
-	std::istream jsondata( buffer.get() );
-
-	/**
-	 * Here, we got a json object like this:
-	 * {"retcode":0,"result":{"uiuin":"","account":615050000,"uin":954663841}}
-	 *
-	 */
-	//处理!
-	try {
-		pt::json_parser::read_json( jsondata, jsonobj );
-
-		//TODO, group members
-		if( jsonobj.get<int>( "retcode" ) == 0 ) {
-			group->qqnum = jsonobj.get<std::string>( "result.account" );
-			BOOST_LOG_TRIVIAL(debug) <<  "qq number of group " <<  console_out_str(group->name) << " is " <<  group->qqnum;
-			// 写缓存
-			pt::json_parser::write_json(std::string("cache/group_qqnumber") + group->gid, jsonobj);
-			//start polling messages, 2 connections!
-			BOOST_LOG_TRIVIAL(info) << "start polling messages";
-
-			boost::delayedcallsec( get_ioservice(), 3, boost::bind( &WebQQ::do_poll_one_msg, shared_from_this(), m_cookies.ptwebqq ) );
-
-			siggroupnumber(group);
-
-			return ;
-		}else{
-			BOOST_LOG_TRIVIAL(error) << console_out_str("获取群的QQ号码失败");
-			pt::json_parser::write_json(std::cerr, jsonobj);
-		}
-	} catch( const pt::json_parser_error & jserr ) {
-
-	} catch( const pt::ptree_bad_path & badpath ) {
-	}
-
-	try{
-	// 读取缓存
-		pt::json_parser::read_json(std::string("cache/group_qqnumber") + group->gid, jsonobj);
-
-		group->qqnum = jsonobj.get<std::string>( "result.account" );
-		BOOST_LOG_TRIVIAL(debug) <<  "(cached) qq number of group" <<  console_out_str(group->name) << "is" <<  group->qqnum << std::endl;
-
-		// 向用户报告一个 group 出来了.
-		siggroupnumber(group);
-		return;
-	}catch (...){
-		boost::delayedcallsec( m_io_service, 50 + boost::rand48()() % 100 , boost::bind( &WebQQ::update_group_qqnumber, shared_from_this(), group) );
 	}
 }
 

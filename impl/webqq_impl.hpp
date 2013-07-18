@@ -206,7 +206,7 @@ public:
 	void send_group_message( std::string group, std::string msg, send_group_message_cb donecb );
 	void send_group_message( qqGroup &  group, std::string msg, send_group_message_cb donecb );
 	void update_group_list(webqq::webqq_handler_t handler);
-	void update_group_qqnumber(boost::shared_ptr<qqGroup> group);
+	void update_group_qqnumber(boost::shared_ptr<qqGroup> group, webqq::webqq_handler_t handler);
 	void update_group_member(boost::shared_ptr<qqGroup> group, done_callback_handler);
 
 	// 查找群，如果要验证码，则获取后带vfcode参数进行调用.否则对  vfcode 是 ""
@@ -248,7 +248,7 @@ public:
 
 	void cb_group_member_process_json(pt::ptree	&jsonobj, boost::shared_ptr<qqGroup>);
 	void cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf>, boost::shared_ptr<qqGroup>,  done_callback_handler );
-	void cb_group_qqnumber( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf>, boost::shared_ptr<qqGroup> );
+
 	void cb_newbee_group_join(qqGroup_ptr group, std::string uid);
 
 	void send_group_message_internal( std::string group, std::string msg, send_group_message_cb donecb );
