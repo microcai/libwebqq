@@ -35,6 +35,8 @@ namespace js = boost::property_tree::json_parser;
 
 #include "constant.hpp"
 
+#include "lwqq_cookie.hpp"
+
 namespace webqq {
 namespace qqimpl {
 namespace detail {
