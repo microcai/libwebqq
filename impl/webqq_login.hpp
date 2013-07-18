@@ -267,7 +267,7 @@ public:
 
 		boost::regex ex("ptui_checkVC\\('([0-9])',[ ]?'(.*)'\\)");
 
-		if(boost::regex_match(response.c_str(), what, ex))
+		if(boost::regex_search(response.c_str(), what, ex))
 		{
 			std::string type = what[1];
 			std::string vc = what[2];
