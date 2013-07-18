@@ -73,27 +73,20 @@ static void upcase_string( char *str, int len )
 	}
 }
 
-static std::string parse_version( boost::asio::streambuf& buffer )
+static std::string parse_version(boost::asio::streambuf& buffer)
 {
-	const char* response = boost::asio::buffer_cast<const char*> ( buffer.data() );
+	std::string response;
+	response.resize(buffer.size());
+	buffer.sgetn(&response[0], buffer.size());
 
-	if( strstr( response, "ptuiV" ) ) {
-		char* s, *t;
-		s = ( char* ) strchr( response, '(' );
-		t = ( char* ) strchr( response, ')' );
+	boost::regex ex("ptuiV\\(([0-9]*)\\);");
+	boost::cmatch what;
 
-		if( !s || !t ) {
-			return "";
-		}
-
-		s++;
-		std::vector<char> v( t - s + 1 );
-		strncpy( v.data(), s, t - s );
-
-		BOOST_LOG_TRIVIAL(info) << "Get webqq version: " <<  v.data();
-		return v.data();
+	if(boost::regex_search(response.c_str(), what, ex))
+	{
+		BOOST_LOG_TRIVIAL(info) << "Get webqq version: " <<  what[1];
+		return what[1];
 	}
-
 	return "";
 }
 
