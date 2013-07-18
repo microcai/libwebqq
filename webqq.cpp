@@ -104,6 +104,8 @@ void webqq::start_polling(boost::system::error_code ec)
 	if (ec){
 		if (ec == error::login_failed_wrong_vc){
 			// report bad VC code
+			if (sigbadvc)
+				sigbadvc();
 		}
 		boost::delayedcallsec(get_ioservice(), 15, boost::bind(&webqq::login, this));
 	}

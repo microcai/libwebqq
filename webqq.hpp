@@ -152,6 +152,12 @@ public:
 	// 新人入群通知. 注意, 只有管理员才能获得.
 	void on_group_newbee(boost::function<void ( qqGroup_ptr,  qqBuddy * )> cb);
 
+	template<class Reporter>
+	void on_bad_vc(Reporter reporter)
+	{
+		sigbadvc = reporter;
+	}
+
 	// not need to call this the first time, but you might need this if you became offline.
 	void login();
 
@@ -191,6 +197,9 @@ private:
 private:
 	// 验证码, 需要自行下载url中的图片，然后调用 login_withvc.
 	boost::signals2::signal< void ( const boost::asio::const_buffer & )> signeedvc;
+
+	// 报告验证码不对
+	boost::function<void ()> sigbadvc;
 
 	boost::shared_ptr<qqimpl::WebQQ> impl;
 };
