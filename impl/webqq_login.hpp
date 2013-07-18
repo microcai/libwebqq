@@ -63,23 +63,6 @@ inline std::string lutil_md5_digest(const std::string & data)
 	return std::string(reinterpret_cast<const char*>(md5sum.c_array()), md5sum.static_size);
 }
 
-inline std::string parse_version(boost::asio::streambuf& buffer)
-{
-	std::string response;
-	response.resize(buffer.size());
-	buffer.sgetn(&response[0], buffer.size());
-
-	boost::regex ex("ptuiV\\(([0-9]*)\\);");
-	boost::cmatch what;
-
-	if(boost::regex_search(response.c_str(), what, ex))
-	{
-		BOOST_LOG_TRIVIAL(info) << "Get webqq version: " <<  what[1];
-		return what[1];
-	}
-	return "";
-}
-
 inline std::string uin_decode(const std::string &uin)
 {
 	int i;
@@ -145,28 +128,13 @@ static std::string lwqq_enc_pwd( const std::string & pwd, const std::string & vc
 
 static std::string generate_clientid()
 {
-	int r;
-	struct timeval tv;
-	long t;
-
 	srand( time( NULL ) );
-	r = rand() % 90 + 10;
-
-#ifdef WIN32
-	return boost::str( boost::format( "%d%d%d" ) % r % r % r );
-#else
-
-	if( gettimeofday( &tv, NULL ) ) {
-		return NULL;
-	}
-
-	t = tv.tv_usec % 1000000;
-	return boost::str( boost::format( "%d%ld" ) % r % t );
-#endif
+	return boost::str( boost::format( "%d%d%d" ) % (rand() % 90 + 10) % (rand() % 90 + 10) % (rand() % 90 + 10) );
 }
 
 // qq 登录办法
 class SYMBOL_HIDDEN check_login_op : boost::asio::coroutine {
+
 public:
 	check_login_op( boost::shared_ptr<qqimpl::WebQQ> webqq, webqq::webqq_handler_string_t handler)
 		: m_webqq( webqq ), m_handler(handler)
@@ -179,11 +147,25 @@ public:
 	}
 
 	// 在这里实现　QQ 的登录.
-	void operator()( const boost::system::error_code& ec, std::size_t bytes_transfered )
+	void operator()(const boost::system::error_code& ec, std::size_t bytes_transfered)
 	{
-		BOOST_ASIO_CORO_REENTER( this )
+		std::string response;
+		response.resize(bytes_transfered);
+		buffer->sgetn(&response[0], bytes_transfered);
+
+		boost::regex ex;
+		boost::cmatch what;
+
+		BOOST_ASIO_CORO_REENTER(this)
 		{
-			m_webqq->m_version = parse_version( *buffer );
+			ex.set_expression("ptuiV\\(([0-9]*)\\);");
+
+			if(boost::regex_search(response.c_str(), what, ex))
+			{
+				m_webqq->m_version = what[1];
+			}
+
+			BOOST_LOG_TRIVIAL(info) << "Get webqq version: " << m_webqq->m_version;
 
 			// 接着获得验证码.
 
@@ -200,64 +182,56 @@ public:
 
 			stream->request_options(
 				avhttp::request_opts()
-				( avhttp::http_options::cookie, boost::str( boost::format( "chkuin=%s" ) % m_webqq->m_qqnum ) )
-				( avhttp::http_options::connection, "close" )
+				(avhttp::http_options::cookie, boost::str(boost::format("chkuin=%s") % m_webqq->m_qqnum))
+				(avhttp::http_options::connection, "close")
 			);
 
-			BOOST_ASIO_CORO_YIELD avhttp::async_read_body( *stream,
-										/*url*/ boost::str( boost::format( "%s%s?uin=%s&appid=%s" ) % LWQQ_URL_CHECK_HOST % VCCHECKPATH % m_webqq->m_qqnum % APPID ),
-										*buffer,
-										*this );
+			BOOST_ASIO_CORO_YIELD avhttp::async_read_body(*stream,
+					/*url*/ boost::str(boost::format("%s%s?uin=%s&appid=%s") % LWQQ_URL_CHECK_HOST % VCCHECKPATH % m_webqq->m_qqnum % APPID),
+					*buffer,
+					*this);
 
 			// 解析验证码，然后带验证码登录.
-			parse_verify_code(bytes_transfered);
-		}
-	}
 
-	void parse_verify_code(std::size_t bytes_transfered)
-	{
-		/**
-		*
-		* The http message body has two format:
-		*
-		* ptui_checkVC('1','9ed32e3f644d968809e8cbeaaf2cce42de62dfee12c14b74');
-		* ptui_checkVC('0','!LOB');
-		* The former means we need verify code image and the second
-		* parameter is vc_type.
-		* The later means we don't need the verify code image. The second
-		* parameter is the verify code. The vc_type is in the header
-		* "Set-Cookie".
-		*/
-		std::string response;
-		response.resize(bytes_transfered);
-		buffer->sgetn(&response[0], bytes_transfered);
-		boost::cmatch what;
+			/**
+			*
+			* The http message body has two format:
+			*
+			* ptui_checkVC('1','9ed32e3f644d968809e8cbeaaf2cce42de62dfee12c14b74');
+			* ptui_checkVC('0','!LOB');
+			* The former means we need verify code image and the second
+			* parameter is vc_type.
+			* The later means we don't need the verify code image. The second
+			* parameter is the verify code. The vc_type is in the header
+			* "Set-Cookie".
+			*/
 
-		boost::regex ex("ptui_checkVC\\('([0-9])',[ ]?'([0-9a-zA-Z!]*)'");
+			ex.set_expression("ptui_checkVC\\('([0-9])',[ ]?'([0-9a-zA-Z!]*)'");
 
-		if(boost::regex_search(response.c_str(), what, ex))
-		{
-			std::string type = what[1];
-			std::string vc = what[2];
-
-			/* We need get the ptvfsession from the header "Set-Cookie" */
-			if(type == "0")
+			if(boost::regex_search(response.c_str(), what, ex))
 			{
-				update_cookies(&(m_webqq->m_cookies), stream->response_options().header_string(), "ptvfsession");
-				m_webqq->m_cookies.update();
+				std::string type = what[1];
+				std::string vc = what[2];
 
-				m_handler(boost::system::error_code(), vc);
-				return;
+				/* We need get the ptvfsession from the header "Set-Cookie" */
+				if(type == "0")
+				{
+					update_cookies(&(m_webqq->m_cookies), stream->response_options().header_string(), "ptvfsession");
+					m_webqq->m_cookies.update();
+
+					m_handler(boost::system::error_code(), vc);
+					return;
+				}
+				else if(type == "1")
+				{
+					m_webqq->get_verify_image(vc ,  *this);
+					return;
+				}
 			}
-			else if(type == "1")
-			{
-				m_webqq->get_verify_image(vc ,  *this);
-				return;
-			}
+
+			// 未知错误.
+			m_handler(error::make_error_code(error::login_failed_other), std::string());
 		}
-
-		// 未知错误.
-		m_handler(error::make_error_code(error::login_failed_other), std::string());
 	}
 
 	void operator()(boost::system::error_code ec, std::string vc)
