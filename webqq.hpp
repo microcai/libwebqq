@@ -26,7 +26,7 @@
 #include <boost/asio.hpp>
 #include <boost/function.hpp>
 #include <boost/filesystem/path.hpp>
-#include <boost/concept_check.hpp>
+#include <boost/signals2.hpp>
 
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef BUILDING_DLL
@@ -136,6 +136,13 @@ struct qqMsg {
 
 class webqq {
 public:
+	typedef boost::function<void(boost::system::error_code)> webqq_handler_t;
+	typedef boost::function<void(boost::system::error_code, std::string )> webqq_handler_string_t;
+// 	typedef boost::function<void(boost::system::error_code )> webqq_handler_t;
+// 	typedef boost::function<void(boost::system::error_code )> webqq_handler_t;
+// 	typedef boost::function<void(boost::system::error_code )> webqq_handler_t;
+
+public:
 	webqq( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd);
 	~webqq();
 	// 设置受到群消息的回调.
@@ -179,7 +186,11 @@ public:
 	qqGroup_ptr get_Group_by_qq( std::string qq );
 	boost::asio::io_service	&get_ioservice();
 private:
-	
+	void fireupneedvc(boost::system::error_code, std::string);
+private:
+	// 验证码, 需要自行下载url中的图片，然后调用 login_withvc.
+	boost::signals2::signal< void ( const boost::asio::const_buffer & )> signeedvc;
+
 	boost::shared_ptr<qqimpl::WebQQ> impl;
 };
 

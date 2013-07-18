@@ -23,8 +23,11 @@ namespace fs = boost::filesystem;
 #include <avhttp.hpp>
 #include <avhttp/async_read_body.hpp>
 #include "boost/urlencode.hpp"
+#include "boost/timedcall.hpp"
 
 #include "webqq.hpp"
+#include "error_code.hpp"
+
 #include "impl/webqq_impl.hpp"
 
 namespace webqq{
@@ -32,6 +35,7 @@ namespace webqq{
 webqq::webqq( boost::asio::io_service& asio_service, std::string qqnum, std::string passwd)
 {
 	impl = boost::make_shared<qqimpl::WebQQ>( boost::ref(asio_service), qqnum, passwd);
+	impl->m_funclogin = boost::bind(&webqq::login, this);
 }
 
 webqq::~webqq()
@@ -40,7 +44,7 @@ webqq::~webqq()
 
 void webqq::on_verify_code( boost::function< void ( const boost::asio::const_buffer & ) >  cb )
 {
-	impl->signeedvc.connect( cb );
+	signeedvc.connect( cb );
 }
 
 void webqq::on_group_msg( boost::function< void( const std::string, const std::string, const std::vector<qqMsg>& )> cb )
@@ -77,7 +81,21 @@ qqGroup_ptr webqq::get_Group_by_qq( std::string qq )
 
 void webqq::login()
 {
-	impl->login();
+	impl->check_login(boost::bind(&webqq::fireupneedvc, this, _1, _2));
+}
+
+void webqq::fireupneedvc(boost::system::error_code ec, std::string vc)
+{
+	if (ec == error::login_failed_need_vc)
+	{
+		signeedvc(boost::asio::buffer(vc));
+		return;
+	}
+	if (!ec)
+		login_withvc(vc);
+	else{
+		boost::delayedcallsec(get_ioservice(), 15, boost::bind(&webqq::login, this));
+	}
 }
 
 void webqq::login_withvc( std::string vccode )

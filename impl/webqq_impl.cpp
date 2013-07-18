@@ -49,6 +49,7 @@ namespace js = boost::property_tree::json_parser;
 #include "clean_cache.hpp"
 
 #include "process_group_msg.hpp"
+#include <libwebqq/error_code.hpp>
 
 #ifdef WIN32
 
@@ -70,10 +71,9 @@ inline int snprintf(char* buf, int len, char const* fmt, ...)
 #endif // WIN32
 
 namespace webqq{
+namespace qqimpl{
 
 static void dummy(){}
-
-using namespace qqimpl;
 
 static std::string generate_clientid();
 
@@ -126,12 +126,12 @@ WebQQ::WebQQ( boost::asio::io_service& _io_service,
 }
 
 /**login*/
-void WebQQ::login()
+void WebQQ::check_login(webqq::webqq_handler_string_t handler)
 {
 	m_cookies.clear();
 	// start login process, will call login_withvc later
 	if (m_status == LWQQ_STATUS_OFFLINE)
-		detail::corologin op( shared_from_this() );
+		detail::check_login_op op( shared_from_this(), handler );
 }
 
 // login to server with vc. called by login code or by user
@@ -220,7 +220,7 @@ void WebQQ::cb_send_msg( const boost::system::error_code& ec, read_streamptr str
 			m_status = LWQQ_STATUS_OFFLINE;
 			m_cookies.clear();
 			// 10s 后登录.
-			boost::delayedcallsec( m_io_service, 10, boost::bind( &WebQQ::login, this ) );
+			boost::delayedcallsec( m_io_service, 10, m_funclogin );
 			m_group_msg_insending = false;
 			return ;
 		}
@@ -443,37 +443,52 @@ qqGroup_ptr WebQQ::get_Group_by_qq( std::string qq )
 	return qqGroup_ptr();
 }
 
+class get_verify_image_op {
+public:
+	get_verify_image_op(boost::shared_ptr<WebQQ> webqq, std::string vcimgid, webqq::webqq_handler_string_t handler)
+	  : m_webqq(webqq), m_handler(handler),
+		m_stream(boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()))),
+		m_buffer(boost::make_shared<boost::asio::streambuf>())
+	{
+		BOOST_ASSERT(vcimgid.length() > 8);
+		std::string url = boost::str(
+							boost::format( LWQQ_URL_VERIFY_IMG ) % APPID % m_webqq->m_qqnum
+						);
 
-void WebQQ::get_verify_image( std::string vcimgid )
-{
-	if( vcimgid.length() < 8 ) {
-		m_status = LWQQ_STATUS_OFFLINE;
-		boost::delayedcallsec( m_io_service, 10, boost::bind( &WebQQ::login, this ) );
-		return ;
+		m_stream->request_options(
+			avhttp::request_opts()
+			( avhttp::http_options::cookie, std::string( "chkuin=" ) + m_webqq->m_qqnum )
+			( avhttp::http_options::connection, "close" )
+		);
+		avhttp::async_read_body( *m_stream, url, * m_buffer, *this);
+
 	}
+	void operator()(boost::system::error_code ec, std::size_t bytes_transfered)
+	{
+		detail::update_cookies( &(m_webqq->m_cookies), m_stream->response_options().header_string() , "verifysession");
+		m_webqq->m_cookies.update();
 
-	std::string url = boost::str(
-						  boost::format( LWQQ_URL_VERIFY_IMG ) % APPID % m_qqnum
-					  );
+		std::string vcimg;
+		vcimg.resize(bytes_transfered);
 
-	read_streamptr stream( new avhttp::http_stream( m_io_service ) );
-	stream->request_options(
-		avhttp::request_opts()
-		( avhttp::http_options::cookie, std::string( "chkuin=" ) + m_qqnum )
-		( avhttp::http_options::connection, "close" )
-	);
-	boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
-	avhttp::async_read_body( *stream, url, * buffer,
-						 boost::bind( &WebQQ::cb_get_verify_image, this, _1, stream, buffer ) );
-}
+		m_buffer->sgetn(&vcimg[0], bytes_transfered);
 
-void WebQQ::cb_get_verify_image( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer )
+		if (ec)
+			ec = error::fetch_verifycode_failed;
+		m_handler(ec, vcimg);
+	}
+private:
+	boost::shared_ptr<WebQQ> m_webqq;
+	webqq::webqq_handler_string_t m_handler;
+
+	boost::shared_ptr<boost::asio::streambuf> m_buffer;
+	read_streamptr m_stream;
+
+};
+
+void WebQQ::get_verify_image( std::string vcimgid, webqq::webqq_handler_string_t handler)
 {
-	detail::update_cookies( &m_cookies, stream->response_options().header_string() , "verifysession");
-	m_cookies.update();
-
-	// verify image is now in response
-	signeedvc( buffer->data() );
+	get_verify_image_op op(shared_from_this(), vcimgid, handler);
 }
 
 void WebQQ::do_poll_one_msg( std::string ptwebqq )
@@ -591,7 +606,7 @@ void WebQQ::process_msg( const pt::wptree &jstree , std::string & ptwebqq )
 		{
 			m_status = LWQQ_STATUS_OFFLINE;
 			m_cookies.clear();
-			boost::delayedcallsec( m_io_service, 15, boost::bind( &WebQQ::login, this ) );
+			boost::delayedcallsec( m_io_service, 15, m_funclogin );
 			js::write_json(std::wcerr, jstree);
 		}
 
@@ -633,7 +648,7 @@ void WebQQ::process_msg( const pt::wptree &jstree , std::string & ptwebqq )
 			if (m_status == LWQQ_STATUS_ONLINE){
 				m_status = LWQQ_STATUS_OFFLINE;
 				m_cookies.ptwebqq = "";
-				boost::delayedcallsec( m_io_service, 15, boost::bind( &WebQQ::login, shared_from_this() ) );
+				boost::delayedcallsec( m_io_service, 15, m_funclogin);
 			}
 		}
 	}
@@ -1060,4 +1075,5 @@ static std::string parse_unescape( const std::string & source )
 	return result;
 }
 
+} // namespace qqimpl
 } // namespace webqq

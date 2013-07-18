@@ -299,29 +299,26 @@ static std::string generate_clientid()
 }
 
 // qq 登录办法
-class SYMBOL_HIDDEN corologin : boost::asio::coroutine {
+class SYMBOL_HIDDEN check_login_op : boost::asio::coroutine {
 public:
-	corologin( boost::shared_ptr<qqimpl::WebQQ> webqq )
-		: m_webqq( webqq ) {
-		read_streamptr stream;
-		( *this )( boost::system::error_code(), 0 );
+	check_login_op( boost::shared_ptr<qqimpl::WebQQ> webqq, webqq::webqq_handler_string_t handler)
+		: m_webqq( webqq ), m_handler(handler)
+	{
+		// 首先获得版本.
+		stream = boost::make_shared<avhttp::http_stream>( boost::ref(m_webqq->get_ioservice()));
+		buffer = boost::make_shared<boost::asio::streambuf>();
+		BOOST_LOG_TRIVIAL(debug) << "Get webqq version from " <<  LWQQ_URL_VERSION ;
+		avhttp::async_read_body( *stream, LWQQ_URL_VERSION, * buffer,  *this );
 	}
 
 	// 在这里实现　QQ 的登录.
-	void operator()( const boost::system::error_code& ec, std::size_t bytes_transfered ) {
-		//　登录步骤.
-		BOOST_ASIO_CORO_REENTER( this ) {
-			stream = boost::make_shared<avhttp::http_stream>( boost::ref(m_webqq->get_ioservice()));
-			buffer = boost::make_shared<boost::asio::streambuf>();
-
-			BOOST_LOG_TRIVIAL(debug) << "Get webqq version from " <<  LWQQ_URL_VERSION ;
-			// 首先获得版本.
-			BOOST_ASIO_CORO_YIELD avhttp::async_read_body( *stream, LWQQ_URL_VERSION, * buffer,  *this );
-
+	void operator()( const boost::system::error_code& ec, std::size_t bytes_transfered )
+	{
+		BOOST_ASIO_CORO_REENTER( this )
+		{
 			m_webqq->m_version = parse_version( *buffer );
 
 			// 接着获得验证码.
-			stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
 
 			m_webqq->m_clientid.clear();
 			m_webqq->m_cookies.clear();
@@ -331,12 +328,14 @@ public:
 			m_webqq->m_status = LWQQ_STATUS_OFFLINE;
 			//获取验证码.
 
+			stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
+			buffer = boost::make_shared<boost::asio::streambuf>();
+
 			stream->request_options(
 				avhttp::request_opts()
 				( avhttp::http_options::cookie, boost::str( boost::format( "chkuin=%s" ) % m_webqq->m_qqnum ) )
 				( avhttp::http_options::connection, "close" )
 			);
-			buffer = boost::make_shared<boost::asio::streambuf>();
 
 			BOOST_ASIO_CORO_YIELD avhttp::async_read_body( *stream,
 										/*url*/ boost::str( boost::format( "%s%s?uin=%s&appid=%s" ) % LWQQ_URL_CHECK_HOST % VCCHECKPATH % m_webqq->m_qqnum % APPID ),
@@ -375,7 +374,6 @@ public:
 			m_webqq->m_verifycode.uin = parse_verify_uin( response );
 
 			if( m_webqq->m_verifycode.uin.empty() ) {
-				m_webqq->sigerror( 1, 0 );
 				return;
 			}
 
@@ -391,7 +389,8 @@ public:
 			update_cookies( &( m_webqq->m_cookies ), stream->response_options().header_string(), "ptvfsession" );
 			m_webqq->m_cookies.update();
 
-			m_webqq->login_withvc( s );
+			m_handler(boost::system::error_code(), std::string(s));
+
 		} else if( *c == '1' ) {
 			/* We need get the verify image. */
 
@@ -405,12 +404,14 @@ public:
 			c = strstr( s, "'" );
 			*c = '\0';
 
-			//TODO, get verify image, and call signeedvc
-			m_webqq->get_verify_image( s );
+			// get verify image
+			m_webqq->get_verify_image( s ,  m_handler);
 		}
 	}
 private:
 	boost::shared_ptr<qqimpl::WebQQ> m_webqq;
+	webqq::webqq_handler_string_t m_handler;
+
 	read_streamptr stream;
 	boost::shared_ptr<boost::asio::streambuf> buffer;
 };
@@ -466,7 +467,7 @@ public:
 			m_webqq->change_status(LWQQ_STATUS_ONLINE, *this);
 		}else
 		{
-			m_webqq->get_ioservice().post( boost::bind( &WebQQ::login, m_webqq->shared_from_this() ) );
+			m_webqq->get_ioservice().post(m_webqq->m_funclogin);
 		}
 	}
 	

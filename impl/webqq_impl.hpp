@@ -182,6 +182,8 @@ typedef struct LwqqCookies {
 
 typedef std::map<std::string, boost::shared_ptr<qqGroup> > grouplist;
 
+typedef boost::system::error_code system_error;
+
 class SYMBOL_HIDDEN WebQQ  : public boost::enable_shared_from_this<WebQQ>
 {
 	typedef boost::function0<void>		done_callback_handler;
@@ -190,8 +192,8 @@ public:
 public:
 	WebQQ( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd);
 
-	// not need to call this the first time, but you might need this if you became offline.
-	void login();
+	// call this to start login process
+	void check_login(webqq::webqq_handler_string_t handler);
 	// login with vc, call this if you got signeedvc signal.
 	// in signeedvc signal, you can retreve images from server.
 	void login_withvc( std::string vccode );
@@ -222,13 +224,6 @@ public:
 public:// signals
 	// 登录成功激发.
 	boost::signals2::signal< void ()> siglogin;
-	// 验证码, 需要自行下载url中的图片，然后调用 login_withvc.
-	boost::signals2::signal< void ( const boost::asio::const_buffer & )> signeedvc;
-	// 断线的时候激发.
-	boost::signals2::signal< void ()> sigoffline;
-
-	// 发生错误的时候激发, 返回 false 停止登录，停止发送，等等操作。true则重试.
-	boost::signals2::signal< bool ( int stage, int why )> sigerror;
 
 	// 获得一个群QQ号码的时候激发.
 	boost::signals2::signal< void ( qqGroup_ptr )> siggroupnumber;
@@ -238,13 +233,14 @@ public:// signals
 	// 有群消息的时候激发.
 	boost::signals2::signal< void ( const std::string group, const std::string who, const std::vector<qqMsg> & )> siggroupmessage;
 
+	// NOTE internal use only!
+	boost::function<void()> m_funclogin;
 public:
 	void init_face_map();
 
 	void update_group_member_qq(boost::shared_ptr<qqGroup> group );
 
-	void get_verify_image( std::string vcimgid );
-	void cb_get_verify_image( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> );
+	void get_verify_image( std::string vcimgid, webqq::webqq_handler_string_t handler);
 
 	void do_poll_one_msg( std::string ptwebqq );
 	void cb_poll_msg( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buf, std::string ptwebqq );
