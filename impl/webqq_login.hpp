@@ -27,6 +27,7 @@
 #include <boost/asio.hpp>
 #include <boost/property_tree/json_parser.hpp>
 namespace js = boost::property_tree::json_parser;
+#include <boost/regex.hpp>
 
 #include <avhttp.hpp>
 #include <avhttp/async_read_body.hpp>
@@ -241,11 +242,11 @@ public:
 										*this );
 
 			// 解析验证码，然后带验证码登录.
-			parse_verify_code(*buffer );
+			parse_verify_code(bytes_transfered);
 		}
 	}
 
-	void parse_verify_code(boost::asio::streambuf& buffer )
+	void parse_verify_code(std::size_t bytes_transfered)
 	{
 		/**
 		*
@@ -259,52 +260,38 @@ public:
 		* parameter is the verify code. The vc_type is in the header
 		* "Set-Cookie".
 		*/
-		const char * response = boost::asio::buffer_cast<const char * >( buffer.data() );
-		char *s;
-		char *c = ( char* )strstr( response, "ptui_checkVC" );
-		c = ( char* )strchr( response, '\'' );
-		c++;
+		std::string response;
+		response.resize(bytes_transfered);
+		buffer->sgetn(&response[0], bytes_transfered);
+		boost::cmatch what;
 
-		if( *c == '0' ) {
-			/* We got the verify code. */
+		boost::regex ex("ptui_checkVC\\('([0-9])',[ ]?'(.*)'\\)");
 
-			/* Parse uin first */
-			m_webqq->m_verifycode.uin = parse_verify_uin( response );
+		if(boost::regex_match(response.c_str(), what, ex))
+		{
+			std::string type = what[1];
+			std::string vc = what[2];
 
-			if( m_webqq->m_verifycode.uin.empty() ) {
+			/* We need get the ptvfsession from the header "Set-Cookie" */
+			if(type == "0")
+			{
+				update_cookies(&(m_webqq->m_cookies), stream->response_options().header_string(), "ptvfsession");
+				m_webqq->m_cookies.update();
+
+				m_handler(boost::system::error_code(), vc);
+				return;
+			}
+			else if(type == "1")
+			{
+				m_webqq->get_verify_image(vc ,  *this);
 				return;
 			}
 
-			s = c;
-			c = strstr( s, "'" );
-			s = c + 1;
-			c = strstr( s, "'" );
-			s = c + 1;
-			c = strstr( s, "'" );
-			*c = '\0';
-
-			/* We need get the ptvfsession from the header "Set-Cookie" */
-			update_cookies( &( m_webqq->m_cookies ), stream->response_options().header_string(), "ptvfsession" );
-			m_webqq->m_cookies.update();
-
-			m_handler(boost::system::error_code(), std::string(s));
-
-		} else if( *c == '1' ) {
-			/* We need get the verify image. */
-
-			/* Parse uin first */
-			m_webqq->m_verifycode.uin = parse_verify_uin( response );
-			s = c;
-			c = strstr( s, "'" );
-			s = c + 1;
-			c = strstr( s, "'" );
-			s = c + 1;
-			c = strstr( s, "'" );
-			*c = '\0';
-
-			// get verify image
-			m_webqq->get_verify_image( s ,  *this);
 		}
+
+		// 未知错误.
+		m_handler(error::make_error_code(error::login_failed_other), std::string());
+
 	}
 
 	void operator()(boost::system::error_code ec, std::string vc)
