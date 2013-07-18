@@ -187,8 +187,8 @@ typedef boost::system::error_code system_error;
 
 class SYMBOL_HIDDEN WebQQ  : public boost::enable_shared_from_this<WebQQ>
 {
-	typedef boost::function0<void>		done_callback_handler;
 public:
+	typedef boost::function0<void>		done_callback_handler;
 	using boost::enable_shared_from_this<WebQQ>::shared_from_this;
 public:
 	WebQQ( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd);
@@ -205,7 +205,7 @@ public:
 	typedef boost::function<void ( const boost::system::error_code& ec )> send_group_message_cb;
 	void send_group_message( std::string group, std::string msg, send_group_message_cb donecb );
 	void send_group_message( qqGroup &  group, std::string msg, send_group_message_cb donecb );
-	void update_group_list();
+	void update_group_list(webqq::webqq_handler_t handler);
 	void update_group_qqnumber(boost::shared_ptr<qqGroup> group);
 	void update_group_member(boost::shared_ptr<qqGroup> group, done_callback_handler);
 
@@ -245,7 +245,7 @@ public:
 
 	void process_msg( const pt::wptree & jstree,std::string & ptwebqq );
 	void process_group_message( const pt::wptree & jstree );
-	void cb_group_list( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> );
+
 	void cb_group_member_process_json(pt::ptree	&jsonobj, boost::shared_ptr<qqGroup>);
 	void cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf>, boost::shared_ptr<qqGroup>,  done_callback_handler );
 	void cb_group_qqnumber( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf>, boost::shared_ptr<qqGroup> );

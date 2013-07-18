@@ -52,7 +52,7 @@ namespace js = boost::property_tree::json_parser;
 #include "webqq_login.hpp"
 #include "clean_cache.hpp"
 #include "webqq_verify_image.hpp"
-
+#include "webqq_group_list.hpp"
 #include "process_group_msg.hpp"
 
 
@@ -80,16 +80,9 @@ namespace qqimpl{
 
 static void dummy(){}
 
-static std::string generate_clientid();
 
 ///low level special char mapping
 static std::string parse_unescape(const std::string &);
-
-static std::string create_post_data( std::string vfwebqq )
-{
-	std::string m = boost::str( boost::format( "{\"vfwebqq\":\"%s\"}" ) % vfwebqq );
-	return std::string( "r=" ) + boost::url_encode(m);
-}
 
 static pt::wptree json_parse( const wchar_t * doc )
 {
@@ -250,30 +243,9 @@ void WebQQ::cb_send_msg( const boost::system::error_code& ec, read_streamptr str
 	m_io_service.post( boost::asio::detail::bind_handler( donecb, ec ) );
 }
 
-void WebQQ::update_group_list()
+void WebQQ::update_group_list(webqq::webqq_handler_t handler)
 {
-	std::cout <<  "getting group list" <<  std::endl;
-	/* Create post data: {"h":"hello","vfwebqq":"4354j53h45j34"} */
-	std::string postdata = create_post_data( this->m_vfwebqq );
-	std::string url = boost::str( boost::format( "%s/api/get_group_name_list_mask2" ) % "http://s.web2.qq.com" );
-
-	read_streamptr stream( new avhttp::http_stream( m_io_service ) );
-	stream->request_options(
-		avhttp::request_opts()
-		( avhttp::http_options::request_method, "POST" )
-		( avhttp::http_options::cookie, m_cookies.lwcookies )
-		( avhttp::http_options::referer, "http://s.web2.qq.com/proxy.html?v=20110412001&callback=1&id=1" )
-		( avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8" )
-		( avhttp::http_options::request_body, postdata )
-		( avhttp::http_options::content_length, boost::lexical_cast<std::string>( postdata.length() ) )
-		( avhttp::http_options::connection, "close" )
-	);
-
-	boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
-
-	avhttp::async_read_body( *stream, url, *buffer,
-						 boost::bind( &WebQQ::cb_group_list, this, _1, stream, buffer )
-					   );
+	detail::update_group_list_op op(shared_from_this(), handler);
 }
 
 void WebQQ::update_group_qqnumber(boost::shared_ptr<qqGroup> group )
@@ -610,61 +582,6 @@ void WebQQ::process_msg( const pt::wptree &jstree , std::string & ptwebqq )
 				m_cookies.ptwebqq = "";
 				boost::delayedcallsec( m_io_service, 15, m_funclogin);
 			}
-		}
-	}
-}
-
-void WebQQ::cb_group_list( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer )
-{
-	pt::ptree	jsonobj;
-	std::istream jsondata( buffer.get() );
-	bool retry = false;
-
-	if (!ec){
-		//处理!
-		try {
-			pt::json_parser::read_json( jsondata, jsonobj );
-
-			//TODO, group list
-			if( !( retry = !( jsonobj.get<int>( "retcode" ) == 0 ) ) ) {
-				BOOST_FOREACH( pt::ptree::value_type result,
-							jsonobj.get_child( "result" ).get_child( "gnamelist" ) ) {
-					boost::shared_ptr<qqGroup>	newgroup(new qqGroup);
-					newgroup->gid = result.second.get<std::string>( "gid" );
-					newgroup->name = result.second.get<std::string>( "name" );
-					newgroup->code = result.second.get<std::string>( "code" );
-
-					if( newgroup->gid[0] == '-' ) {
-						retry = true;
-						BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : " <<  "qqGroup get error" << std::endl;
-						continue;
-					}
-
-					this->m_groups.insert( std::make_pair( newgroup->gid, newgroup ) );
-					BOOST_LOG_TRIVIAL(info) <<  __FILE__ << " : " << __LINE__ << " : " << console_out_str("qq群 ") << console_out_str(newgroup->gid) <<  console_out_str(newgroup->name);
-
-				}
-			}
-		} catch( const pt::json_parser_error & jserr ) {
-			retry = true;
-			BOOST_LOG_TRIVIAL(error) << __FILE__ << " : " << __LINE__ << " : " <<  "parse json error : " <<  console_out_str(jserr.what());
-		} catch( const pt::ptree_bad_path & badpath ) {
-			retry = true;
-			BOOST_LOG_TRIVIAL(error) << __FILE__ << " : " << __LINE__ << " : " <<   "bad path error " <<  badpath.what();
-		}
-	}else
-		retry = 1;
-
-	if( retry ) {
-		boost::delayedcallsec( m_io_service, 5, boost::bind( &WebQQ::update_group_list, shared_from_this() ) );
-	} else {
-		int groupcount = m_groups.size();
-
-		done_callback_handler groupmembercb = boost::bindmultihandler(groupcount, boost::bind( &WebQQ::do_poll_one_msg, shared_from_this(), m_cookies.ptwebqq ));
-		// fetching more budy info.
-		BOOST_FOREACH( grouplist::value_type & v, m_groups ) {
-			update_group_qqnumber( v.second );
-			update_group_member( v.second , groupmembercb);
 		}
 	}
 }
