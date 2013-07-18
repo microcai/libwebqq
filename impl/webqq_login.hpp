@@ -97,25 +97,6 @@ static std::string parse_version( boost::asio::streambuf& buffer )
 	return "";
 }
 
-// ptui_checkVC('0','!IJG, ptui_checkVC('0','!IJG', '\x00\x00\x00\x00\x54\xb3\x3c\x53');
-static std::string parse_verify_uin( const char *str )
-{
-	const char *start;
-	const char *end;
-
-	start = strchr( str, '\\' );
-
-	if( !start )
-		return "";
-
-	end = strchr( start, '\'' );
-
-	if( !end )
-		return "";
-
-	return std::string( start, end - start );
-}
-
 /**
  * I hacked the javascript file named comm.js, which received from tencent
  * server, and find that fuck tencent has changed encryption algorithm
