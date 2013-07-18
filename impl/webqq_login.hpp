@@ -303,8 +303,15 @@ public:
 			*c = '\0';
 
 			// get verify image
-			m_webqq->get_verify_image( s ,  m_handler);
+			m_webqq->get_verify_image( s ,  *this);
 		}
+	}
+
+	void operator()(boost::system::error_code ec, std::string vc)
+	{
+		if (!ec)
+			ec = error::login_failed_need_vc;
+		m_handler(ec, vc);
 	}
 private:
 	boost::shared_ptr<qqimpl::WebQQ> m_webqq;
