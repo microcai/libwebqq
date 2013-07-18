@@ -139,13 +139,11 @@ void WebQQ::check_login(webqq::webqq_handler_string_t handler)
 		detail::check_login_op op( shared_from_this(), handler );
 }
 
-// login to server with vc. called by login code or by user
-// if no verify image needed, then called by login
-// if verify image needed, then the user should listen to signeedvc and call this
-void WebQQ::login_withvc( std::string vccode )
+// login to server with vc.
+void WebQQ::login_withvc(std::string vccode, webqq::webqq_handler_t handler)
 {
 	std::cout << "vc code is \"" << vccode << "\"" << std::endl;
-	detail::corologin_vc op( shared_from_this(), vccode );
+	detail::login_vc_op op( shared_from_this(), vccode, handler);
 }
 
 // last step of a login process

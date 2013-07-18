@@ -43,6 +43,7 @@ namespace js = boost::property_tree::json_parser;
 #include "constant.hpp"
 
 #include "lwqq_cookie.hpp"
+#include "lwqq_status.hpp"
 
 namespace webqq {
 namespace qqimpl {
@@ -92,37 +93,6 @@ inline std::string uin_decode(const std::string &uin)
 	return std::string(_uin, 8);
 }
 
-/**
- * I hacked the javascript file named comm.js, which received from tencent
- * server, and find that fuck tencent has changed encryption algorithm
- * for password in webqq3 . The new algorithm is below(descripted with javascript):
- * var M=C.p.value; // M is the qq password
- * var I=hexchar2bin(md5(M)); // Make a md5 digest
- * var H=md5(I+pt.uin); // Make md5 with I and uin(see below)
- * var G=md5(H+C.verifycode.value.toUpperCase());
- *
- * @param pwd User's password
- * @param vc Verify Code. e.g. "!M6C"
- * @param uin A string like "\x00\x00\x00\x00\x54\xb3\x3c\x53", NB: it
- *        must contain 8 hexadecimal number, in this example, it equaled
- *        to "0x0,0x0,0x0,0x0,0x54,0xb3,0x3c,0x53"
- *
- * @return Encoded password
- */
-static std::string lwqq_enc_pwd( const std::string & pwd, const std::string & vc, const std::string & uin)
-{
-	/* Equal to "var I=hexchar2bin(md5(M));" */
-	std::string I =  lutil_md5_digest(pwd);
-
-	/* Equal to "var H=md5(I+pt.uin);" */
-	std::string H = lutil_md5_data( I + uin_decode(uin));
-
-	/* Equal to var G=md5(H+C.verifycode.value.toUpperCase()); */
-	std::string G =  lutil_md5_data(boost::to_upper_copy(H + vc));
-	boost::to_upper(G);
-	return G;
-}
-
 inline std::string generate_clientid()
 {
 	srand( time( NULL ) );
@@ -130,13 +100,14 @@ inline std::string generate_clientid()
 }
 
 // qq 登录办法-验证码登录
-class SYMBOL_HIDDEN corologin_vc : boost::asio::coroutine {
+class SYMBOL_HIDDEN login_vc_op : boost::asio::coroutine{
 public:
 	typedef void result_type;
 
-	corologin_vc( boost::shared_ptr<qqimpl::WebQQ> webqq, std::string _vccode )
-		: m_webqq( webqq ), vccode( _vccode ) {
-		std::string md5 = lwqq_enc_pwd( m_webqq->m_passwd.c_str(), vccode.c_str(), m_webqq->m_verifycode.uin.c_str() );
+	login_vc_op(boost::shared_ptr<qqimpl::WebQQ> webqq, std::string _vccode, webqq::webqq_handler_t handler)
+		: m_webqq(webqq), vccode(_vccode), m_handler(handler)
+	{
+		std::string md5 = webqq_password_encode(m_webqq->m_passwd, vccode, m_webqq->m_verifycode.uin);
 
 		// do login !
 		std::string url = boost::str(
@@ -146,7 +117,7 @@ public:
 								  "u1=http%%3A%%2F%%2Fweb.qq.com%%2Floginproxy.html"
 								  "%%3Flogin2qq%%3D1%%26webqq_type%%3D10&h=1&ptredirect=0&"
 								  "ptlang=2052&from_ui=1&pttype=1&dumy=&fp=loginerroralert&"
-								  "action=2-11-7438&mibao_css=m_webqq&t=1&g=1" )
+								  "action=2-11-7438&mibao_css=m_webqq&t=1&g=1")
 							  % LWQQ_URL_LOGIN_HOST
 							  % m_webqq->m_qqnum
 							  % md5
@@ -155,16 +126,16 @@ public:
 							  % APPID
 						  );
 
-		stream = boost::make_shared<avhttp::http_stream>( boost::ref( m_webqq->get_ioservice() ) );
-		stream->request_options(
+		m_stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
+		m_stream->request_options(
 			avhttp::request_opts()
-			( avhttp::http_options::cookie, m_webqq->m_cookies.lwcookies )
-			( avhttp::http_options::connection, "close" )
+			(avhttp::http_options::cookie, m_webqq->m_cookies.lwcookies)
+			(avhttp::http_options::connection, "close")
 		);
 
 		m_buffer = boost::make_shared<boost::asio::streambuf>();
 
-		avhttp::async_read_body( *stream, url, *m_buffer, *this );
+		avhttp::async_read_body(*m_stream, url, *m_buffer, *this);
 	}
 
 	// 在这里实现　QQ 的登录.
@@ -173,7 +144,6 @@ public:
 		std::istream response( m_buffer.get());
 		if( ( check_login( ec, bytes_transfered ) == 0 ) && ( m_webqq->m_status == LWQQ_STATUS_ONLINE ) )
 		{
-			m_webqq->siglogin();
 			m_webqq->m_clientid = generate_clientid();
 			//change status,  this is the last step for login
 			// 设定在线状态.
@@ -208,6 +178,37 @@ public:
 			}
 		}
 	}
+private:
+
+	/**
+	* I hacked the javascript file named comm.js, which received from tencent
+	* server, and find that fuck tencent has changed encryption algorithm
+	* for password in webqq3 . The new algorithm is below(descripted with javascript):
+	* var M=C.p.value; // M is the qq password
+	* var I=hexchar2bin(md5(M)); // Make a md5 digest
+	* var H=md5(I+pt.uin); // Make md5 with I and uin(see below)
+	* var G=md5(H+C.verifycode.value.toUpperCase());
+	*
+	* @param pwd User's password
+	* @param vc Verify Code. e.g. "!M6C"
+	* @param uin A string like "\x00\x00\x00\x00\x54\xb3\x3c\x53", NB: it
+	*        must contain 8 hexadecimal number, in this example, it equaled
+	*        to "0x0,0x0,0x0,0x0,0x54,0xb3,0x3c,0x53"
+	*
+	* @return Encoded password
+	*/
+	std::string webqq_password_encode( const std::string & pwd, const std::string & vc, const std::string & uin)
+	{
+		/* Equal to "var I=hexchar2bin(md5(M));" */
+		std::string I =  lutil_md5_digest(pwd);
+
+		/* Equal to "var H=md5(I+pt.uin);" */
+		std::string H = lutil_md5_data( I + uin_decode(uin));
+
+		/* Equal to var G=md5(H+C.verifycode.value.toUpperCase()); */
+		std::string G =  lutil_md5_data(boost::to_upper_copy(H + vc));
+		return boost::to_upper_copy(G);
+	}
 
 private:
 	int check_login(boost::system::error_code & ec, std::size_t bytes_transfered)
@@ -236,7 +237,7 @@ private:
 		}
 		if (!ec){
 			m_webqq->m_status = LWQQ_STATUS_ONLINE;
-			save_cookie( &( m_webqq->m_cookies ), stream->response_options().header_string() );
+			save_cookie( &( m_webqq->m_cookies ), m_stream->response_options().header_string() );
 			BOOST_LOG_TRIVIAL(info) <<  "login success!";
 		}else{
 			status = LWQQ_STATUS_OFFLINE;
@@ -248,7 +249,9 @@ private:
 
 private:
 	boost::shared_ptr<qqimpl::WebQQ> m_webqq;
-	read_streamptr stream;
+	webqq::webqq_handler_t m_handler;
+
+	read_streamptr m_stream;
 	boost::shared_ptr<boost::asio::streambuf> m_buffer;
 	std::string vccode;
 };

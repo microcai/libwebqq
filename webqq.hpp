@@ -187,6 +187,7 @@ public:
 	boost::asio::io_service	&get_ioservice();
 private:
 	void fireupneedvc(boost::system::error_code, std::string);
+	void start_polling(boost::system::error_code);
 private:
 	// 验证码, 需要自行下载url中的图片，然后调用 login_withvc.
 	boost::signals2::signal< void ( const boost::asio::const_buffer & )> signeedvc;

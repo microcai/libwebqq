@@ -197,7 +197,7 @@ public:
 	void check_login(webqq::webqq_handler_string_t handler);
 	// login with vc, call this if you got signeedvc signal.
 	// in signeedvc signal, you can retreve images from server.
-	void login_withvc( std::string vccode );
+	void login_withvc(std::string vccode, webqq::webqq_handler_t handler);
 	
 	// change status. This is the last step of login process.
 	void change_status(LWQQ_STATUS status, boost::function<void (boost::system::error_code) > handler);
@@ -223,9 +223,6 @@ public:
 	};
 
 public:// signals
-	// 登录成功激发.
-	boost::signals2::signal< void ()> siglogin;
-
 	// 获得一个群QQ号码的时候激发.
 	boost::signals2::signal< void ( qqGroup_ptr )> siggroupnumber;
 	// 新人入群的时候激发.
