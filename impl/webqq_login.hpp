@@ -185,8 +185,6 @@ public:
 
 				m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
 			}
-
-
 		}
 	}
 private:

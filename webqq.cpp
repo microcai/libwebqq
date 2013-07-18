@@ -102,6 +102,9 @@ void webqq::start_polling(boost::system::error_code ec)
 {
 	// start_polling if login success!
 	if (ec){
+		if (ec == error::login_failed_wrong_vc){
+			// report bad VC code
+		}
 		boost::delayedcallsec(get_ioservice(), 15, boost::bind(&webqq::login, this));
 	}
 }
@@ -110,7 +113,6 @@ void webqq::login_withvc( std::string vccode )
 {
 	impl->login_withvc( vccode, boost::bind(&webqq::start_polling, this, _1) );
 }
-
 
 void webqq::send_group_message( std::string group, std::string msg, boost::function<void ( const boost::system::error_code& ec )> donecb )
 {
