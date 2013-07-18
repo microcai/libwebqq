@@ -40,16 +40,20 @@ namespace js = boost::property_tree::json_parser;
 #include "boost/urlencode.hpp"
 
 #include "constant.hpp"
+
 #include "../webqq.hpp"
+#include "../error_code.hpp"
 
 #include "webqq_impl.hpp"
+
 #include "utf8.hpp"
 #include "lwqq_status.hpp"
 #include "webqq_login.hpp"
 #include "clean_cache.hpp"
+#include "webqq_verify_image.hpp"
 
 #include "process_group_msg.hpp"
-#include <libwebqq/error_code.hpp>
+
 
 #ifdef WIN32
 
@@ -443,52 +447,9 @@ qqGroup_ptr WebQQ::get_Group_by_qq( std::string qq )
 	return qqGroup_ptr();
 }
 
-class get_verify_image_op {
-public:
-	get_verify_image_op(boost::shared_ptr<WebQQ> webqq, std::string vcimgid, webqq::webqq_handler_string_t handler)
-	  : m_webqq(webqq), m_handler(handler),
-		m_stream(boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()))),
-		m_buffer(boost::make_shared<boost::asio::streambuf>())
-	{
-		BOOST_ASSERT(vcimgid.length() > 8);
-		std::string url = boost::str(
-							boost::format( LWQQ_URL_VERIFY_IMG ) % APPID % m_webqq->m_qqnum
-						);
-
-		m_stream->request_options(
-			avhttp::request_opts()
-			( avhttp::http_options::cookie, std::string( "chkuin=" ) + m_webqq->m_qqnum )
-			( avhttp::http_options::connection, "close" )
-		);
-		avhttp::async_read_body( *m_stream, url, * m_buffer, *this);
-
-	}
-	void operator()(boost::system::error_code ec, std::size_t bytes_transfered)
-	{
-		detail::update_cookies( &(m_webqq->m_cookies), m_stream->response_options().header_string() , "verifysession");
-		m_webqq->m_cookies.update();
-
-		std::string vcimg;
-		vcimg.resize(bytes_transfered);
-
-		m_buffer->sgetn(&vcimg[0], bytes_transfered);
-
-		if (ec)
-			ec = error::fetch_verifycode_failed;
-		m_handler(ec, vcimg);
-	}
-private:
-	boost::shared_ptr<WebQQ> m_webqq;
-	webqq::webqq_handler_string_t m_handler;
-
-	boost::shared_ptr<boost::asio::streambuf> m_buffer;
-	read_streamptr m_stream;
-
-};
-
 void WebQQ::get_verify_image( std::string vcimgid, webqq::webqq_handler_string_t handler)
 {
-	get_verify_image_op op(shared_from_this(), vcimgid, handler);
+	detail::get_verify_image_op op(shared_from_this(), vcimgid, handler);
 }
 
 void WebQQ::do_poll_one_msg( std::string ptwebqq )

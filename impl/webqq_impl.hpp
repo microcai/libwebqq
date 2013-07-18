@@ -46,6 +46,7 @@ namespace pt = boost::property_tree;
 typedef boost::shared_ptr<avhttp::http_stream> read_streamptr;
 
 #include "../webqq.hpp"
+#include "../error_code.hpp"
 
 #if !defined(_MSC_VER)
 #pragma GCC visibility push(hidden)
