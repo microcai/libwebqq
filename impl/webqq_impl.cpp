@@ -253,7 +253,7 @@ void WebQQ::update_group_qqnumber(boost::shared_ptr<qqGroup> group, webqq::webqq
 	detail::update_group_qqnumber_op op(shared_from_this(), group, handler);
 }
 
-void WebQQ::update_group_member(boost::shared_ptr<qqGroup> group , done_callback_handler handler)
+void WebQQ::update_group_member(boost::shared_ptr<qqGroup> group, webqq::webqq_handler_t handler)
 {
 	read_streamptr stream( new avhttp::http_stream( m_io_service ) );
 
@@ -610,7 +610,7 @@ void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, boost::shared_ptr<q
 }
 
 
-void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer, boost::shared_ptr<qqGroup> group, done_callback_handler handler)
+void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer, boost::shared_ptr<qqGroup> group, webqq::webqq_handler_t handler)
 {
 	//处理!
 	try {
@@ -627,18 +627,20 @@ void WebQQ::cb_group_member( const boost::system::error_code& ec, read_streamptr
 		// 开始更新成员的 QQ 号码，一次更新一个，慢慢来.
 		this->update_group_member_qq( group );
 
-		get_ioservice().post(handler);
+		get_ioservice().post(boost::asio::detail::bind_handler(handler, boost::system::error_code()));
 
 	} catch( const pt::json_parser_error & jserr ) {
 		BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : " <<  "parse json error : " <<  jserr.what();
 
-		boost::delayedcallsec( m_io_service, 20, boost::bind( &WebQQ::update_group_member, shared_from_this(), group, dummy) );
 		// 在重试之前，获取缓存文件.
 		try{
-		pt::ptree jsonobj;
-		pt::json_parser::read_json(std::string("cache/group_") + group->name , jsonobj);
-		cb_group_member_process_json(jsonobj, group);
-		}catch (...){}
+			pt::ptree jsonobj;
+			pt::json_parser::read_json(std::string("cache/group_") + group->name , jsonobj);
+			cb_group_member_process_json(jsonobj, group);
+			get_ioservice().post(boost::asio::detail::bind_handler(handler, boost::system::error_code()));
+		}catch (...){
+			boost::delayedcallsec( m_io_service, 20, boost::bind( &WebQQ::update_group_member, shared_from_this(), group, handler) );
+		}
 	} catch( const pt::ptree_bad_path & badpath ) {
 	}
 }

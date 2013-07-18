@@ -62,7 +62,7 @@ void webqq::on_group_newbee( boost::function<void ( qqGroup_ptr,  qqBuddy * )>  
 	impl->signewbuddy.connect(cb);
 }
 
-static void dummy(){}
+static void dummy(boost::system::error_code){}
 
 void webqq::update_group_member(boost::shared_ptr<qqGroup> group )
 {

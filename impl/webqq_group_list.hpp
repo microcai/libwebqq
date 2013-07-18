@@ -141,22 +141,31 @@ public:
 		}
 
 		// and then update_group_detail
-
-		int groupcount = m_webqq->m_groups.size();
-
-		WebQQ::done_callback_handler groupmembercb = boost::bindmultihandler(groupcount, boost::bind(&WebQQ::do_poll_one_msg, m_webqq, m_webqq->m_cookies.ptwebqq));
-		// fetching more budy info.
-		BOOST_FOREACH(grouplist::value_type & v, m_webqq->m_groups)
-		{
-			m_webqq->update_group_qqnumber(v.second, *this);
-			m_webqq->update_group_member(v.second , groupmembercb);
-		}
-
+		m_webqq->get_ioservice().post(
+				boost::asio::detail::bind_handler(*this, boost::system::error_code())
+		);
 	}
 
 	void operator()(boost::system::error_code ec)
 	{
+		BOOST_ASIO_CORO_REENTER(this)
+		{
+			// 先更新群的 QQ 号.
+			for (iter = m_webqq->m_groups.begin(); iter != m_webqq->m_groups.end(); ++iter)
+			{
+				BOOST_ASIO_CORO_YIELD
+					m_webqq->update_group_qqnumber(iter->second, *this);
+			}
 
+			// 然后更新 Q群的 群友列表.
+			for (iter = m_webqq->m_groups.begin(); iter != m_webqq->m_groups.end(); ++iter)
+			{
+				BOOST_ASIO_CORO_YIELD
+					m_webqq->update_group_member(iter->second , *this);
+			}
+		}
+
+		m_handler(boost::system::error_code());
 	}
 
 private:
@@ -165,6 +174,8 @@ private:
 
 	read_streamptr m_stream;
 	boost::shared_ptr<boost::asio::streambuf> m_buffer;
+
+	grouplist::iterator iter;
 };
 
 }

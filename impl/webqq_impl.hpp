@@ -188,7 +188,6 @@ typedef boost::system::error_code system_error;
 class SYMBOL_HIDDEN WebQQ  : public boost::enable_shared_from_this<WebQQ>
 {
 public:
-	typedef boost::function0<void>		done_callback_handler;
 	using boost::enable_shared_from_this<WebQQ>::shared_from_this;
 public:
 	WebQQ( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd);
@@ -207,7 +206,7 @@ public:
 	void send_group_message( qqGroup &  group, std::string msg, send_group_message_cb donecb );
 	void update_group_list(webqq::webqq_handler_t handler);
 	void update_group_qqnumber(boost::shared_ptr<qqGroup> group, webqq::webqq_handler_t handler);
-	void update_group_member(boost::shared_ptr<qqGroup> group, done_callback_handler);
+	void update_group_member(boost::shared_ptr<qqGroup> group, webqq::webqq_handler_t handler);
 
 	// 查找群，如果要验证码，则获取后带vfcode参数进行调用.否则对  vfcode 是 ""
 	void search_group(std::string groupqqnum, std::string vfcode, webqq::search_group_handler handler);
@@ -247,7 +246,7 @@ public:
 	void process_group_message( const pt::wptree & jstree );
 
 	void cb_group_member_process_json(pt::ptree	&jsonobj, boost::shared_ptr<qqGroup>);
-	void cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf>, boost::shared_ptr<qqGroup>,  done_callback_handler );
+	void cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf>, boost::shared_ptr<qqGroup>, webqq::webqq_handler_t handler);
 
 	void cb_newbee_group_join(qqGroup_ptr group, std::string uid);
 
