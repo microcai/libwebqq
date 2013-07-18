@@ -150,15 +150,18 @@ public:
 			m_webqq->change_status(LWQQ_STATUS_ONLINE, *this);
 		}else
 		{
-			m_webqq->get_ioservice().post(m_webqq->m_funclogin);
+			using namespace boost::asio::detail;
+			m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
 		}
 	}
 	
 	void operator()(const boost::system::error_code& ec)
 	{
+		using namespace boost::asio::detail;
 		if(ec)
 		{
 			// 修改在线状态失败!
+			m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
 		}
 		else
 		{
@@ -176,6 +179,8 @@ public:
 				boost::delayedcallms( m_webqq->get_ioservice(), 500, boost::bind( &WebQQ::send_group_message_internal, m_webqq->shared_from_this(), boost::get<0>( v ), boost::get<1>( v ), boost::get<2>( v ) ) );
 				m_webqq->m_msg_queue.pop_front();
 			}
+
+			m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
 		}
 	}
 private:

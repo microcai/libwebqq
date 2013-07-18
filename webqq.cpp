@@ -98,10 +98,12 @@ void webqq::fireupneedvc(boost::system::error_code ec, std::string vc)
 	}
 }
 
-void webqq::start_polling(boost::system::error_code)
+void webqq::start_polling(boost::system::error_code ec)
 {
 	// start_polling if login success!
-
+	if (ec){
+		boost::delayedcallsec(get_ioservice(), 15, boost::bind(&webqq::login, this));
+	}
 }
 
 void webqq::login_withvc( std::string vccode )
