@@ -236,8 +236,8 @@ private:
 		{
 			status = boost::lexical_cast<int>(what[1]);
 			m_webqq->m_nick = what[6];
-		}
-		status = 9;
+		}else
+			status = 9;
 
 		if ( status >= 0 && status <= 8){
 			ec = boost::system::error_code(status, error::error_category());
