@@ -270,6 +270,8 @@ public:
 	std::string m_qqnum, m_passwd;
 	LWQQ_STATUS m_status;
 
+	std::string m_nick;                                        // nick of the avbot account
+
 	std::string	m_version;
 	std::string m_clientid, m_psessionid;
 	long m_msg_id;     // update on every message.

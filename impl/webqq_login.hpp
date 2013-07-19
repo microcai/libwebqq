@@ -228,22 +228,23 @@ private:
 
 		BOOST_LOG_TRIVIAL(debug) << console_out_str(response);
 
-		char *p = strstr( ( char* )response.c_str(), "\'" );
+		int status;
+		boost::cmatch what;
+		boost::regex ex("ptuiCB\\('([0-9])',[ ]?'([0-9])',[ ]?'([^']*)',[ ]?'([0-9])',[ ]?'([^']*)',[ ]?'([^']*)'[ ]*\\);");
 
-		if( !p ) {
-			return -1;
+		if(boost::regex_search(response.c_str(), what, ex))
+		{
+			status = boost::lexical_cast<int>(what[1]);
+			m_webqq->m_nick = what[6];
 		}
-
-		char buf[4] = {0};
-
-		strncpy( buf, p + 1, 1 );
-		int status = atoi( buf );
+		status = 9;
 
 		if ( status >= 0 && status <= 8){
 			ec = boost::system::error_code(status, error::error_category());
 		}else{
 			ec = error::login_failed_other;
 		}
+
 		if (!ec){
 			m_webqq->m_status = LWQQ_STATUS_ONLINE;
 			save_cookie( &( m_webqq->m_cookies ), m_stream->response_options().header_string() );
