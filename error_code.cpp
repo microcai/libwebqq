@@ -7,7 +7,7 @@ const boost::system::error_category& webqq::error::error_category()
 	return reinterpret_cast<const boost::system::error_category&>(error_category_instance);
 }
 
-const char* webqq::error::error_category_impl::name() const
+const char* webqq::error::error_category_impl::name() const BOOST_SYSTEM_NOEXCEPT
 {
 	return "libwebqq";
 }

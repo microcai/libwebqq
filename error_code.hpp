@@ -14,6 +14,10 @@
 #include <boost/system/system_error.hpp>
 #include <boost/system/error_code.hpp>
 
+#ifndef BOOST_SYSTEM_NOEXCEPT
+  #define BOOST_SYSTEM_NOEXCEPT BOOST_NOEXCEPT
+#endif
+
 namespace webqq {
 namespace error {
 
@@ -98,7 +102,7 @@ inline boost::system::error_code make_error_code(errc_t e)
 class error_category_impl
   : public boost::system::error_category
 {
-	virtual const char* name() const;
+	virtual const char* name() const BOOST_SYSTEM_NOEXCEPT;
 
 	virtual std::string message(int e) const;
 };
