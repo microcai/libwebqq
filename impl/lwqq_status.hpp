@@ -82,14 +82,15 @@ public:
 		//处理!
 		try {
 			js::read_json( response, json );
-			js::write_json( std::cout, json );
 
 			if( json.get<std::string>( "retcode" ) == "0" ) {
 				m_webqq->m_psessionid = json.get_child( "result" ).get<std::string>( "psessionid" );
 				m_webqq->m_vfwebqq = json.get_child( "result" ).get<std::string>( "vfwebqq" );
 				m_webqq->m_status = LWQQ_STATUS_ONLINE;
 
-				m_handler(boost::system::error_code());
+				m_webqq->get_ioservice().post(
+					boost::asio::detail::bind_handler(m_handler,boost::system::error_code())
+				);
 				return;
 			}
 		} catch( const pt::json_parser_error & jserr ) {
