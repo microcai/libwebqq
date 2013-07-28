@@ -93,14 +93,12 @@ public:
 				);
 				return;
 			}
-		} catch( const pt::json_parser_error & jserr ) {
-			BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " <<__LINE__ << " :" <<  "parse json error :" <<  jserr.what();
-		} catch( const pt::ptree_bad_path & jserr ) {
+		} catch( const pt::ptree_error & jserr ) {
 			BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " <<__LINE__ << " :" << "parse bad path error : " <<  jserr.what();
 		}
 		}
 
-		m_handler(boost::system::errc::make_error_code(boost::system::errc::protocol_error));
+		m_handler(error::make_error_code(error::failed_to_change_status));
 	}
 private:
 	boost::shared_ptr<qqimpl::WebQQ> m_webqq;
