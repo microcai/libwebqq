@@ -569,7 +569,9 @@ void WebQQ::process_msg( const pt::wptree &jstree , std::string & ptwebqq )
 void WebQQ::cb_newbee_group_join( qqGroup_ptr group,  std::string uid )
 {
 	// 报告新人入群.
-	signewbuddy(group, group->get_Buddy_by_uin(uid));
+	boost::delayedcallsec(get_ioservice(), 30,
+		boost::bind(boost::ref(signewbuddy), group, group->get_Buddy_by_uin(uid))
+	);
 }
 
 void WebQQ::cb_group_member_process_json(pt::ptree &jsonobj, boost::shared_ptr<qqGroup> group)
