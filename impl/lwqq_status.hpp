@@ -54,18 +54,24 @@ public:
 					% (m_webqq->m_psessionid.empty() ? std::string("null") : m_webqq->m_psessionid)
 				);
 
-		msg = boost::str( boost::format( "r=%s" ) % boost::url_encode(msg) );
+		msg = boost::str(
+					boost::format( "r=%s&clientid=%s&psessionid=%s" )
+					% boost::url_encode(msg)
+					% m_webqq->m_clientid
+					% (m_webqq->m_psessionid.empty() ? std::string("null") : m_webqq->m_psessionid)
+			  );
 
 		stream.reset( new avhttp::http_stream( m_webqq->get_ioservice() ) );
 		stream->request_options(
 			avhttp::request_opts()
 			( avhttp::http_options::request_method, "POST" )
 			( avhttp::http_options::cookie, m_webqq->m_cookies.lwcookies )
-			( avhttp::http_options::referer, "http://d.web2.qq.com/proxy.html?v=20110331002&callback=1&id=2" )
+			( avhttp::http_options::referer, "http://d.web2.qq.com/proxy.html?v=20110331002&callback=1&id=3" )
 			( avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8" )
 			( avhttp::http_options::request_body, msg )
 			( avhttp::http_options::content_length, boost::lexical_cast<std::string>( msg.length() ) )
 			( avhttp::http_options::connection, "close" )
+			("Origin", "http://d.web2.qq.com")
 		);
 		buf = boost::make_shared<boost::asio::streambuf>();
 		avhttp::async_read_body(* stream, LWQQ_URL_SET_STATUS , * buf, * this );
