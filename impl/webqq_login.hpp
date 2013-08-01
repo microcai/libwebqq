@@ -141,18 +141,57 @@ public:
 	// 在这里实现　QQ 的登录.
 	void operator()(boost::system::error_code ec, std::size_t bytes_transfered)
 	{
-		std::istream response( m_buffer.get());
-		if( ( check_login( ec, bytes_transfered ) == 0 ) && ( m_webqq->m_status == LWQQ_STATUS_ONLINE ) )
+		BOOST_ASIO_CORO_REENTER(this)
 		{
-			m_webqq->m_clientid = generate_clientid();
-			//change status,  this is the last step for login
-			// 设定在线状态.
-			m_webqq->change_status(LWQQ_STATUS_ONLINE, *this);
-		}else
-		{
-			using namespace boost::asio::detail;
-			m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
+			if( ( check_login( ec, bytes_transfered ) == 0 ) && ( m_webqq->m_status == LWQQ_STATUS_ONLINE ) )
+			{
+				// 再次　login
+				m_stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
+				m_stream->request_options(
+					avhttp::request_opts()
+					(avhttp::http_options::cookie, m_webqq->m_cookies.lwcookies)
+					(avhttp::http_options::connection, "close")
+					(avhttp::http_options::referer, "https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=5&mibao_css=m_webqq&appid=1003903&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fweb2.qq.com%2Floginproxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20130723001")
+				);
+
+				m_stream->max_redirects(1);
+
+				m_buffer = boost::make_shared<boost::asio::streambuf>();
+
+				BOOST_ASIO_CORO_YIELD avhttp::async_read_body(
+					* m_stream,
+					boost::str(boost::format("https://ssl.ptlogin2.qq.com/pt4_302?u1=%s") %
+						// u1
+						boost::url_encode(
+							boost::str(
+									boost::format("http://ptlogin4.web2.qq.com/check_sig?pttype=1&uin=%s&service=login&nodirect=1&ptsig=%s&s_url=%s&f_url=&ptlang=2052&ptredirect=100&aid=1003903&daid=164&j_later=0&low_login_hour=0&regmaster=0")
+										% m_webqq->m_qqnum
+										% boost::url_encode(m_webqq->m_login_sig)
+										// s_url
+										% boost::url_encode(std::string("http://web2.qq.com/loginproxy.html?login2qq=1&webqq_type=10"))
+								)
+						)
+					),
+					*m_buffer,
+					*this
+				);
+
+				save_cookie( &( m_webqq->m_cookies ), m_stream->response_options().header_string() );
+
+				m_webqq->m_clientid = generate_clientid();
+				//change status,  this is the last step for login
+				// 设定在线状态.
+
+				boost::asio::detail::coroutine_ref(this) = 0;
+				m_webqq->change_status(LWQQ_STATUS_ONLINE, *this);
+			}else
+			{
+				using namespace boost::asio::detail;
+				m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
+			}
 		}
+
+
 	}
 	
 	void operator()(const boost::system::error_code& ec)

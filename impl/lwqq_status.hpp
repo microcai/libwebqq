@@ -44,28 +44,22 @@ public:
 	lwqq_change_status(boost::shared_ptr<qqimpl::WebQQ> webqq, LWQQ_STATUS status, boost::function<void (boost::system::error_code) > handler)
 		: m_webqq(webqq), m_handler(handler)
 	{
+		std::stringstream	post_val_r;
 		boost::property_tree::ptree r;
 		r.put("status", lwqq_status_to_str( LWQQ_STATUS_ONLINE ));
 		r.put("passwd_sig", "");
 		r.put("ptwebqq", m_webqq->m_cookies.ptwebqq);
 		r.put("clientid", m_webqq->m_clientid);
-		r.put_child("psessionid", boost::property_tree::ptree());
+		if (m_webqq->m_psessionid.empty())
+			r.put_child("psessionid", boost::property_tree::ptree());
+		else
+			r.put("psessionid", m_webqq->m_psessionid);
 
-		boost::property_tree::json_parser::write_json(std::cout , r);
+		boost::property_tree::json_parser::write_json(post_val_r , r);
 
-		std::string msg = boost::str(
-					boost::format( "{\"status\":\"%s\",\"ptwebqq\":\"%s\","
-									"\"passwd_sig\":""\"\",\"clientid\":\"%s\""
-									", \"psessionid\": %s}" )
-					% lwqq_status_to_str( LWQQ_STATUS_ONLINE )
-					% m_webqq->m_cookies.ptwebqq
-					% m_webqq->m_clientid
-					% (m_webqq->m_psessionid.empty() ? std::string("null") : m_webqq->m_psessionid)
-				);
-
-		msg = boost::str(
+		std::string	msg = boost::str(
 					boost::format( "r=%s&clientid=%s&psessionid=%s" )
-					% boost::url_encode(msg)
+					% boost::url_encode(post_val_r.str())
 					% m_webqq->m_clientid
 					% (m_webqq->m_psessionid.empty() ? std::string("null") : m_webqq->m_psessionid)
 			  );
