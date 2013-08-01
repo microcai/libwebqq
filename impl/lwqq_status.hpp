@@ -44,10 +44,19 @@ public:
 	lwqq_change_status(boost::shared_ptr<qqimpl::WebQQ> webqq, LWQQ_STATUS status, boost::function<void (boost::system::error_code) > handler)
 		: m_webqq(webqq), m_handler(handler)
 	{
+		boost::property_tree::ptree r;
+		r.put("status", lwqq_status_to_str( LWQQ_STATUS_ONLINE ));
+		r.put("passwd_sig", "");
+		r.put("ptwebqq", m_webqq->m_cookies.ptwebqq);
+		r.put("clientid", m_webqq->m_clientid);
+		r.put_child("psessionid", boost::property_tree::ptree());
+
+		boost::property_tree::json_parser::write_json(std::cout , r);
+
 		std::string msg = boost::str(
 					boost::format( "{\"status\":\"%s\",\"ptwebqq\":\"%s\","
 									"\"passwd_sig\":""\"\",\"clientid\":\"%s\""
-									", \"psessionid\": \"%s\"}" )
+									", \"psessionid\": %s}" )
 					% lwqq_status_to_str( LWQQ_STATUS_ONLINE )
 					% m_webqq->m_cookies.ptwebqq
 					% m_webqq->m_clientid

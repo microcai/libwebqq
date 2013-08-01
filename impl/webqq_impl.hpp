@@ -89,7 +89,7 @@ typedef struct LwqqVerifyCode {
 typedef struct LwqqCookies {
 	std::string ptvfsession;          /**< ptvfsession */
 	std::string ptcz;
-	std::string skey;
+	std::string skey, p_skey;
 	std::string ptwebqq;
 	std::string ptuserinfo;
 	std::string uin;
@@ -140,6 +140,10 @@ typedef struct LwqqCookies {
 			this->lwcookies += "skey=" + this->skey + "; ";
 		}
 
+		if( this->p_skey.length() ) {
+			this->lwcookies += "p_skey=" + this->p_skey + "; ";
+		}
+
 		if( this->ptwebqq.length() ) {
 			this->lwcookies += "ptwebqq=" + this->ptwebqq + "; ";
 		}
@@ -149,7 +153,7 @@ typedef struct LwqqCookies {
 		}
 
 		if( this->uin.length() ) {
-			this->lwcookies += "uin=" + this->uin + "; ";
+			this->lwcookies += "uin=" + this->uin + "; " + "p_uin=" + this->uin + "; ";
 		}
 
 		if( this->ptisp.length() ) {
@@ -274,6 +278,7 @@ public:
 
 	std::string	m_version;
 	std::string m_clientid, m_psessionid;
+	std::string m_login_sig;                                   // 安全参数
 	long m_msg_id;     // update on every message.
 
 	LwqqVerifyCode m_verifycode;

@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <string>
 #include <iostream>
 
 #include <boost/log/trivial.hpp>
@@ -26,7 +27,7 @@
 #include <boost/function.hpp>
 #include <boost/asio.hpp>
 #include <boost/regex.hpp>
-
+#include <boost/urlencode.hpp>
 
 #include <avhttp.hpp>
 #include <avhttp/async_read_body.hpp>
@@ -50,9 +51,9 @@ public:
 	{
 		// 首先获得版本.
 		stream = boost::make_shared<avhttp::http_stream>( boost::ref(m_webqq->get_ioservice()));
-		buffer = boost::make_shared<boost::asio::streambuf>();
+		m_buffer = boost::make_shared<boost::asio::streambuf>();
 		BOOST_LOG_TRIVIAL(debug) << "Get webqq version from " <<  LWQQ_URL_VERSION ;
-		avhttp::async_read_body( *stream, LWQQ_URL_VERSION, * buffer,  *this );
+		avhttp::async_read_body( *stream, LWQQ_URL_VERSION, * m_buffer,  *this );
 	}
 
 	// 在这里实现　QQ 的登录.
@@ -60,16 +61,16 @@ public:
 	{
 		std::string response;
 		response.resize(bytes_transfered);
-		buffer->sgetn(&response[0], bytes_transfered);
+		m_buffer->sgetn(&response[0], bytes_transfered);
 
 		boost::regex ex;
-		boost::cmatch what;
+		boost::smatch what;
 
 		BOOST_ASIO_CORO_REENTER(this)
 		{
 			ex.set_expression("ptuiV\\(([0-9]*)\\);");
 
-			if(boost::regex_search(response.c_str(), what, ex))
+			if(boost::regex_search(response, what, ex))
 			{
 				m_webqq->m_version = what[1];
 			}
@@ -84,20 +85,42 @@ public:
 			m_webqq->m_psessionid.clear();
 			m_webqq->m_vfwebqq.clear();
 			m_webqq->m_status = LWQQ_STATUS_OFFLINE;
+
+			// 获取　login_sig
+
+			stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
+			m_buffer = boost::make_shared<boost::asio::streambuf>();
+
+			BOOST_ASIO_CORO_YIELD avhttp::async_read_body(*stream,/*url*/
+					boost::str(
+						boost::format("%s?daid=164&target=self&style=5&mibao_css=m_webqq&appid=%s&enable_qlogin=0&s_url=%s")
+							% LWQQ_URL_CHECK_LOGIN_SIG_HOST
+							% APPID
+							% boost::url_encode(std::string("http://web2.qq.com/loginproxy.html"))
+					),
+					*m_buffer,
+					*this);
+
+			// 类似这样的
+			// 是一个正常的 HTML 文件，　但是内容包含
+			// g_login_sig=encodeURIComponent("PpbBnX213jzzSH8*xXyySm9qq1jAnP2uo1fXkGaC5t0ZDaxE5MzSR59qh1EhmjqA");
+
+			boost::regex_search(response, what, boost::regex("g_login_sig *= *encodeURIComponent\\(\"([^\"]*)\"\\);"));
+
+			m_webqq->m_login_sig = what[1];
 			//获取验证码.
 
 			stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
-			buffer = boost::make_shared<boost::asio::streambuf>();
+			m_buffer = boost::make_shared<boost::asio::streambuf>();
 
 			stream->request_options(
 				avhttp::request_opts()
 				(avhttp::http_options::cookie, boost::str(boost::format("chkuin=%s") % m_webqq->m_qqnum))
 				(avhttp::http_options::connection, "close")
 			);
-
 			BOOST_ASIO_CORO_YIELD avhttp::async_read_body(*stream,
 					/*url*/ boost::str(boost::format("%s%s?uin=%s&appid=%s") % LWQQ_URL_CHECK_HOST % VCCHECKPATH % m_webqq->m_qqnum % APPID),
-					*buffer,
+					*m_buffer,
 					*this);
 
 			// 解析验证码，然后带验证码登录.
@@ -117,7 +140,7 @@ public:
 
 			ex.set_expression("ptui_checkVC\\('([0-9])',[ ]?'([0-9a-zA-Z!]*)',[ ]?'([0-9a-zA-Z\\\\]*)'");
 
-			if(boost::regex_search(response.c_str(), what, ex))
+			if(boost::regex_search(response, what, ex))
 			{
 				std::string type = what[1];
 				std::string vc = what[2];
@@ -155,7 +178,7 @@ private:
 	webqq::webqq_handler_string_t m_handler;
 
 	read_streamptr stream;
-	boost::shared_ptr<boost::asio::streambuf> buffer;
+	boost::shared_ptr<boost::asio::streambuf> m_buffer;
 };
 
 }

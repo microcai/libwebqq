@@ -44,6 +44,9 @@ static void update_cookies(LwqqCookies *cookies, const std::string & httpheader,
 	else if( ( key == "skey" ) )
 	{
 		cookies->skey = value ;
+	}else if ( key == "p_skey")
+	{
+		cookies->p_skey = value ;
 	}
 	else if( ( key == "ptwebqq" ) )
 	{
@@ -98,6 +101,7 @@ static void save_cookie( LwqqCookies * cookies, const std::string & httpheader )
 {
 	update_cookies( cookies, httpheader, "ptcz" );
 	update_cookies( cookies, httpheader, "skey" );
+	update_cookies( cookies, httpheader, "p_skey" );
 	update_cookies( cookies, httpheader, "ptwebqq" );
 	update_cookies( cookies, httpheader, "ptuserinfo" );
 	update_cookies( cookies, httpheader, "uin" );
