@@ -114,16 +114,17 @@ public:
 							  boost::format(
 								  "%s/login?u=%s&p=%s&verifycode=%s&"
 								  "webqq_type=%d&remember_uin=1&aid=%s&login2qq=1&"
-								  "u1=http%%3A%%2F%%2Fweb.qq.com%%2Floginproxy.html"
-								  "%%3Flogin2qq%%3D1%%26webqq_type%%3D10&h=1&ptredirect=0&"
-								  "ptlang=2052&from_ui=1&pttype=1&dumy=&fp=loginerroralert&"
-								  "action=2-11-7438&mibao_css=m_webqq&t=1&g=1")
+								  "u1=%s&h=1&ptredirect=0&"
+								  "ptlang=2052&from_ui=1&daid=164&pttype=1&dumy=&fp=loginerroralert&"
+								  "action=4-15-8246&mibao_css=m_webqq&t=2&g=1&login_sig=%s")
 							  % LWQQ_URL_LOGIN_HOST
 							  % m_webqq->m_qqnum
 							  % md5
 							  % vccode
 							  % m_webqq->m_status
 							  % APPID
+							  % boost::url_encode(std::string("http://web2.qq.com/loginproxy.html?login2qq=1&webqq_type=10"))
+							  % m_webqq->m_login_sig
 						  );
 
 		m_stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
@@ -141,6 +142,7 @@ public:
 	// 在这里实现　QQ 的登录.
 	void operator()(boost::system::error_code ec, std::size_t bytes_transfered)
 	{
+		std::string url;
 		BOOST_ASIO_CORO_REENTER(this)
 		{
 			if( ( check_login( ec, bytes_transfered ) == 0 ) && ( m_webqq->m_status == LWQQ_STATUS_ONLINE ) )
@@ -149,34 +151,27 @@ public:
 				m_stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
 				m_stream->request_options(
 					avhttp::request_opts()
-					(avhttp::http_options::cookie, m_webqq->m_cookies.lwcookies)
+					(avhttp::http_options::cookie, buildcookie())
 					(avhttp::http_options::connection, "close")
 					(avhttp::http_options::referer, "https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=5&mibao_css=m_webqq&appid=1003903&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fweb2.qq.com%2Floginproxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20130723001")
+					(avhttp::http_options::accept, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+					(avhttp::http_options::user_agent, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.32 Safari/537.36")
 				);
 
-				m_stream->max_redirects(1);
+				m_stream->max_redirects(0);
 
 				m_buffer = boost::make_shared<boost::asio::streambuf>();
 
 				BOOST_ASIO_CORO_YIELD avhttp::async_read_body(
-					* m_stream,
-					boost::str(boost::format("https://ssl.ptlogin2.qq.com/pt4_302?u1=%s") %
-						// u1
-						boost::url_encode(
-							boost::str(
-									boost::format("http://ptlogin4.web2.qq.com/check_sig?pttype=1&uin=%s&service=login&nodirect=1&ptsig=%s&s_url=%s&f_url=&ptlang=2052&ptredirect=100&aid=1003903&daid=164&j_later=0&low_login_hour=0&regmaster=0")
-										% m_webqq->m_qqnum
-										% boost::url_encode(m_webqq->m_login_sig)
-										// s_url
-										% boost::url_encode(std::string("http://web2.qq.com/loginproxy.html?login2qq=1&webqq_type=10"))
-								)
-						)
-					),
-					*m_buffer,
-					*this
-				);
+					* m_stream, m_next_url, *m_buffer,	*this);
 
 				save_cookie( &( m_webqq->m_cookies ), m_stream->response_options().header_string() );
+				m_buffer = boost::make_shared<boost::asio::streambuf>();
+
+				if (ec == avhttp::errc::found){
+					BOOST_ASIO_CORO_YIELD avhttp::async_read_body(*m_stream, m_stream->location(), *m_buffer, *this);
+					save_cookie( &( m_webqq->m_cookies ), m_stream->response_options().header_string() );
+				}
 
 				m_webqq->m_clientid = generate_clientid();
 				//change status,  this is the last step for login
@@ -275,6 +270,7 @@ private:
 		{
 			status = boost::lexical_cast<int>(what[1]);
 			m_webqq->m_nick = what[6];
+			m_next_url = what[3];
 		}else
 			status = 9;
 
@@ -296,9 +292,33 @@ private:
 		return status;
 	}
 
+	std::string buildcookie()
+	{
+		// 这里只需要
+
+		// RK pt2gguin ptcz ptiso ptui_loginuin ptwebqq skey uin verifysession
+
+		return boost::str(
+			boost::format(
+				"RK=%s; pt2gguin=%s; ptcz=%s; ptisp=%s; ptui_loginuin=%s; ptwebqq=%s; skey=%s; uin=%s; verifysession=%s; "
+			)
+			% m_webqq->m_cookies.RK
+			% m_webqq->m_cookies.pt2gguin
+			% m_webqq->m_cookies.ptcz
+			% m_webqq->m_cookies.ptisp
+			% m_webqq->m_qqnum
+			% m_webqq->m_cookies.ptwebqq
+			% m_webqq->m_cookies.skey
+			% m_webqq->m_cookies.uin
+			% m_webqq->m_cookies.verifysession
+		);
+
+	}
+
 private:
 	boost::shared_ptr<qqimpl::WebQQ> m_webqq;
 	webqq::webqq_handler_t m_handler;
+	std::string m_next_url;
 
 	read_streamptr m_stream;
 	boost::shared_ptr<boost::asio::streambuf> m_buffer;

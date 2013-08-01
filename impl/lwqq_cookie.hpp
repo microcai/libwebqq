@@ -22,6 +22,7 @@ typedef struct LwqqCookies {
 	std::string verifysession;
 	std::string lwcookies;
 	std::string rv2;
+	std::string uikey;
 
 	std::string RK;
 	std::string superkey, superuin;
@@ -75,7 +76,8 @@ typedef struct LwqqCookies {
 
 		if( this->uin.length() ) {
 			this->lwcookies += "uin=" + this->uin + "; " + "p_uin=" + this->uin + "; ";
-			this->lwcookies += "ptui_loginuin=" + this->uin + "; ";
+			this->lwcookies += "ptui_loginuin=" + this->uin.substr(1) + "; ";
+			this->lwcookies += "p_uin=" + this->uin + "; ";
 		}
 
 		if( this->ptisp.length() ) {
@@ -87,7 +89,10 @@ typedef struct LwqqCookies {
 		}
 		if( this->pt4_token.length() ) {
 			this->lwcookies += "pt4_token=" + this->pt4_token + "; ";
+		}else{
+			this->lwcookies += "pt4_token=; p_skey=; ";
 		}
+
 		if( this->verifysession.length() ) {
 			this->lwcookies += "verifysession=" + this->verifysession + "; ";
 		}
@@ -100,6 +105,8 @@ typedef struct LwqqCookies {
  		if( this->superuin.length() ) {
 			this->lwcookies += "superuin=" + this->superuin + "; ";
 		}
+		if (this->uikey.length())
+			this->lwcookies += "uikey=" + this->uikey + "; ";
 	}
 } LwqqCookies;
 
@@ -188,7 +195,12 @@ static void update_cookies(LwqqCookies *cookies, const std::string & httpheader,
 	else if( ( key == "rv2" ) )
 	{
 		cookies->rv2 = value ;
-	}	else
+	}
+	else if ( key == "uikey")
+	{
+		cookies->uikey = value;
+	}
+	else
 	{
 		BOOST_LOG_TRIVIAL(warning) <<  " No this cookie: " <<  key;
 	}
@@ -209,6 +221,7 @@ static void save_cookie( LwqqCookies * cookies, const std::string & httpheader )
 	update_cookies( cookies, httpheader, "RK" );
 	update_cookies( cookies, httpheader, "superkey" );
 	update_cookies( cookies, httpheader, "superuin" );
+	update_cookies( cookies, httpheader, "uikey" );
 
 	//ptui_loginuin=2019517659; pt2gguin=o2019517659;
 	cookies->update();
