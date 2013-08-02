@@ -73,7 +73,7 @@ class update_group_qqnumber_op : boost::asio::coroutine
 
 		m_stream->request_options(
 			avhttp::request_opts()
-			( avhttp::http_options::cookie, m_webqq->m_cookies.lwcookies )
+			( avhttp::http_options::cookie, m_webqq->m_cookie_mgr.get_cookie(url)() )
 			( avhttp::http_options::referer, LWQQ_URL_REFERER_QUN_DETAIL )
 			( avhttp::http_options::connection, "close" )
 		);
@@ -116,7 +116,7 @@ public:
 				//start polling messages, 2 connections!
 				BOOST_LOG_TRIVIAL(info) << "start polling messages";
 
-				boost::delayedcallsec( m_webqq->get_ioservice(), 3, boost::bind( &WebQQ::do_poll_one_msg, m_webqq, m_webqq->m_cookies.ptwebqq ) );
+				boost::delayedcallsec( m_webqq->get_ioservice(), 3, boost::bind( &WebQQ::do_poll_one_msg, m_webqq, m_webqq->m_cookie_mgr.get_cookie(LWQQ_URL_POLL_MESSAGE).get_value("ptwebqq") ) );
 
 				m_webqq->siggroupnumber(m_this_group);
 

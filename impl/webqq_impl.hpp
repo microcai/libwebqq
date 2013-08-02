@@ -169,7 +169,7 @@ public:
 
 public:
 	std::string	m_vfwebqq;
-	LwqqCookies m_cookies;
+// 	LwqqCookies m_cookies;
 
 public:
 	boost::asio::io_service & m_io_service;
@@ -192,7 +192,7 @@ public:
 	boost::circular_buffer<boost::tuple<std::string, std::string, send_group_message_cb> >	m_msg_queue;
 	std::map<int, int> facemap;
 
-	cookie::cookie_store cookie_mgr;
+	cookie::cookie_store m_cookie_mgr;
 };
 
 };

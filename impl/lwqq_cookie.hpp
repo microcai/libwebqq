@@ -206,26 +206,26 @@ static void update_cookies(LwqqCookies *cookies, const std::string & httpheader,
 	}
 }
 
-static void save_cookie( LwqqCookies * cookies, const std::string & httpheader )
-{
-	update_cookies( cookies, httpheader, "ptcz" );
-	update_cookies( cookies, httpheader, "skey" );
-	update_cookies( cookies, httpheader, "p_skey" );
-	update_cookies( cookies, httpheader, "ptwebqq" );
-	update_cookies( cookies, httpheader, "ptuserinfo" );
-	update_cookies( cookies, httpheader, "uin" );
-	update_cookies( cookies, httpheader, "ptisp" );
-	update_cookies( cookies, httpheader, "pt2gguin" );
-	update_cookies( cookies, httpheader, "pt4_token" );
-	update_cookies( cookies, httpheader, "rv2" );
-	update_cookies( cookies, httpheader, "RK" );
-	update_cookies( cookies, httpheader, "superkey" );
-	update_cookies( cookies, httpheader, "superuin" );
-	update_cookies( cookies, httpheader, "uikey" );
-
-	//ptui_loginuin=2019517659; pt2gguin=o2019517659;
-	cookies->update();
-}
+// static void save_cookie( LwqqCookies * cookies, const std::string & httpheader )
+// {
+// 	update_cookies( cookies, httpheader, "ptcz" );
+// 	update_cookies( cookies, httpheader, "skey" );
+// 	update_cookies( cookies, httpheader, "p_skey" );
+// 	update_cookies( cookies, httpheader, "ptwebqq" );
+// 	update_cookies( cookies, httpheader, "ptuserinfo" );
+// 	update_cookies( cookies, httpheader, "uin" );
+// 	update_cookies( cookies, httpheader, "ptisp" );
+// 	update_cookies( cookies, httpheader, "pt2gguin" );
+// 	update_cookies( cookies, httpheader, "pt4_token" );
+// 	update_cookies( cookies, httpheader, "rv2" );
+// 	update_cookies( cookies, httpheader, "RK" );
+// 	update_cookies( cookies, httpheader, "superkey" );
+// 	update_cookies( cookies, httpheader, "superuin" );
+// 	update_cookies( cookies, httpheader, "uikey" );
+//
+// 	//ptui_loginuin=2019517659; pt2gguin=o2019517659;
+// 	cookies->update();
+// }
 
 }
 }
