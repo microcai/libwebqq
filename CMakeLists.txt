@@ -10,8 +10,6 @@ include_directories(../soci/src/core/)
 include_directories(../soci/src/backends/sqlite3)
 include_directories(../sqlite)
 
-add_library(sqlite3 STATIC ../sqlite/sqlite3.c)
-
 add_library(webqq STATIC error_code.cpp webqq.cpp impl/webqq_face.cpp impl/webqq_impl.cpp)
 
 target_link_libraries(webqq ${Boost_LIBRARIES} soci_core_static soci_sqlite3_static sqlite3)
