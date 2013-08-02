@@ -97,6 +97,7 @@ static pt::wptree json_parse( const wchar_t * doc )
 WebQQ::WebQQ( boost::asio::io_service& _io_service,
 		std::string _qqnum, std::string _passwd)
 : m_io_service( _io_service ), m_qqnum( _qqnum ), m_passwd( _passwd ), m_status( LWQQ_STATUS_OFFLINE ),
+	m_cookie_mgr("webqqcookies"), 
 	m_msg_queue( 20 ) //　最多保留最后的20条未发送消息.
 {
 #ifndef _WIN32

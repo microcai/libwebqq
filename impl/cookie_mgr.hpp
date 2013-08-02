@@ -288,8 +288,7 @@ public:
 		db <<  sqlstmt;
 	}
 
-// 	cookie_store(const std::string & dbpath = std::string(":memory:"))
-	cookie_store(const std::string & dbpath = std::string("/tmp/avbot"))
+ 	cookie_store(const std::string & dbpath = std::string(":memory:"))
 	{
 		db.open(soci::sqlite3, dbpath);
 		check_db_initialized();
