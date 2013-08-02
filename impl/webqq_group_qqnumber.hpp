@@ -45,10 +45,7 @@ namespace pt = boost::property_tree;
 #include "boost/consolestr.hpp"
 
 #include "webqq_impl.hpp"
-
 #include "constant.hpp"
-
-#include "lwqq_cookie.hpp"
 #include "lwqq_status.hpp"
 
 namespace webqq{

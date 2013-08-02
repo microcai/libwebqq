@@ -42,7 +42,6 @@ namespace js = boost::property_tree::json_parser;
 
 #include "constant.hpp"
 
-#include "lwqq_cookie.hpp"
 #include "lwqq_status.hpp"
 
 namespace webqq {

@@ -36,8 +36,6 @@
 
 #include "constant.hpp"
 
-#include "lwqq_cookie.hpp"
-
 namespace webqq {
 namespace qqimpl {
 namespace detail {
