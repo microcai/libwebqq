@@ -130,11 +130,37 @@ namespace cookie{
  * 表示一个 cookie 对象,  可以获取用户 cookie: 的字符串,  也可以继续操纵其存储的 cookie
  */
 class cookie{
+	std::vector<std::pair<std::string, std::string> > m_cookies;
 public:
+
+	cookie(std::vector<std::string> names, std::vector<std::string> values)
+	{
+		BOOST_ASSERT(names.size() == values.size());
+
+		for(int i=0;i<names.size(); i++)
+		{
+			m_cookies.push_back(std::make_pair(names[i], values[i]));
+		}
+	}
+
+	operator bool()
+	{
+		return !m_cookies.empty();
+	}
+
 	// 返回 cookie: 所应该使用的字符串.
 	std::string operator()()
 	{
-		return "";
+		if (m_cookies.empty())
+		{
+			return "null=null";
+		}
+		std::stringstream outline;
+
+		for (int i =0; i < m_cookies.size(); i++)
+			outline << m_cookies[i].first << "=" << m_cookies[i].second << "; ";
+
+		return outline.str();
 	}
 };
 
@@ -257,12 +283,19 @@ public:
 
 	// 以 url 对象为参数调用就可以获得这个请求应该带上的 cookie
 	//
-	cookie cookie(const avhttp::url & url)
+	cookie get_cookie(const avhttp::url & url)
 	{
 		// 遍历 cookie store, 找到符合 PATH 和 domain 要求的 cookie
 		// 然后构建 cookie 对象.
 
+		std::vector<std::string> names;
+		std::vector<std::string> values;
 
+		db <<
+			boost::str(boost::format("select name, value from cookies where domain like \"%%%s\"") % url.host())
+			, soci::into(names), soci::into(values) ;
+
+		return cookie(names, values);
 	}
 
 	// 调用以设置 cookie, 这个是其中一个重载, 用于从 http_stream 获取 set-cookie 头
