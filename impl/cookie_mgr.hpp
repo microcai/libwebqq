@@ -162,6 +162,14 @@ public:
 
 		return outline.str();
 	}
+
+	std::string get_value(std::string name)
+	{
+		for (int i =0; i < m_cookies.size(); i++)
+			if (m_cookies[i].first == name)
+				return  m_cookies[i].second;
+		return "";
+	}
 };
 
 /* 管理和存储 cookie, WebQQ 最重要的任务就是保护这么一个对象*/
@@ -324,7 +332,7 @@ public:
  		set_cookie(domain, set_cookie_line, inserted);
 	}
 
-	// 详细参数直接设置一个 cookie,  通常不要使用这个函数!
+	// 详细参数直接设置一个 cookie
 	void set_cookie(std::string domain, std::string path, std::string name, std::string value, std::string expiration)
 	{
 		using namespace soci;
