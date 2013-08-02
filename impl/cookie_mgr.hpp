@@ -245,27 +245,32 @@ class cookie_store : boost::noncopyable
 					}
 				}
 
-				// 根据　expires 确定是否为删除操作
-				boost::posix_time::time_duration dur =
-					boost::posix_time::from_iso_string(expires)
-					  -
-					boost::posix_time::from_time_t(std::time(NULL));
 
-				if (dur.is_negative())
+
+				//if (expires!="session")
+				if (0)
 				{
-					// 检查是否在　inserted 有了！　如果有了，则删除操作是不可以的。
-					if (std::find(inserted.begin(), inserted.end(), boost::make_tuple(domain, path, name)) == inserted.end() )
+					// 根据　expires 确定是否为删除操作
+					boost::posix_time::time_duration dur =
+						boost::posix_time::from_iso_string(expires)
+						-
+						boost::posix_time::from_time_t(std::time(NULL));
+
+					if (dur.is_negative())
 					{
-						// 可删！
-						delete_cookie(domain, path, name);
+						// 检查是否在　inserted 有了！　如果有了，则删除操作是不可以的。
+						if (std::find(inserted.begin(), inserted.end(), boost::make_tuple(domain, path, name)) == inserted.end() )
+						{
+							// 可删！
+							delete_cookie(domain, path, name);
+						}
+						return;
 					}
 				}
-				else
-				{
-					// 更新到数据库！
-					set_cookie(domain, path, name, value, expires);
-					inserted.push_back(boost::make_tuple(domain, path, name));
-				}
+				// 更新到数据库！
+				set_cookie(domain, path, name, value, expires);
+				inserted.push_back(boost::make_tuple(domain, path, name));
+
 			}
 		}
 	}
@@ -290,6 +295,19 @@ public:
 		check_db_initialized();
 	}
 
+	std::string build_domain_conditions(std::string domain)
+	{
+		bool prepend_or = false;
+		std::stringstream condition;
+		do{
+			if (prepend_or)
+				condition <<  " or " ;
+			condition <<  "domain = \"" << domain << "\" ";
+			prepend_or = true;
+		}while (domain.find_first_of('.') != domain.find_last_of('.') );
+		return condition.str();
+	}
+
 	// 以 url 对象为参数调用就可以获得这个请求应该带上的 cookie
 	//
 	cookie get_cookie(const avhttp::url & url)
@@ -297,12 +315,15 @@ public:
 		// 遍历 cookie store, 找到符合 PATH 和 domain 要求的 cookie
 		// 然后构建 cookie 对象.
 
-		std::vector<std::string> names;
-		std::vector<std::string> values;
+		std::vector<std::string> names(100);
+		std::vector<std::string> values(100);
 
-		db <<
-			boost::str(boost::format("select name, value from cookies where domain like \"%%%s\"") % url.host())
-			, soci::into(names), soci::into(values) ;
+		std::vector<soci::indicator> inds_names;
+		std::vector<soci::indicator> inds_values;
+
+		std::string sql = boost::str(boost::format("select name, value from cookies where domain like \"%%%s\"") % build_domain_conditions(url.host()) );
+
+		db << sql , soci::into(names, inds_names), soci::into(values, inds_values) ;
 
 		return cookie(names, values);
 	}
@@ -313,8 +334,9 @@ public:
 //
 // 	}
 
-	void set_cookie(const avhttp::url& url, const avhttp::http_stream & stream)
+	void set_cookie(const avhttp::http_stream & stream)
 	{
+		avhttp::url url(stream.final_url());
 		avhttp::option::option_item_list opts = stream.response_options().option_all();
 
 		std::vector< boost::tuple<std::string, std::string, std::string> > inserted;
