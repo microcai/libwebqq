@@ -61,7 +61,7 @@ public:
 	}
 	void operator()(boost::system::error_code ec, std::size_t bytes_transfered)
 	{
-		m_webqq->m_cookie_mgr.set_cookie(*m_stream);
+		m_webqq->m_cookie_mgr.set_cookie(LWQQ_URL_VERIFY_IMG, *m_stream);
 // 		detail::update_cookies( &(m_webqq->m_cookies), m_stream->response_options().header_string() , "verifysession");
 // 		m_webqq->m_cookies.update();
 

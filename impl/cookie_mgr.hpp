@@ -283,7 +283,8 @@ public:
 		db <<  sqlstmt;
 	}
 
-	cookie_store(const std::string & dbpath = std::string(":memory:"))
+// 	cookie_store(const std::string & dbpath = std::string(":memory:"))
+	cookie_store(const std::string & dbpath = std::string("/tmp/avbot"))
 	{
 		db.open(soci::sqlite3, dbpath);
 		check_db_initialized();
@@ -307,10 +308,13 @@ public:
 	}
 
 	// 调用以设置 cookie, 这个是其中一个重载, 用于从 http_stream 获取 set-cookie 头
-	void set_cookie(const avhttp::http_stream & stream)
-	{
-		avhttp::url url(stream.location());
+// 	void set_cookie(const std::string& domain, const avhttp::http_stream & stream)
+// 	{
+//
+// 	}
 
+	void set_cookie(const avhttp::url& url, const avhttp::http_stream & stream)
+	{
 		avhttp::option::option_item_list opts = stream.response_options().option_all();
 
 		std::vector< boost::tuple<std::string, std::string, std::string> > inserted;

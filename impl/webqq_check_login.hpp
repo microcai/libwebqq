@@ -146,7 +146,7 @@ public:
 				/* We need get the ptvfsession from the header "Set-Cookie" */
 				if(type == "0")
 				{
-					m_webqq->m_cookie_mgr.set_cookie(*stream);
+					m_webqq->m_cookie_mgr.set_cookie("http://qq.com", *stream);
 // 					update_cookies(&(m_webqq->m_cookies), stream->response_options().header_string(), "ptvfsession");
 // 					m_webqq->m_cookies.update();
 

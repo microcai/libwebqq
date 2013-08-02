@@ -652,7 +652,7 @@ void WebQQ::cb_fetch_aid(const boost::system::error_code& ec, read_streamptr str
 //		detail::update_cookies(&m_cookies, stream->response_options().header_string(), "verifysession");
 //		m_cookies.update();
 
-		m_cookie_mgr.set_cookie(*stream);
+		m_cookie_mgr.set_cookie("http://captcha.qq.com", *stream);
 
 		handler(boost::system::error_code(), std::string(boost::asio::buffer_cast<const char*>(buf->data()), boost::asio::buffer_size(buf->data())));
 		return;
