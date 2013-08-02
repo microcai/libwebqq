@@ -295,16 +295,20 @@ public:
 		check_db_initialized();
 	}
 
-	std::string build_domain_conditions(std::string domain)
+	static std::string build_domain_conditions(std::string domain)
 	{
 		bool prepend_or = false;
 		std::stringstream condition;
 		do{
 			if (prepend_or)
 				condition <<  " or " ;
-			condition <<  "domain = \"" << domain << "\" ";
+			condition <<  "domain = \"" << domain << "\" or domain = \"." <<  domain <<  "\" ";
 			prepend_or = true;
-		}while (domain.find_first_of('.') != domain.find_last_of('.') );
+			if (domain.find_first_of('.')!= std::string::npos)
+			{
+				domain = domain.substr(domain.find_first_of('.')+1);
+			}
+		}while (domain.find_first_of('.') != std::string::npos );
 		return condition.str();
 	}
 
@@ -321,7 +325,7 @@ public:
 		std::vector<soci::indicator> inds_names;
 		std::vector<soci::indicator> inds_values;
 
-		std::string sql = boost::str(boost::format("select name, value from cookies where domain like \"%%%s\"") % build_domain_conditions(url.host()) );
+		std::string sql = boost::str(boost::format("select name, value from cookies where %s") % build_domain_conditions(url.host()) );
 
 		db << sql , soci::into(names, inds_names), soci::into(values, inds_values) ;
 
@@ -329,11 +333,6 @@ public:
 	}
 
 	// 调用以设置 cookie, 这个是其中一个重载, 用于从 http_stream 获取 set-cookie 头
-// 	void set_cookie(const std::string& domain, const avhttp::http_stream & stream)
-// 	{
-//
-// 	}
-
 	void set_cookie(const avhttp::http_stream & stream)
 	{
 		avhttp::url url(stream.final_url());
