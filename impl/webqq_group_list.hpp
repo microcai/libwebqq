@@ -131,7 +131,7 @@ public:
 		}catch (const pt::ptree_error &){retry = true;}
 
 		if (retry){
-			boost::delayedcallsec(m_webqq->get_ioservice(), 15,
+			boost::delayedcallsec(m_webqq->get_ioservice(), 300,
 					boost::bind(&make_update_group_list_op, m_webqq, m_handler)
 			);
 			return;
