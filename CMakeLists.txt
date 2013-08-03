@@ -12,7 +12,7 @@ include_directories(${SQLITE3_INCLUDE_DIR})
 
 add_library(webqq STATIC error_code.cpp webqq.cpp impl/webqq_face.cpp impl/webqq_impl.cpp)
 
-target_link_libraries(webqq ${Boost_LIBRARIES} soci_core_static soci_sqlite3_static ${SQLITE3_LIBRARIES})
+target_link_libraries(webqq ${Boost_LIBRARIES} soci_sqlite3)
 check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
 if(HAVE_CLOCK_GETTIME)
         target_link_libraries(webqq -lrt)
