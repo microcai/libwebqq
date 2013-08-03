@@ -61,7 +61,7 @@ public:
 	}
 	void operator()(boost::system::error_code ec, std::size_t bytes_transfered)
 	{
-		m_webqq->m_cookie_mgr.set_cookie(*m_stream);
+		m_webqq->m_cookie_mgr.save_cookie(*m_stream);
 
 		std::string vcimg;
 		vcimg.resize(bytes_transfered);

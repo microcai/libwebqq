@@ -497,7 +497,7 @@ void WebQQ::process_msg( const pt::wptree &jstree , std::string & ptwebqq )
 		{
 			// 更新 ptwebqq
 			ptwebqq = wide_utf8( jstree.get<std::wstring>( L"p") );
-			m_cookie_mgr.set_cookie("qq.com", "/", "ptwebqq", ptwebqq, "session");
+			m_cookie_mgr.save_cookie("qq.com", "/", "ptwebqq", ptwebqq, "session");
 
 		}else if( retcode == 102 )
 		{
@@ -650,7 +650,7 @@ void WebQQ::cb_fetch_aid(const boost::system::error_code& ec, read_streamptr str
 	if (!ec)
 	{
 		// 获取到咯, 更新 verifysession
-		m_cookie_mgr.set_cookie(*stream);
+		m_cookie_mgr.save_cookie(*stream);
 
 		handler(boost::system::error_code(), std::string(boost::asio::buffer_cast<const char*>(buf->data()), boost::asio::buffer_size(buf->data())));
 		return;

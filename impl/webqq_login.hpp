@@ -163,12 +163,14 @@ public:
 				BOOST_ASIO_CORO_YIELD avhttp::async_read_body(
 					* m_stream, m_next_url, *m_buffer,	*this);
 
-				m_webqq->m_cookie_mgr.set_cookie(*m_stream);
+				m_webqq->m_cookie_mgr.save_cookie(*m_stream);
+				m_webqq->m_cookie_mgr.get_cookie(*m_stream);
+
 				m_buffer = boost::make_shared<boost::asio::streambuf>();
 
 				if (ec == avhttp::errc::found){
 					BOOST_ASIO_CORO_YIELD avhttp::async_read_body(*m_stream, m_stream->location(), *m_buffer, *this);
-					m_webqq->m_cookie_mgr.set_cookie(*m_stream);
+					m_webqq->m_cookie_mgr.save_cookie(*m_stream);
 				}
 
 				m_webqq->m_clientid = generate_clientid();
@@ -277,7 +279,7 @@ private:
 
 		if (!ec){
 			m_webqq->m_status = LWQQ_STATUS_ONLINE;
-			m_webqq->m_cookie_mgr.set_cookie(*m_stream);
+			m_webqq->m_cookie_mgr.save_cookie(*m_stream);
 			BOOST_LOG_TRIVIAL(info) <<  "login success!";
 		}else{
 			status = LWQQ_STATUS_OFFLINE;
