@@ -419,320 +419,46 @@ inline int checktz(const char *check)
 	return found ? what->offset * 60 : -1;
 }
 
-#ifndef ISALNUM
-#define ISALNUM isalnum
-#endif
-
-#ifndef ISALPHA
-#define ISALPHA isalpha
-#endif
-
-#ifndef ISDIGIT
-#define ISDIGIT isdigit
-#endif
-
-#define CURL_MASK_SINT 0x7FFFFFFF
-
-#if defined(_MSC_VER) && (_MSC_VER >= 1400)
-# ifndef _USE_32BIT_TIME_T
-# define SIZEOF_TIME_T 8
-# else
-# define SIZEOF_TIME_T 4
-# endif
-#endif
-
-inline int curlx_sltosi(long slnum)
+inline boost::posix_time::ptime ptime_from_gmt_string(std::string date)
 {
-	return (int)(slnum & (long) CURL_MASK_SINT);
-}
+	boost::smatch what;
+	/*
+	 * time is of format
+	 *   Thu, 01 Jan 1970 00:00:01 GMT
+     */
 
-inline void skip(const char **date)
-{
-	/* skip everything that aren't letters or digits */
-	while(**date && !ISALNUM(**date))
-		(*date)++;
-}
-
-typedef enum
-{
-	DATE_MDAY,
-	DATE_YEAR,
-	DATE_TIME
-} assume;
-
-/* this is a clone of 'struct tm' but with all fields we don't need or use
-cut out */
-typedef struct
-{
-	int tm_sec;
-	int tm_min;
-	int tm_hour;
-	int tm_mday;
-	int tm_mon;
-	int tm_year;
-} my_tm;
-
-/* struct tm to time since epoch in GMT time zone.
-* This is similar to the standard mktime function but for GMT only, and
-* doesn't suffer from the various bugs and portability problems that
-* some systems' implementations have.
-*/
-template<typename my_tm>
-time_t my_timegm(my_tm *tm)
-{
-	static const int month_days_cumulative [12] =
-	{ 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
-	int month, year, leap_days;
-
-	if(tm->tm_year < 70)
-		/* we don't support years before 1970 as they will cause this function
-		to return a negative value */
-		return -1;
-
-	year = tm->tm_year + 1900;
-	month = tm->tm_mon;
-
-	if(month < 0)
+	if (boost::regex_search(date, what, boost::regex("([A-z]+), +([\\d]+)[ -]+([a-zA-Z0-9]+)[ -]+([\\d]+) +([0-9][0-9]):([0-9][0-9]):([0-9][0-9]) +([a-zA-Z0-9\\+]+)")))
 	{
-		year += (11 - month) / 12;
-		month = 11 - (11 - month) % 12;
-	}
-	else if(month >= 12)
-	{
-		year -= month / 12;
-		month = month % 12;
+		// 放弃解析星期， 呵呵
+
+		long year, mouth, day;
+
+		long hour, min, sec;
+
+		year = boost::lexical_cast<long>(what[4]);
+		mouth =  checkmonth( std::string(what[3]).c_str() );
+		day = boost::lexical_cast<long>(2);
+
+		hour = boost::lexical_cast<long>(what[5]);
+		min = boost::lexical_cast<long>(what[6]);
+		sec = boost::lexical_cast<long>(what[7]);
+
+		long tzoff = checktz(std::string(what[8]).c_str());
+
+		return
+
+		boost::posix_time::ptime(boost::gregorian::date(year, mouth, day))
+		  +
+		boost::posix_time::hours(hour)
+		  +
+		boost::posix_time::minutes(min)
+		  +
+		boost::posix_time::seconds(sec)
+		  +
+		boost::posix_time::seconds(tzoff);
 	}
 
-	leap_days = year - (tm->tm_mon <= 1);
-	leap_days = ((leap_days / 4) - (leap_days / 100) + (leap_days / 400)
-				 - (1969 / 4) + (1969 / 100) - (1969 / 400));
-
-	return ((((time_t)(year - 1970) * 365
-			  + leap_days + month_days_cumulative [month] + tm->tm_mday - 1) * 24
-			 + tm->tm_hour) * 60 + tm->tm_min) * 60 + tm->tm_sec;
-}
-
-inline int parsedate(const char *date, time_t *output)
-{
-	time_t t = 0;
-	int wdaynum = -1; /* day of the week number, 0-6 (mon-sun) */
-	int monnum = -1; /* month of the year number, 0-11 */
-	int mdaynum = -1; /* day of month, 1 - 31 */
-	int hournum = -1;
-	int minnum = -1;
-	int secnum = -1;
-	int yearnum = -1;
-	int tzoff = -1;
-	my_tm tm;
-	assume dignext = DATE_MDAY;
-	const char *indate = date; /* save the original pointer */
-	int part = 0; /* max 6 parts */
-
-	while(*date && (part < 6))
-	{
-		bool found = false;
-
-		skip(&date);
-
-		if(ISALPHA(*date))
-		{
-			/* a name coming up */
-			char buf[32] = "";
-			size_t len;
-			sscanf(date, "%31[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz]",
-				   buf);
-			len = strlen(buf);
-
-			if(wdaynum == -1)
-			{
-				wdaynum = checkday(buf, len);
-
-				if(wdaynum != -1)
-					found = true;
-			}
-
-			if(!found && (monnum == -1))
-			{
-				monnum = checkmonth(buf);
-
-				if(monnum != -1)
-					found = true;
-			}
-
-			if(!found && (tzoff == -1))
-			{
-				/* this just must be a time zone string */
-				tzoff = checktz(buf);
-
-				if(tzoff != -1)
-					found = true;
-			}
-
-			if(!found)
-				return PARSEDATE_FAIL; /* bad string */
-
-			date += len;
-		}
-		else if(ISDIGIT(*date))
-		{
-			/* a digit */
-			int val;
-			char *end;
-
-			if((secnum == -1) &&
-					(3 == sscanf(date, "%02d:%02d:%02d", &hournum, &minnum, &secnum)))
-			{
-				/* time stamp! */
-				date += 8;
-			}
-			else if((secnum == -1) &&
-					(2 == sscanf(date, "%02d:%02d", &hournum, &minnum)))
-			{
-				/* time stamp without seconds */
-				date += 5;
-				secnum = 0;
-			}
-			else
-			{
-				val = curlx_sltosi(strtol(date, &end, 10));
-
-				if((tzoff == -1) &&
-						((end - date) == 4) &&
-						(val <= 1400) &&
-						(indate < date) &&
-						((date[-1] == '+' || date[-1] == '-')))
-				{
-					/* four digits and a value less than or equal to 1400 (to take into
-					account all sorts of funny time zone diffs) and it is preceded
-					with a plus or minus. This is a time zone indication. 1400 is
-					picked since +1300 is frequently used and +1400 is mentioned as
-					an edge number in the document "ISO C 200X Proposal: Timezone
-					Functions" at http://david.tribble.com/text/c0xtimezone.html If
-					anyone has a more authoritative source for the exact maximum time
-					zone offsets, please speak up! */
-					found = true;
-					tzoff = (val / 100 * 60 + val % 100) * 60;
-
-					/* the + and - prefix indicates the local time compared to GMT,
-					this we need ther reversed math to get what we want */
-					tzoff = date[-1] == '+' ? -tzoff : tzoff;
-				}
-
-				if(((end - date) == 8) &&
-						(yearnum == -1) &&
-						(monnum == -1) &&
-						(mdaynum == -1))
-				{
-					/* 8 digits, no year, month or day yet. This is YYYYMMDD */
-					found = true;
-					yearnum = val / 10000;
-					monnum = (val % 10000) / 100 - 1; /* month is 0 - 11 */
-					mdaynum = val % 100;
-				}
-
-				if(!found && (dignext == DATE_MDAY) && (mdaynum == -1))
-				{
-					if((val > 0) && (val < 32))
-					{
-						mdaynum = val;
-						found = true;
-					}
-
-					dignext = DATE_YEAR;
-				}
-
-				if(!found && (dignext == DATE_YEAR) && (yearnum == -1))
-				{
-					yearnum = val;
-					found = true;
-
-					if(yearnum < 1900)
-					{
-						if(yearnum > 70)
-							yearnum += 1900;
-						else
-							yearnum += 2000;
-					}
-
-					if(mdaynum == -1)
-						dignext = DATE_MDAY;
-				}
-
-				if(!found)
-					return PARSEDATE_FAIL;
-
-				date = end;
-			}
-		}
-
-		part++;
-	}
-
-	if(-1 == secnum)
-		secnum = minnum = hournum = 0; /* no time, make it zero */
-
-	if((-1 == mdaynum) ||
-			(-1 == monnum) ||
-			(-1 == yearnum))
-		/* lacks vital info, fail */
-		return PARSEDATE_FAIL;
-
-#if SIZEOF_TIME_T < 5
-
-	/* 32 bit time_t can only hold dates to the beginning of 2038 */
-	if(yearnum > 2037)
-	{
-		*output = 0x7fffffff;
-		return PARSEDATE_LATER;
-	}
-
-#endif
-
-	if(yearnum < 1970)
-	{
-		*output = 0;
-		return PARSEDATE_SOONER;
-	}
-
-	tm.tm_sec = secnum;
-	tm.tm_min = minnum;
-	tm.tm_hour = hournum;
-	tm.tm_mday = mdaynum;
-	tm.tm_mon = monnum;
-	tm.tm_year = yearnum - 1900;
-
-	/* my_timegm() returns a time_t. time_t is often 32 bits, even on many
-	architectures that feature 64 bit 'long'.
-
-	Some systems have 64 bit time_t and deal with years beyond 2038. However,
-	even on some of the systems with 64 bit time_t mktime() returns -1 for
-	dates beyond 03:14:07 UTC, January 19, 2038. (Such as AIX 5100-06)
-	*/
-	t = my_timegm(&tm);
-
-	/* time zone adjust (cast t to int to compare to negative one) */
-	if(-1 != (int)t)
-	{
-
-		/* Add the time zone diff between local time zone and GMT. */
-		long delta = (long)(tzoff != -1 ? tzoff : 0);
-
-		if((delta > 0) && (t + delta < t))
-			return -1; /* time_t overflow */
-
-		t += delta;
-	}
-
-	*output = t;
-
-	return PARSEDATE_OK;
-}
-
-inline std::time_t parsestring(std::string date)
-{
-	std::time_t t;
-	parsedate(date.c_str(), &t);
-	return t;
+	return boost::posix_time::from_time_t(0);
 }
 
 }
@@ -833,7 +559,7 @@ class cookie_store : boost::noncopyable
 						std::string v;
 
 						k = boost::to_lower_copy(std::string(what[1]));
-						v = boost::to_lower_copy(std::string(what[2]));
+						v = what[2];
 
 						// 设置超时时间.
 						if ( k == "expires")
@@ -844,7 +570,7 @@ class cookie_store : boost::noncopyable
 							path = v;
 						}else if (k == "domain")
 						{
-							domain = v;
+							domain = boost::to_lower_copy(v);
 						}else if (k == "max-age")
 						{
 							// set expires with age
@@ -862,7 +588,7 @@ class cookie_store : boost::noncopyable
 				{
 					// 根据　expires 确定是否为删除操作
 					boost::posix_time::time_duration dur =
-						boost::posix_time::from_time_t(detail::parsestring(expires))
+						detail::ptime_from_gmt_string(expires)
 						-
 						boost::posix_time::from_time_t(std::time(NULL));
 
