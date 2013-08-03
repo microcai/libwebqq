@@ -856,7 +856,9 @@ class cookie_store : boost::noncopyable
 					}
 				}
 
-				if (expires!="session")
+				bool is_delete = value.empty();
+
+				if ( !is_delete && expires!="session")
 				{
 					// 根据　expires 确定是否为删除操作
 					boost::posix_time::time_duration dur =
@@ -864,21 +866,22 @@ class cookie_store : boost::noncopyable
 						-
 						boost::posix_time::from_time_t(std::time(NULL));
 
-					if (dur.is_negative())
-					{
-						// 检查是否在　inserted 有了！　如果有了，则删除操作是不可以的。
-						if (std::find(inserted.begin(), inserted.end(), boost::make_tuple(domain, path, name)) == inserted.end() )
-						{
-							// 可删！
-							delete_cookie(domain, path, name);
-						}
-						return;
-					}
+					is_delete = dur.is_negative();
 				}
-				// 更新到数据库！
-				set_cookie(domain, path, name, value, expires);
-				inserted.push_back(boost::make_tuple(domain, path, name));
 
+				if (is_delete)
+				{
+					// 检查是否在　inserted 有了！　如果有了，则删除操作是不可以的。
+					if (std::find(inserted.begin(), inserted.end(), boost::make_tuple(domain, path, name)) == inserted.end() )
+					{
+						// 可删！
+						delete_cookie(domain, path, name);
+					}
+				}else{
+					// 更新到数据库！
+					set_cookie(domain, path, name, value, expires);
+					inserted.push_back(boost::make_tuple(domain, path, name));
+				}
 			}
 		}
 	}
