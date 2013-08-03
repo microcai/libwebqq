@@ -164,11 +164,12 @@ public:
 					* m_stream, m_next_url, *m_buffer,	*this);
 
 				m_webqq->m_cookie_mgr.save_cookie(*m_stream);
-				m_webqq->m_cookie_mgr.get_cookie(*m_stream);
 
 				m_buffer = boost::make_shared<boost::asio::streambuf>();
 
 				if (ec == avhttp::errc::found){
+					m_webqq->m_cookie_mgr.get_cookie(m_stream->location(), *m_stream);
+					m_stream->request_options(m_stream->request_options().remove(avhttp::http_options::host));
 					BOOST_ASIO_CORO_YIELD avhttp::async_read_body(*m_stream, m_stream->location(), *m_buffer, *this);
 					m_webqq->m_cookie_mgr.save_cookie(*m_stream);
 				}
