@@ -399,7 +399,7 @@ class cookie_store : boost::noncopyable
 	}
 
 	// 以 set-cookie: 行的字符串设置 cookie
-	void set_cookie(std::string domain, const std::string &set_cookie_line,
+	void save_cookie(std::string domain, const std::string &set_cookie_line,
 			std::vector< boost::tuple<std::string, std::string, std::string> > & inserted)
 	{
 		std::string name, value, path = "/", expires = "session";
@@ -477,7 +477,7 @@ class cookie_store : boost::noncopyable
 					}
 				}else{
 					// 更新到数据库！
-					set_cookie(domain, path, name, value, expires);
+					save_cookie(domain, path, name, value, expires);
 					inserted.push_back(boost::make_tuple(domain, path, name));
 				}
 			}
@@ -566,8 +566,28 @@ public:
 		return cookie(names, values);
 	}
 
+	// 直接设置 cookie
+	void get_cookie(const avhttp::url & url, avhttp::http_stream & avstream)
+	{
+		avhttp::request_opts opts = avstream.request_options();
+
+		opts.remove(avhttp::http_options::cookie);
+
+		opts.insert(avhttp::http_options::cookie,
+			get_cookie(avstream.final_url())()
+		);
+		avstream.request_options(opts);
+	}
+
+
+	// 直接设置 cookie
+	void get_cookie(avhttp::http_stream & avstream)
+	{
+		get_cookie(avstream.final_url(), avstream);
+	}
+
 	// 调用以设置 cookie, 这个是其中一个重载, 用于从 http_stream 获取 set-cookie 头
-	void set_cookie(const avhttp::http_stream & stream)
+	void save_cookie(const avhttp::http_stream & stream)
 	{
 		avhttp::url url(stream.final_url());
 		avhttp::option::option_item_list opts = stream.response_options().option_all();
@@ -579,20 +599,20 @@ public:
 			// 寻找 set-cookie
 			if (boost::algorithm::to_lower_copy(v.first) == "set-cookie")
 			{
-				set_cookie(url.host(), v.second, inserted);
+				save_cookie(url.host(), v.second, inserted);
 			}
 		}
 	}
 
 	// 以 set-cookie: 行的字符串设置 cookie
-	void set_cookie(std::string domain, const std::string &set_cookie_line)
+	void save_cookie(std::string domain, const std::string &set_cookie_line)
 	{
  		std::vector< boost::tuple<std::string, std::string, std::string> > inserted;
- 		set_cookie(domain, set_cookie_line, inserted);
+ 		save_cookie(domain, set_cookie_line, inserted);
 	}
 
 	// 详细参数直接设置一个 cookie
-	void set_cookie(std::string domain, std::string path, std::string name, std::string value, std::string expiration)
+	void save_cookie(std::string domain, std::string path, std::string name, std::string value, std::string expiration)
 	{
 		using namespace soci;
 		transaction transac(db);
