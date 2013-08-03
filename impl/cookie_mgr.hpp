@@ -63,7 +63,6 @@
 #include <avhttp/http_stream.hpp>
 
 namespace cookie{
-
 namespace error{
 
 template<class Error_category>
@@ -125,122 +124,14 @@ struct is_error_code_enum<cookie::error::errc_t>
 } // namespace boost
 
 namespace cookie{
-
-namespace detail {
-
-static const char * const Curl_wkday[] =
-{"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
-
-static const char * const weekday[] =
-{
-	"Monday", "Tuesday", "Wednesday", "Thursday",
-	"Friday", "Saturday", "Sunday"
-};
-
-static const char * const Curl_month[] =
-{
-	"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-};
-
-typedef struct
-{
-	char name[5];
-	int offset; /* +/- in minutes */
-} tzinfo;
-
-#define PARSEDATE_OK 0
-#define PARSEDATE_FAIL -1
-#define PARSEDATE_LATER 1
-#define PARSEDATE_SOONER 2
-
-#define tDAYZONE -60 /* offset for daylight savings time */
+namespace detail{
 
 /* Portable, consistent toupper (remember EBCDIC). Do not use toupper() because
 its behavior is altered by the current locale. */
 inline char url_raw_toupper(char in)
 {
-	switch(in)
-	{
-		case 'a':
-			return 'A';
-
-		case 'b':
-			return 'B';
-
-		case 'c':
-			return 'C';
-
-		case 'd':
-			return 'D';
-
-		case 'e':
-			return 'E';
-
-		case 'f':
-			return 'F';
-
-		case 'g':
-			return 'G';
-
-		case 'h':
-			return 'H';
-
-		case 'i':
-			return 'I';
-
-		case 'j':
-			return 'J';
-
-		case 'k':
-			return 'K';
-
-		case 'l':
-			return 'L';
-
-		case 'm':
-			return 'M';
-
-		case 'n':
-			return 'N';
-
-		case 'o':
-			return 'O';
-
-		case 'p':
-			return 'P';
-
-		case 'q':
-			return 'Q';
-
-		case 'r':
-			return 'R';
-
-		case 's':
-			return 'S';
-
-		case 't':
-			return 'T';
-
-		case 'u':
-			return 'U';
-
-		case 'v':
-			return 'V';
-
-		case 'w':
-			return 'W';
-
-		case 'x':
-			return 'X';
-
-		case 'y':
-			return 'Y';
-
-		case 'z':
-			return 'Z';
-	}
-
+	if (in >='a' && in<='z')
+		return in & 0x5F;
 	return in;
 }
 
@@ -262,40 +153,14 @@ inline bool url_raw_equal(const char *first, const char *second)
 	return (url_raw_toupper(*first) == url_raw_toupper(*second));
 }
 
-
-
-/* returns:
--1 no day
-0 monday - 6 sunday
-*/
-
-inline int checkday(const char *check, size_t len)
-{
-	int i;
-	const char * const *what;
-	bool found = false;
-
-	if(len > 3)
-		what = &weekday[0];
-	else
-		what = &Curl_wkday[0];
-
-	for(i = 0; i < 7; i++)
-	{
-		if(url_raw_equal(check, what[0]))
-		{
-			found = true;
-			break;
-		}
-
-		what++;
-	}
-
-	return found ? i : -1;
-}
-
 inline int checkmonth(const char *check)
 {
+	static const char * const Curl_month[] =
+	{
+		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+	};
+
 	int i;
 	const char * const *what;
 	bool found = false;
@@ -318,10 +183,15 @@ inline int checkmonth(const char *check)
 
 /* return the time zone offset between GMT and the input one, in number
 of seconds or -1 if the timezone wasn't found/legal */
-
 inline int checktz(const char *check)
 {
-	static const tzinfo tz[] =
+	#define tDAYZONE -60 /* offset for daylight savings time */
+
+	struct tzinfo
+	{
+		char name[5];
+		int offset; /* +/- in minutes */
+	} tz [] =
 	{
 		{"GMT", 0}, /* Greenwich Mean */
 		{"UTC", 0}, /* Universal (Coordinated) */
@@ -399,6 +269,8 @@ inline int checktz(const char *check)
 		{"Z", 0}, /* Zulu, zero meridian, a.k.a. UTC */
 	};
 
+#undef tDAYZONE
+
 	unsigned int i;
 	const tzinfo *what;
 	bool found = false;
@@ -436,7 +308,7 @@ inline boost::posix_time::ptime ptime_from_gmt_string(std::string date)
 		long hour, min, sec;
 
 		year = boost::lexical_cast<long>(what[4]);
-		mouth =  checkmonth( std::string(what[3]).c_str() );
+		mouth =  checkmonth( std::string(what[3]).c_str() ) + 1;
 		day = boost::lexical_cast<long>(2);
 
 		hour = boost::lexical_cast<long>(what[5]);
