@@ -101,7 +101,7 @@ public:
 		BOOST_ASIO_CORO_REENTER(this)
 		{for (;m_webqq->m_status != LWQQ_STATUS_QUITTING;){
 			// 等待状态为登录.
-			while(m_webqq->m_status != LWQQ_STATUS_ONLINE && m_webqq->m_psessionid.empty())
+			while(m_webqq->m_status != LWQQ_STATUS_ONLINE || m_webqq->m_psessionid.empty())
 			{
 				BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
 						m_webqq->get_ioservice(),
