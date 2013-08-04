@@ -200,7 +200,6 @@ void WebQQ::update_group_member(boost::shared_ptr<qqGroup> group, webqq::webqq_h
 
 class SYMBOL_HIDDEN buddy_uin_to_qqnumber {
 public:
-	typedef void result_type;
 	// 将　qqBuddy 里的　uin 转化为　qq 号码.
 	template<class Handler>
 	buddy_uin_to_qqnumber( boost::shared_ptr<WebQQ> _webqq, std::string uin, Handler handler )
@@ -223,7 +222,7 @@ public:
 
 		boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
 
-		avhttp::async_read_body(*stream, url, *buffer, boost::bind( *this, _1, stream, buffer, handler ) );
+		avhttp::async_read_body(*stream, url, *buffer, boost::bind<void>( *this, _1, stream, buffer, handler ) );
 	}
 
 	template <class Handler>
@@ -261,11 +260,10 @@ private:
 
 class SYMBOL_HIDDEN update_group_member_qq_op : boost::asio::coroutine {
 public:
-	typedef void result_type;
-
 	update_group_member_qq_op( boost::shared_ptr<WebQQ>  _webqq, boost::shared_ptr<qqGroup> _group )
-		: group( _group ), m_webqq( _webqq ) {
-		m_webqq->get_ioservice().post( boost::bind( *this, "" ) );
+		: group( _group ), m_webqq( _webqq )
+	{
+		m_webqq->get_ioservice().post( boost::asio::detail::bind_handler(*this, std::string()));
 	}
 
 	void operator()( std::string qqnum )

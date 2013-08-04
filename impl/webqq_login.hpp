@@ -101,8 +101,6 @@ inline std::string generate_clientid()
 // qq 登录办法-验证码登录
 class SYMBOL_HIDDEN login_vc_op : boost::asio::coroutine{
 public:
-	typedef void result_type;
-
 	login_vc_op(boost::shared_ptr<qqimpl::WebQQ> webqq, std::string _vccode, webqq::webqq_handler_t handler)
 		: m_webqq(webqq), vccode(_vccode), m_handler(handler)
 	{
@@ -191,10 +189,8 @@ public:
 				m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
 			}
 		}
-
-
 	}
-	
+
 	void operator()(const boost::system::error_code& ec)
 	{
 		using namespace boost::asio::detail;

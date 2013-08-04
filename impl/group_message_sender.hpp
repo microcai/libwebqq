@@ -85,8 +85,6 @@ struct escape_iterator
 class group_message_sender:boost::asio::coroutine
 {
 public:
-	typedef void result_type;
-
 	group_message_sender(boost::shared_ptr<qqimpl::WebQQ> webqq)
 		: m_webqq(webqq)
 	{
@@ -176,7 +174,7 @@ private:
 			*m_stream,
 			LWQQ_URL_SEND_QUN_MSG,
 			*m_buffer,
-			boost::bind(*this, _1, _2, v)
+			boost::bind<void>(*this, _1, _2, v)
 		);
 	}
 public:
