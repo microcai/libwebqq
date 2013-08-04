@@ -36,10 +36,13 @@ webqq::webqq( boost::asio::io_service& asio_service, std::string qqnum, std::str
 {
 	impl = boost::make_shared<qqimpl::WebQQ>( boost::ref(asio_service), qqnum, passwd);
 	impl->m_funclogin = boost::bind(&webqq::login, this);
+
+	impl->start_schedule_work();
 }
 
 webqq::~webqq()
 {
+	impl->stop_schedule_work();
 }
 
 void webqq::on_verify_code( boost::function< void ( const boost::asio::const_buffer & ) >  cb )

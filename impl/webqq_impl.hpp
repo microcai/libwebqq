@@ -41,6 +41,8 @@
 #include <boost/property_tree/ptree.hpp>
 namespace pt = boost::property_tree;
 
+#include <boost/async_coro_queue.hpp>
+
 #include <avhttp.hpp>
 #include <avhttp/async_read_body.hpp>
 typedef boost::shared_ptr<avhttp::http_stream> read_streamptr;
@@ -97,6 +99,11 @@ public:
 	using boost::enable_shared_from_this<WebQQ>::shared_from_this;
 public:
 	WebQQ( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd);
+
+	// called by webqq.hpp
+	void start_schedule_work();
+	// called by webqq.hpp distructor
+	void stop_schedule_work();
 
 	// call this to start login process
 	void check_login(webqq::webqq_handler_string_t handler);
@@ -156,9 +163,6 @@ public:
 
 	void cb_newbee_group_join(qqGroup_ptr group, std::string uid);
 
-	void send_group_message_internal( std::string group, std::string msg, send_group_message_cb donecb );
-	void cb_send_msg( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf>, boost::function<void ( const boost::system::error_code& ec )> donecb );
-
 	void cb_search_group(std::string, const boost::system::error_code& ec, read_streamptr stream,  boost::shared_ptr<boost::asio::streambuf> buf, webqq::search_group_handler handler);
 	
 	void fetch_aid(std::string arg, boost::function<void(const boost::system::error_code&, std::string)> handler);
@@ -186,11 +190,13 @@ public:
 
 	grouplist	m_groups;
 
-	bool		m_group_msg_insending;
-	boost::circular_buffer<boost::tuple<std::string, std::string, send_group_message_cb> >	m_msg_queue;
 	std::map<int, int> facemap;
 
 	cookie::cookie_store m_cookie_mgr;
+
+	boost::async_coro_queue<
+		boost::circular_buffer<boost::tuple<std::string, std::string, send_group_message_cb> >
+	>	m_group_message_queue;
 };
 
 };

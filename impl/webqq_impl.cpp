@@ -32,7 +32,6 @@ namespace js = boost::property_tree::json_parser;
 #include <boost/foreach.hpp>
 #include <boost/assign.hpp>
 #include <boost/scope_exit.hpp>
-#include <boost/regex/pending/unicode_iterator.hpp>
 
 #include "boost/timedcall.hpp"
 #include "boost/multihandler.hpp"
@@ -55,6 +54,7 @@ namespace js = boost::property_tree::json_parser;
 #include "webqq_group_list.hpp"
 #include "webqq_group_qqnumber.hpp"
 #include "process_group_msg.hpp"
+#include "group_message_sender.hpp"
 
 #ifdef WIN32
 
@@ -80,10 +80,7 @@ namespace qqimpl{
 
 static void dummy(){}
 
-
 ///low level special char mapping
-static std::string parse_unescape(const std::string &);
-
 static pt::wptree json_parse( const wchar_t * doc )
 {
 	pt::wptree jstree;
@@ -98,7 +95,7 @@ WebQQ::WebQQ( boost::asio::io_service& _io_service,
 		std::string _qqnum, std::string _passwd)
 : m_io_service( _io_service ), m_qqnum( _qqnum ), m_passwd( _passwd ), m_status( LWQQ_STATUS_OFFLINE ),
 	m_cookie_mgr("webqqcookies"), 
-	m_msg_queue( 20 ) //　最多保留最后的20条未发送消息.
+	m_group_message_queue(_io_service, 20)  //　最多保留最后的20条未发送消息.
 {
 #ifndef _WIN32
 	/* Set msg_id */
@@ -117,11 +114,21 @@ WebQQ::WebQQ( boost::asio::io_service& _io_service,
 
 	if (!boost::filesystem::exists("cache"))
 		boost::filesystem::create_directories("cache");
+}
+
+void WebQQ::start_schedule_work()
+{
+	detail::group_message_sender op(shared_from_this());
 
 	// 开启个程序去清理过期 cache_* 文件
 	// webqq 每天登录 uid 变化,  而不是每次都变化.
 	// 所以 cache 有效期只有一天.
 	clean_cache(get_ioservice());
+}
+
+void WebQQ::stop_schedule_work()
+{
+	m_status = LWQQ_STATUS_QUITTING;
 }
 
 /**login*/
@@ -153,93 +160,7 @@ void WebQQ::send_group_message( qqGroup& group, std::string msg, send_group_mess
 
 void WebQQ::send_group_message( std::string group, std::string msg, send_group_message_cb donecb )
 {
-	//check if already in sending a message
-	m_msg_queue.push_back( boost::make_tuple( group, msg, donecb ) );
-
-	if( !m_group_msg_insending ) {
-		m_group_msg_insending = true;
-		send_group_message_internal( group, msg, donecb );
-	}
-}
-
-void WebQQ::send_group_message_internal( std::string group, std::string msg, send_group_message_cb donecb )
-{
-	//unescape for POST
-	std::string messagejson = boost::str(
-			boost::format("{\"group_uin\":\"%s\", "
-				"\"content\":\"["
-				"\\\"%s\\\","
-				"[\\\"font\\\",{\\\"name\\\":\\\"宋体\\\",\\\"size\\\":\\\"9\\\",\\\"style\\\":[0,0,0],\\\"color\\\":\\\"000000\\\"}]"
-				"]\","
-				"\"msg_id\":%ld,"
-				"\"clientid\":\"%s\","
-				"\"psessionid\":\"%s\"}")
-			%group % parse_unescape( msg ) % m_msg_id % m_clientid % m_psessionid
-			);
-
-	std::string postdata =  boost::str(
-			boost::format( "r=%s&clientid=%s&psessionid=%s" )
-			% boost::url_encode(messagejson)
-			% m_clientid
-			% m_psessionid
-			);
-
-	read_streamptr stream( new avhttp::http_stream( m_io_service ) );
-	stream->request_options(
-			avhttp::request_opts()
-			( avhttp::http_options::request_method, "POST" )
-			( avhttp::http_options::cookie, m_cookie_mgr.get_cookie(LWQQ_URL_SEND_QUN_MSG)() )
-			( avhttp::http_options::referer, "http://d.web2.qq.com/proxy.html?v=20101025002" )
-			( avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8" )
-			( avhttp::http_options::request_body, postdata )
-			( avhttp::http_options::content_length, boost::lexical_cast<std::string>( postdata.length() ) )
-			( avhttp::http_options::connection, "close" )
-			);
-
-	boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
-
-	avhttp::async_read_body( *stream, LWQQ_URL_SEND_QUN_MSG, *buffer,
-			boost::bind( &WebQQ::cb_send_msg, this, _1, stream, buffer, donecb )
-			);
-}
-
-void WebQQ::cb_send_msg( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer, boost::function<void ( const boost::system::error_code& ec )> donecb )
-{
-	pt::ptree jstree;
-	std::istream	response( buffer.get() );
-
-	try {
-		js::read_json( response, jstree );
-
-		if( jstree.get<int>( "retcode" ) == 108 ) {
-			// 已经断线，重新登录
-			m_status = LWQQ_STATUS_OFFLINE;
-			// 10s 后登录.
-			boost::delayedcallsec( m_io_service, 10, m_funclogin );
-			m_group_msg_insending = false;
-			return ;
-		}
-
-	} catch( const pt::json_parser_error & jserr ) {
-		std::istream	response( buffer.get() );
-		BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : " << "parse json error : " << jserr.what()
-			<<  "\n=========\n" <<  jserr.message() << "\n=========" ;
-		m_msg_queue.pop_front();
-	} catch( const pt::ptree_bad_path & badpath ) {
-		BOOST_LOG_TRIVIAL(error) << __FILE__ << " : " << __LINE__ << " : " <<  "bad path " <<  badpath.what();
-	}
-
-	if (!m_msg_queue.empty())
-		m_msg_queue.pop_front();
-
-	if( m_msg_queue.empty() ) {
-		m_group_msg_insending = false;
-	} else {
-		boost::tuple<std::string, std::string, send_group_message_cb> v = m_msg_queue.front();
-		boost::delayedcallms( m_io_service, 500, boost::bind( &WebQQ::send_group_message_internal, this, boost::get<0>( v ), boost::get<1>( v ), boost::get<2>( v ) ) );
-	}
-
-	m_io_service.post( boost::asio::detail::bind_handler( donecb, ec ) );
+	m_group_message_queue.push(boost::make_tuple( group, msg, donecb ));
 }
 
 void WebQQ::update_group_list(webqq::webqq_handler_t handler)
@@ -809,79 +730,6 @@ void WebQQ::join_group(qqGroup_ptr group, std::string vfcode, webqq::join_group_
 	boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
 
 	avhttp::async_read_body(*stream, url, * buffer, boost::bind(&WebQQ::cb_join_group, shared_from_this(), group, _1, stream, buffer, handler));
-}
-
-// 把 boost::u8_to_u32_iterator 封装一下，提供 * 解引用操作符.
-class u8_u32_iterator: public boost::u8_to_u32_iterator<std::string::const_iterator>
-{
-public:
-	typedef boost::uint32_t reference;
-
-	reference operator* () const
-	{
-		return dereference();
-	}
-	u8_u32_iterator( std::string::const_iterator b ):
-		boost::u8_to_u32_iterator<std::string::const_iterator>( b ) {}
-};
-
-// 向后迭代，然后返回每个字符
-template<class BaseIterator>
-struct escape_iterator
-{
-	BaseIterator m_position;
-	typedef std::string reference;
-
-	escape_iterator( BaseIterator b ): m_position( b ) {}
-
-	void operator ++()
-	{
-		++m_position;
-	}
-
-	void operator ++(int)
-	{
-		++m_position;
-	}
-
-	reference operator* () const
-	{
-		char buf[8] = {0};
-
-		snprintf( buf, sizeof( buf ), "\\\\u%04X", ( boost::uint32_t )( * m_position ) );
-		// 好，解引用！
-		// 获得 代码点后，就是构造  \\\\uXXXX 了
-		return buf;
-	}
-
-	bool operator == ( const escape_iterator & rhs ) const
-	{
-		return m_position == rhs.m_position;
-	}
-
-	bool operator != ( const escape_iterator & rhs ) const
-	{
-		return m_position != rhs.m_position;
-	}
-};
-
-static std::string parse_unescape( const std::string & source )
-{
-	std::string result;
-	escape_iterator<u8_u32_iterator> ues( source.begin() );
-	escape_iterator<u8_u32_iterator> end( source.end() );
-	try{
-		while( ues != end )
-		{
-			result += * ues;
-			++ ues;
-		}
-	}catch (const std::out_of_range &e)
-	{
-		BOOST_LOG_TRIVIAL(error) << __FILE__ <<  __LINE__<<  " "  <<  console_out_str("QQ消息字符串包含非法字符 ");
-	}
-
-	return result;
 }
 
 } // namespace qqimpl

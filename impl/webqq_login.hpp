@@ -210,16 +210,6 @@ public:
 			{
 				//polling group list
 				BOOST_ASIO_CORO_YIELD m_webqq->update_group_list(*this);
-
-				m_webqq->m_group_msg_insending = !m_webqq->m_msg_queue.empty();
-
-				if( m_webqq->m_group_msg_insending )
-				{
-					boost::tuple<std::string, std::string, WebQQ::send_group_message_cb> v = m_webqq->m_msg_queue.front();
-					boost::delayedcallms( m_webqq->get_ioservice(), 500, boost::bind( &WebQQ::send_group_message_internal, m_webqq->shared_from_this(), boost::get<0>( v ), boost::get<1>( v ), boost::get<2>( v ) ) );
-					m_webqq->m_msg_queue.pop_front();
-				}
-
 				m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
 			}
 		}
