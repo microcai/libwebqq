@@ -85,12 +85,13 @@ class update_group_list_op : boost::asio::coroutine
 		avhttp::async_read_body(*m_stream, url, *m_buffer, *this);
 	}
 
-	static void make_update_group_list_op(boost::shared_ptr<WebQQ> webqq, webqq::webqq_handler_t handler)
+public:
+	template<class Handler>
+	static update_group_list_op make_update_group_list_op(boost::shared_ptr<WebQQ> webqq, Handler handler)
 	{
-		update_group_list_op op(webqq, handler);
+		return update_group_list_op(webqq, handler);
 	}
 
-public:
 	update_group_list_op(boost::shared_ptr<WebQQ> webqq, webqq::webqq_handler_t handler)
 		: m_webqq(webqq), m_handler(handler)
 	{
@@ -108,6 +109,9 @@ public:
 
 			if(jsonobj.get<int>("retcode") == 0)
 			{
+				grouplist newlist;
+				bool replace_list = false;
+
 				BOOST_FOREACH(pt::ptree::value_type result,
 								jsonobj.get_child("result.gnamelist"))
 				{
@@ -123,17 +127,27 @@ public:
 						BOOST_LOG_TRIVIAL(error) <<  "qqGroup get error" << std::endl;
 
 					}else{
+
+						if (m_webqq->m_groups.find(newgroup->gid)!= m_webqq->m_groups.end())
+						{
+							// 出现了 老的 list 里没有的群GID，说明群GID变更
+							// 这样老的列表就过时了，该丢.
+							replace_list = true;
+						}
+
+						newlist.insert(std::make_pair(newgroup->gid, newgroup));
 						m_webqq->m_groups.insert(std::make_pair(newgroup->gid, newgroup));
 						BOOST_LOG_TRIVIAL(info) << console_out_str("qq群 ") << console_out_str(newgroup->gid) << " " <<  console_out_str(newgroup->name);
 					}
+				}
+				if (replace_list){
+					std::swap(m_webqq->m_groups, newlist);
 				}
 			}
 		}catch (const pt::ptree_error &){retry = true;}
 
 		if (retry){
-			boost::delayedcallsec(m_webqq->get_ioservice(), 300,
-					boost::bind(&make_update_group_list_op, m_webqq, m_handler)
-			);
+			m_handler(error::make_error_code(error::failed_to_fetch_group_list));
 			return;
 		}
 
@@ -145,6 +159,7 @@ public:
 
 	void operator()(boost::system::error_code ec)
 	{
+		using namespace boost::asio::detail;
 		BOOST_ASIO_CORO_REENTER(this)
 		{
 			// 先更新群的 QQ 号.
@@ -152,17 +167,13 @@ public:
 			{
 				BOOST_ASIO_CORO_YIELD
 					m_webqq->update_group_qqnumber(iter->second, *this);
-			}
 
-			// 然后更新 Q群的 群友列表.
-			for (iter = m_webqq->m_groups.begin(); iter != m_webqq->m_groups.end(); ++iter)
-			{
 				BOOST_ASIO_CORO_YIELD
-					m_webqq->update_group_member(iter->second , *this);
+					boost::delayedcallms(m_webqq->get_ioservice(), 600, bind_handler(*this, ec));
 			}
 		}
 
-		m_handler(boost::system::error_code());
+		m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
 	}
 
 private:
@@ -174,6 +185,12 @@ private:
 
 	grouplist::iterator iter;
 };
+
+template<class Handler>
+void update_group_list(boost::shared_ptr<WebQQ> webqq, Handler handler)
+{
+	update_group_list_op::make_update_group_list_op(webqq, handler);
+}
 
 }
 }

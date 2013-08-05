@@ -165,7 +165,7 @@ void WebQQ::send_group_message( std::string group, std::string msg, send_group_m
 
 void WebQQ::update_group_list(webqq::webqq_handler_t handler)
 {
-	detail::update_group_list_op op(shared_from_this(), handler);
+	detail::update_group_list_op::make_update_group_list_op(shared_from_this(), handler);
 }
 
 void WebQQ::update_group_qqnumber(boost::shared_ptr<qqGroup> group, webqq::webqq_handler_t handler)
