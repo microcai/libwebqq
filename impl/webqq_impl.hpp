@@ -40,6 +40,7 @@
 #include <boost/system/system_error.hpp>
 #include <boost/property_tree/ptree.hpp>
 namespace pt = boost::property_tree;
+#include <boost/enable_shared_from_this.hpp>
 
 #include <boost/async_coro_queue.hpp>
 
