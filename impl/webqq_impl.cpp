@@ -94,7 +94,7 @@ WebQQ::WebQQ( boost::asio::io_service& _io_service,
 	m_cookie_mgr("webqqcookies"),
 	m_vc_queue(_io_service, 1),
 	m_group_message_queue(_io_service, 20), // 最多保留最后的20条未发送消息.
-	m_group_refresh_queue(_io_service, 8)
+	m_group_refresh_queue(_io_service)
 {
 #ifndef _WIN32
 	/* Set msg_id */
