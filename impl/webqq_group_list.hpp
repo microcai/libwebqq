@@ -171,9 +171,8 @@ public:
 				BOOST_ASIO_CORO_YIELD
 					boost::delayedcallms(m_webqq->get_ioservice(), 600, bind_handler(*this, ec));
 			}
+			m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
 		}
-
-		m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
 	}
 
 private:

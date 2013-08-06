@@ -82,10 +82,10 @@ struct escape_iterator
 	}
 };
 
-class group_message_sender:boost::asio::coroutine
+class group_message_sender_op:boost::asio::coroutine
 {
 public:
-	group_message_sender(boost::shared_ptr<qqimpl::WebQQ> webqq)
+	group_message_sender_op(boost::shared_ptr<qqimpl::WebQQ> webqq)
 		: m_webqq(webqq)
 	{
 		// 进入循环吧.
@@ -219,5 +219,12 @@ private:
 };
 
 }
+
+template<class Webqq>
+detail::group_message_sender_op group_message_sender(boost::shared_ptr<Webqq> webqq)
+{
+	return detail::group_message_sender_op(webqq);
+}
+
 }
 } // namespace webqq

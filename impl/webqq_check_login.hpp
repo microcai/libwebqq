@@ -41,10 +41,11 @@ namespace qqimpl {
 namespace detail {
 
 // qq 登录办法
+template<class Handler>
 class SYMBOL_HIDDEN check_login_op : boost::asio::coroutine
 {
 public:
-	check_login_op( boost::shared_ptr<qqimpl::WebQQ> webqq, webqq::webqq_handler_string_t handler)
+	check_login_op( boost::shared_ptr<qqimpl::WebQQ> webqq, Handler handler)
 		: m_webqq( webqq ), m_handler(handler)
 	{
 		// 首先获得版本.
@@ -170,11 +171,17 @@ public:
 	}
 private:
 	boost::shared_ptr<qqimpl::WebQQ> m_webqq;
-	webqq::webqq_handler_string_t m_handler;
+	Handler m_handler;
 
 	read_streamptr stream;
 	boost::shared_ptr<boost::asio::streambuf> m_buffer;
 };
+
+template<class Handler>
+check_login_op<Handler> check_login(boost::shared_ptr<qqimpl::WebQQ> webqq, Handler handler)
+{
+	return check_login_op<Handler>(webqq, handler);
+}
 
 }
 }

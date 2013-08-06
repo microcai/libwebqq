@@ -113,8 +113,6 @@ public:
 				//start polling messages, 2 connections!
 				BOOST_LOG_TRIVIAL(info) << "start polling messages";
 
-				boost::delayedcallsec( m_webqq->get_ioservice(), 3, boost::bind( &WebQQ::do_poll_one_msg, m_webqq, m_webqq->m_cookie_mgr.get_cookie(LWQQ_URL_POLL_MESSAGE).get_value("ptwebqq") ) );
-
 				m_webqq->siggroupnumber(m_this_group);
 
 				m_handler(boost::system::error_code());

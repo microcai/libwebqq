@@ -7,6 +7,8 @@
 #include <boost/property_tree/json_parser.hpp>
 namespace js = boost::property_tree::json_parser;
 #include <boost/asio/yield.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <avhttp/async_read_body.hpp>
 

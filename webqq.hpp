@@ -27,6 +27,7 @@
 #include <boost/function.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/signals2.hpp>
+#include <boost/any.hpp>
 
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef BUILDING_DLL
@@ -139,7 +140,7 @@ class webqq {
 public:
 	typedef boost::function<void(boost::system::error_code)> webqq_handler_t;
 	typedef boost::function<void(boost::system::error_code, std::string )> webqq_handler_string_t;
-// 	typedef boost::function<void(boost::system::error_code )> webqq_handler_t;
+ 	typedef boost::function<void(boost::system::error_code, int ,  boost::any )> webqq_handler_int_any_t;
 // 	typedef boost::function<void(boost::system::error_code )> webqq_handler_t;
 // 	typedef boost::function<void(boost::system::error_code )> webqq_handler_t;
 
@@ -153,18 +154,11 @@ public:
 	// 新人入群通知. 注意, 只有管理员才能获得.
 	void on_group_newbee(boost::function<void ( qqGroup_ptr,  qqBuddy * )> cb);
 
-	template<class Reporter>
-	void on_bad_vc(Reporter reporter)
-	{
-		sigbadvc = reporter;
-	}
-
-	// not need to call this the first time, but you might need this if you became offline.
-	void login();
+	void on_bad_vc(boost::function<void()> reporter);
 
 	bool is_online();
 
-	void on_verify_code( boost::function<void ( const boost::asio::const_buffer & )> );
+	void on_verify_code( boost::function<void ( std::string )> );
 	// login with vc, call this if you got signeedvc signal.
 	// in signeedvc signal, you can retreve images from server.
 	void login_withvc( std::string vccode );
@@ -193,15 +187,6 @@ public:
 	qqGroup_ptr get_Group_by_qq( std::string qq );
 	boost::asio::io_service	&get_ioservice();
 private:
-	void fireupneedvc(boost::system::error_code, std::string);
-	void start_polling(boost::system::error_code);
-private:
-	// 验证码, 需要自行下载url中的图片，然后调用 login_withvc.
-	boost::signals2::signal< void ( const boost::asio::const_buffer & )> signeedvc;
-
-	// 报告验证码不对
-	boost::function<void ()> sigbadvc;
-
 	boost::shared_ptr<qqimpl::WebQQ> impl;
 };
 

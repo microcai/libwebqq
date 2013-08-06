@@ -81,6 +81,10 @@ enum errc_t
 
 	poll_failed_need_login, // 对于这个错误,  重新登录就可以了.
 
+	poll_failed_user_quit, // 对于这个错误,  重新登录就可以了.
+
+	poll_failed_unknow_ret_code, // 对于这个错误, 忽略？
+
 	send_message_failed_not_login, // 未登录
 
 	send_message_failed_too_long, // 对消息进行拆分

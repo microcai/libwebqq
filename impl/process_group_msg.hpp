@@ -137,5 +137,12 @@ private:
 };
 
 }
+
+template<class Webqq>
+detail::process_group_message_op process_group_message(boost::shared_ptr<Webqq> webqq, const boost::property_tree::wptree& jstree)
+{
+	return detail::process_group_message_op(webqq, jstree);
+}
+
 }
 } // namespace webqq

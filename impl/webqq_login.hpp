@@ -181,63 +181,56 @@ public:
 				//change status,  this is the last step for login
 				// 设定在线状态.
 
-				boost::asio::detail::coroutine_ref(this) = 0;
-				m_webqq->change_status(LWQQ_STATUS_ONLINE, *this);
-			}else
-			{
-				using namespace boost::asio::detail;
-				m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
-			}
-		}
-	}
+				BOOST_ASIO_CORO_YIELD
+					m_webqq->change_status(LWQQ_STATUS_ONLINE, boost::bind<void>(*this, _1, 0));
 
-	void operator()(const boost::system::error_code& ec)
-	{
-		using namespace boost::asio::detail;
-		BOOST_ASIO_CORO_REENTER(this)
-		{
-			if(ec)
-			{
-				// 修改在线状态失败!
-				m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
-				return;
-			}
-			i = 0;
+				if(ec)
+				{
+					// 修改在线状态失败!
+					m_webqq->get_ioservice().post(boost::asio::detail::bind_handler(m_handler, ec));
+					return;
+				}
 
-			//polling group list
+				i = 0;
 
-			// 重试五次，每次延时，如果还失败， 只能说登录失败.
-			do{
-				BOOST_ASIO_CORO_YIELD m_webqq->update_group_list(*this);
-				if ( ec )
+				//polling group list
+
+				// 重试五次，每次延时，如果还失败， 只能说登录失败.
+				do{
+					BOOST_ASIO_CORO_YIELD m_webqq->update_group_list(boost::bind<void>(*this, _1, 0));
+					if ( ec )
+					{
+						BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
+							m_webqq->get_ioservice(), i*20+50,
+							boost::asio::detail::bind_handler(*this, ec, 0)
+						);
+
+						BOOST_LOG_TRIVIAL(warning) << "刷新群列表失败，第 " <<  i << " 次重试中(共五次)..." ;
+					}
+				}while (i++ < 5 && ec);
+				if (ec){
+					// 刷群列表失败，登录也就失败了.
+					return m_webqq->get_ioservice().post(
+						boost::asio::detail::bind_handler(m_handler, ec)
+					);
+				}
+
+				// 接着是刷新群成员列表.
+				for (iter = m_webqq->m_groups.begin(); iter != m_webqq->m_groups.end(); ++iter)
 				{
 					BOOST_ASIO_CORO_YIELD
-						boost::delayedcallsec(m_webqq->get_ioservice(), i*20+50, bind_handler(*this, ec));
+						m_webqq->update_group_member(iter->second , boost::bind<void>(*this, _1, 0));
 
-					BOOST_LOG_TRIVIAL(warning) << "刷新群列表失败，第 " <<  i << " 次重试中(共五次)..." ;
+					BOOST_ASIO_CORO_YIELD
+						boost::delayedcallms(m_webqq->get_ioservice(), 530, boost::bind<void>(*this, ec, 0));
 				}
-			}while (i++ < 5 && ec);
-			if (ec){
-				// 刷群列表失败，登录也就失败了.
-				m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
-				return;
 			}
-
-			// 接着是刷新群成员列表.
-			for (iter = m_webqq->m_groups.begin(); iter != m_webqq->m_groups.end(); ++iter)
-			{
-				BOOST_ASIO_CORO_YIELD
-					m_webqq->update_group_member(iter->second , *this);
-
-				using namespace boost::asio::detail;
-				BOOST_ASIO_CORO_YIELD
-					boost::delayedcallms(m_webqq->get_ioservice(), 530, bind_handler(*this, ec));
-			}
-
-			m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
-
+			return m_webqq->get_ioservice().post(
+				boost::asio::detail::bind_handler(m_handler, ec)
+			);
 		}
 	}
+
 private:
 
 	/**

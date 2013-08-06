@@ -35,8 +35,6 @@ namespace webqq{
 webqq::webqq( boost::asio::io_service& asio_service, std::string qqnum, std::string passwd)
 {
 	impl = boost::make_shared<qqimpl::WebQQ>( boost::ref(asio_service), qqnum, passwd);
-	impl->m_funclogin = boost::bind(&webqq::login, this);
-
 	impl->start_schedule_work();
 }
 
@@ -45,9 +43,9 @@ webqq::~webqq()
 	impl->stop_schedule_work();
 }
 
-void webqq::on_verify_code( boost::function< void ( const boost::asio::const_buffer & ) >  cb )
+void webqq::on_verify_code( boost::function< void ( std::string ) >  cb )
 {
-	signeedvc.connect( cb );
+	impl->m_signeedvc.connect( cb );
 }
 
 void webqq::on_group_msg( boost::function< void( const std::string, const std::string, const std::vector<qqMsg>& )> cb )
@@ -82,41 +80,9 @@ qqGroup_ptr webqq::get_Group_by_qq( std::string qq )
 	return impl->get_Group_by_qq( qq );
 }
 
-void webqq::login()
-{
-	impl->check_login(boost::bind(&webqq::fireupneedvc, this, _1, _2));
-}
-
-void webqq::fireupneedvc(boost::system::error_code ec, std::string vc)
-{
-	if (ec == error::login_check_need_vc)
-	{
-		signeedvc(boost::asio::buffer(vc));
-		return;
-	}
-	if (!ec)
-		login_withvc(vc);
-	else{
-		boost::delayedcallsec(get_ioservice(), 15, boost::bind(&webqq::login, this));
-	}
-}
-
-void webqq::start_polling(boost::system::error_code ec)
-{
-	// start_polling if login success!
-	if (ec){
-		if (ec == error::login_failed_wrong_vc){
-			// report bad VC code
-			if (sigbadvc)
-				sigbadvc();
-		}
-		boost::delayedcallsec(get_ioservice(), 15, boost::bind(&webqq::login, this));
-	}
-}
-
 void webqq::login_withvc( std::string vccode )
 {
-	impl->login_withvc( vccode, boost::bind(&webqq::start_polling, this, _1) );
+	impl->m_vc_queue.push(vccode);
 }
 
 void webqq::send_group_message( std::string group, std::string msg, boost::function<void ( const boost::system::error_code& ec )> donecb )
@@ -217,6 +183,11 @@ void webqq::search_group( std::string groupqqnum, std::string vfcode, webqq::sea
 void webqq::join_group( qqGroup_ptr group, std::string vfcode, webqq::join_group_handler handler )
 {
 	impl->join_group(group, vfcode, handler);
+}
+
+void webqq::on_bad_vc(boost::function< void() > reporter)
+{
+	impl->m_sigbadvc = reporter;
 }
 
 } // namespace webqq
