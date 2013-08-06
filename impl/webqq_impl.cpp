@@ -265,8 +265,6 @@ public:
 
 				if (ec)
 				{
-					// 失败重来
-					m_last_sync = boost::posix_time::from_time_t(std::time(NULL));
 					// 重来！，how？ 当然是 push 咯！
 					m_webqq->m_group_refresh_queue.push(v);
 				}
@@ -287,16 +285,10 @@ public:
 							BOOST_ASIO_CORO_YIELD
 								boost::delayedcallms(m_webqq->get_ioservice(), 530, bind_handler(*this, ec, v));
 						}
-
-						// 更新完毕
-
-						if (v.get<0>()){
-							v.get<0>()(ec);
-						}
 					}
 				}
 			}
-			else if (type <= 1)
+			else if (type == 1)
 			{
 				if (m_webqq->get_Group_by_gid(v.get<2>()))
 				{
@@ -305,12 +297,26 @@ public:
 								m_webqq->get_Group_by_gid(v.get<2>()),
 								boost::bind<void>(*this, _1, v)
 					);
+					if (ec){
+						// 应该是群GID都变了，重新刷新
+						m_webqq->m_group_refresh_queue.push(
+							boost::make_tuple(
+								webqq::webqq_handler_t(),
+								0,
+								std::string(),
+								std::string()
+							)
+						);
+					}
 				}
-			}else{
-				// update group member!
-
-
 			}
+
+			// 更新完毕
+			if (v.get<0>()){
+				v.get<0>()(ec);
+			}
+
+			m_last_sync = boost::posix_time::from_time_t(std::time(NULL));
 
 			// 继续获取，嘻嘻.
 			BOOST_ASIO_CORO_YIELD m_webqq->m_group_refresh_queue.async_pop(
