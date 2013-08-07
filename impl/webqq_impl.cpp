@@ -147,9 +147,13 @@ public:
 			BOOST_ASIO_CORO_YIELD m_webqq->m_vc_queue.async_pop(*this);
 			// 注意，下一行其实回调已经完成登录了.
 
-			if (ec){
+			if (ec)
+			{
+				if (ec == ec ==error::login_failed_wrong_vc)
+				{
+					m_webqq->m_sigbadvc();
+				}
 				// 查找问题， 报告问题啊！
-				//m_signeedvc();
 			}
 
 			// 进入 message 循环.
