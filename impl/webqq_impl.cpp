@@ -554,6 +554,7 @@ void WebQQ::get_verify_image( std::string vcimgid, webqq::webqq_handler_string_t
 
 void WebQQ::cb_newbee_group_join( qqGroup_ptr group,  std::string uid )
 {
+	if (group)
 	// 报告新人入群.
 	boost::delayedcallsec(get_ioservice(), 30,
 		boost::bind(boost::ref(signewbuddy), group, group->get_Buddy_by_uin(uid))
