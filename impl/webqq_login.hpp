@@ -200,12 +200,13 @@ public:
 					BOOST_ASIO_CORO_YIELD m_webqq->update_group_list(boost::bind<void>(*this, _1, 0));
 					if ( ec )
 					{
+						BOOST_LOG_TRIVIAL(warning) << "刷新群列表失败，第 " <<  i << " 次重试中(共五次)..." ;
+
 						BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
 							m_webqq->get_ioservice(), i*20+50,
 							boost::asio::detail::bind_handler(*this, ec, 0)
 						);
 
-						BOOST_LOG_TRIVIAL(warning) << "刷新群列表失败，第 " <<  i << " 次重试中(共五次)..." ;
 					}
 				}while (i++ < 5 && ec);
 				if (ec){
