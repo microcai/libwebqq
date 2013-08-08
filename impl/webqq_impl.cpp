@@ -159,9 +159,21 @@ public:
 					// 密码问题,  直接退出了.
 					BOOST_LOG_TRIVIAL(error) << ec.message();
 					BOOST_LOG_TRIVIAL(error) << "停止登录, 请修改密码重启 avbot";
-					m_webqq->m_status == LWQQ_STATUS_QUITTING;
+					m_webqq->m_status = LWQQ_STATUS_QUITTING;
 					return;
 				}
+				if (ec == error::login_failed_blocked_account)
+				{
+					BOOST_LOG_TRIVIAL(error) << "300s 后重试...";
+					// 帐号冻结, 多等些时间, 嘻嘻
+					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
+						m_io_service, 300, boost::asio::detail::bind_handler(*this,ec));
+				}
+
+				BOOST_LOG_TRIVIAL(error) << "30s 后重试...";
+
+				BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
+						m_io_service, 30, boost::asio::detail::bind_handler(*this,ec));
 			}
 
 			// 进入 message 循环.
