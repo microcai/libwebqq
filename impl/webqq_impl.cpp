@@ -391,6 +391,8 @@ void WebQQ::start_schedule_work()
 
 void WebQQ::stop_schedule_work()
 {
+	m_group_message_queue.cancele();
+	m_group_refresh_queue.cancele();
 	m_status = LWQQ_STATUS_QUITTING;
 }
 
