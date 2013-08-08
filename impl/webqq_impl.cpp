@@ -154,6 +154,14 @@ public:
 					m_webqq->m_sigbadvc();
 				}
 				// 查找问题， 报告问题啊！
+				if (ec == error::login_failed_wrong_passwd)
+				{
+					// 密码问题,  直接退出了.
+					BOOST_LOG_TRIVIAL(error) << ec.message();
+					BOOST_LOG_TRIVIAL(error) << "停止登录, 请修改密码重启 avbot";
+					m_webqq->m_status == LWQQ_STATUS_QUITTING;
+					return;
+				}
 			}
 
 			// 进入 message 循环.
