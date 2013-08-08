@@ -285,7 +285,8 @@ private:
 		}else
 			status = 9;
 
-		if ( status >= 0 && status <= 8){
+		if ( (status >= 0 && status <= 8) || status == error::login_failed_blocked_account)
+		{
 			ec = error::make_error_code(static_cast<error::errc_t>(status));
 		}else{
 			ec = error::login_failed_other;

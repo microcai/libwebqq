@@ -41,6 +41,9 @@ std::string webqq::error::error_category_impl::message(int e) const
 		case login_failed_other:
 			return "Login failed unknow reason";
 
+		case login_failed_blocked_account:
+			return "帐号被冻结, 请及时访问安全中心解冻";
+
 		case fetch_verifycode_failed:
 			return "cannot fetch verifycode";
 		case failed_to_change_status:

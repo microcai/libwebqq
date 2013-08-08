@@ -57,11 +57,11 @@ enum errc_t
 
 	login_failed_other,
 
+	login_failed_blocked_account = 19,
 
 
 
-
-	login_check_need_vc,
+	login_check_need_vc = 1000,
 
 	fetch_verifycode_failed,
 
