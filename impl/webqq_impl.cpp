@@ -149,7 +149,7 @@ public:
 
 			if (ec)
 			{
-				if (ec == ec ==error::login_failed_wrong_vc)
+				if (ec == error::login_failed_wrong_vc)
 				{
 					m_webqq->m_sigbadvc();
 				}
