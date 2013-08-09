@@ -174,12 +174,12 @@ public:
 	std::string m_qqnum, m_passwd;
 	LWQQ_STATUS m_status;
 
-	std::string m_nick;                                        // nick of the avbot account
+	std::string m_nick; // nick of the avbot account
 
 	std::string	m_version;
 	std::string m_clientid, m_psessionid;
-	std::string m_login_sig;                                   // 安全参数
-	long m_msg_id;     // update on every message.
+	std::string m_login_sig; // 安全参数
+	long m_msg_id; // update on every message.
 
 	LwqqVerifyCode m_verifycode;
 
@@ -191,26 +191,28 @@ public:
 
 	// 消息发送异步列队
 	boost::async_coro_queue<
-		boost::circular_buffer<boost::tuple<std::string, std::string, send_group_message_cb> >
-	>	m_group_message_queue;
+		boost::circular_buffer<
+			boost::tuple<std::string, std::string, send_group_message_cb>
+		>
+	> m_group_message_queue;
 
 	// 用于获取验证码的异步列队
 	boost::async_coro_queue<
 		boost::circular_buffer<std::string>
-	>	m_vc_queue;
+	> m_vc_queue;
 
 	typedef boost::tuple<
-				webqq::webqq_handler_t  // 更新回调，如果push的那个数据被更新到了就会回调.
-				, int   // 更新类型.
-				, std::string   // 群 QQ 号  为空表示更新所有的群.
-				, std::string   // new user id, 如果是 type = 2 的话
-			>	group_refresh_queue_type;
+		webqq::webqq_handler_t  // 更新回调，如果push的那个数据被更新到了就会回调.
+		, int   // 更新类型.
+		, std::string   // 群 QQ 号  为空表示更新所有的群.
+		, std::string   // new user id, 如果是 type = 2 的话
+	> group_refresh_queue_type;
 
 	// 用于重新刷新群列表的异步命令列队
 	boost::async_coro_queue<
-			// 列队里数据解释
-			std::list<group_refresh_queue_type>
-		>	m_group_refresh_queue;
+		// 列队里数据解释
+		std::list<group_refresh_queue_type>
+	> m_group_refresh_queue;
 };
 
 };
