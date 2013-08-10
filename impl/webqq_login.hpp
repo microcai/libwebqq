@@ -143,6 +143,8 @@ public:
 		{
 			if( ( check_login( ec, bytes_transfered ) == 0 ) && ( m_webqq->m_status == LWQQ_STATUS_ONLINE ) )
 			{
+				BOOST_LOG_TRIVIAL(info) <<  "redirecting to " << m_next_url;
+
 				// 再次　login
 				m_stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
 				m_stream->request_options(
@@ -176,6 +178,8 @@ public:
 					BOOST_ASIO_CORO_YIELD avhttp::async_read_body(*m_stream, m_stream->location(), *m_buffer, *this);
 					m_webqq->m_cookie_mgr.save_cookie(*m_stream);
 				}
+
+				BOOST_LOG_TRIVIAL(info) <<  "redirecting success!!" << m_next_url;
 
 				m_webqq->m_clientid = generate_clientid();
 				//change status,  this is the last step for login
