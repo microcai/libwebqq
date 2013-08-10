@@ -179,7 +179,7 @@ public:
 					m_webqq->m_cookie_mgr.save_cookie(*m_stream);
 				}
 
-				BOOST_LOG_TRIVIAL(info) <<  "redirecting success!!"
+				BOOST_LOG_TRIVIAL(info) <<  "redirecting success!!";
 
 				m_webqq->m_clientid = generate_clientid();
 				//change status,  this is the last step for login
