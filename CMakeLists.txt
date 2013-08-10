@@ -6,10 +6,6 @@ include_directories(${Boost_INCLUDE_DIRS})
 include_directories(../avhttp/include/)
 include_directories(..)
 
-include_directories(../soci/src/core/)
-include_directories(../soci/src/backends/sqlite3)
-include_directories(${SQLITE3_INCLUDE_DIR})
-
 add_library(webqq STATIC error_code.cpp webqq.cpp impl/webqq_face.cpp impl/webqq_impl.cpp)
 
 target_link_libraries(webqq ${Boost_LIBRARIES} soci_sqlite3)
