@@ -185,6 +185,8 @@ public:
 				//change status,  this is the last step for login
 				// 设定在线状态.
 
+				BOOST_LOG_TRIVIAL(info) <<  "changing status...";
+
 				BOOST_ASIO_CORO_YIELD
 					m_webqq->change_status(LWQQ_STATUS_ONLINE, boost::bind<void>(*this, _1, 0));
 
@@ -194,6 +196,8 @@ public:
 					m_webqq->get_ioservice().post(boost::asio::detail::bind_handler(m_handler, ec));
 					return;
 				}
+
+				BOOST_LOG_TRIVIAL(info) <<  "status => online";
 
 				i = 0;
 
