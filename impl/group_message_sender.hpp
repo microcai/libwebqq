@@ -163,11 +163,13 @@ private:
 			avhttp::request_opts()
 				( avhttp::http_options::request_method, "POST" )
 				( avhttp::http_options::cookie, m_webqq->m_cookie_mgr.get_cookie(LWQQ_URL_SEND_QUN_MSG)() )
-				( avhttp::http_options::referer, "http://d.web2.qq.com/proxy.html?v=20101025002" )
+				( avhttp::http_options::referer, "http://d.web2.qq.com/proxy.html?v=20110331002&callback=1&id=2" )
 				( avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8" )
 				( avhttp::http_options::request_body, postdata )
 				( avhttp::http_options::content_length, boost::lexical_cast<std::string>( postdata.length() ) )
 				( avhttp::http_options::connection, "close" )
+				("Origin", "http://d.web2.qq.com")
+				("Accept", "*/*")
 		);
 
 		avhttp::async_read_body(
