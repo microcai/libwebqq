@@ -124,35 +124,66 @@ public:
 	internal_loop_op(boost::asio::io_service & io_service, boost::shared_ptr<WebQQ> _webqq)
 	  : m_io_service(io_service), m_webqq(_webqq)
 	{
-		avloop_idle_post(m_io_service,
-			boost::asio::detail::bind_handler(*this,boost::system::error_code()));
+		avloop_idle_post(
+			m_io_service,
+			boost::asio::detail::bind_handler(
+				*this,
+				boost::system::error_code(),
+				std::string()
+			)
+		);
 	}
 
-	void operator()(boost::system::error_code ec)
+	void operator()(boost::system::error_code ec, std::string str)
 	{
+		if (ec == boost::asio::error::operation_aborted)
+			return;
+
 		BOOST_ASIO_CORO_REENTER(this)
 		{for (;m_webqq->m_status!= LWQQ_STATUS_QUITTING;){
-			do{
+			do {
 				// try check_login
-				BOOST_ASIO_CORO_YIELD
-					detail::check_login( m_webqq,*this );
-				if (ec){
-					BOOST_LOG_TRIVIAL(error) << "发生错误: " <<  ec.message() <<  " 重试中...";
-					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
-						m_io_service, 300, boost::asio::detail::bind_handler(*this,ec));
+				BOOST_ASIO_CORO_YIELD detail::check_login(m_webqq, *this);
+
+				if (ec)
+				{
+					if (ec == error::login_check_need_vc)
+					{
+						m_webqq->m_signeedvc(str);
+						ec = boost::system::error_code();
+					}
+					else
+					{
+						if (ec)
+						{
+							BOOST_LOG_TRIVIAL(error) << "发生错误: " <<  ec.message() <<  " 重试中...";
+							BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
+								m_io_service, 300, boost::asio::detail::bind_handler(*this, ec, str));
+						}
+					}
 				}
+				else
+				{
+					m_webqq->m_vc_queue.push(str);
+				}
+
 			}while (ec);
 
 			// then retrive vc, can be pushed by check_login or login_withvc
 			BOOST_ASIO_CORO_YIELD m_webqq->m_vc_queue.async_pop(*this);
-			// 注意，下一行其实回调已经完成登录了.
 
+			BOOST_LOG_TRIVIAL(info) << "vc code is \"" << str << "\"" ;
+			// 回调会进入 async_pop 的下一行
+			BOOST_ASIO_CORO_YIELD make_login_op(m_webqq, str, boost::bind<void>(*this, _1, str));
+
+			// 完成登录了. 检查登录结果
 			if (ec)
 			{
 				if (ec == error::login_failed_wrong_vc)
 				{
 					m_webqq->m_sigbadvc();
 				}
+
 				// 查找问题， 报告问题啊！
 				if (ec == error::login_failed_wrong_passwd)
 				{
@@ -167,13 +198,13 @@ public:
 					BOOST_LOG_TRIVIAL(error) << "300s 后重试...";
 					// 帐号冻结, 多等些时间, 嘻嘻
 					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
-						m_io_service, 300, boost::asio::detail::bind_handler(*this,ec));
+						m_io_service, 300, boost::asio::detail::bind_handler(*this, ec, str));
 				}
 
 				BOOST_LOG_TRIVIAL(error) << "30s 后重试...";
 
 				BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
-						m_io_service, 30, boost::asio::detail::bind_handler(*this,ec));
+						m_io_service, 30, boost::asio::detail::bind_handler(*this,ec, str));
 			}
 
 			// 进入 message 循环.
@@ -182,7 +213,9 @@ public:
 				// TODO, 每 12个小时刷新群列表.
 
 				// 获取一次消息。
-				BOOST_ASIO_CORO_YIELD m_webqq->async_poll_message(*this);
+				BOOST_ASIO_CORO_YIELD m_webqq->async_poll_message(
+					boost::bind<void>(*this, _1, std::string())
+				);
 
 				// 判断消息处理结果
 
@@ -191,44 +224,22 @@ public:
 					// 重新登录
 
 					// 延时 60s
-					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
-						m_io_service, 60, boost::asio::detail::bind_handler(*this,ec));
+					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(m_io_service, 60,
+						boost::asio::detail::bind_handler(*this, ec, str)
+					);
 
 					m_webqq->m_status = LWQQ_STATUS_OFFLINE;
 				}else if ( ec == error::poll_failed_network_error )
 				{
 					// 等待等待就好了，等待 12s
-					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
-						m_io_service, 12, boost::asio::detail::bind_handler(*this,ec));
+					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(m_io_service, 12,
+						boost::asio::detail::bind_handler(*this, ec, str)
+					);
 				}
 			}
 
 			// 掉线了，自动重新进入循环， for (;;) 嘛
 		}}
-	}
-
-	// check_login 回调到这里
-	void operator()(boost::system::error_code ec, std::string vc)
-	{
-		if (ec)
-		{
-			if (ec == error::login_check_need_vc)
-			{
-				m_webqq->m_signeedvc(vc);
-				ec = boost::system::error_code();
-			}
-		}else{
-			m_webqq->m_vc_queue.push(vc);
-		}
-		// 回到上面。
-		m_io_service.post(boost::asio::detail::bind_handler(*this, ec));
-	}
-
-	void operator()(std::string v)
-	{
-		BOOST_LOG_TRIVIAL(info) << "vc code is \"" << v << "\"" ;
-		// 回调会进入 async_pop 的下一行
-		detail::login_vc_op op( m_webqq, v, *this);
 	}
 
 private:
@@ -248,7 +259,7 @@ public:
 		:m_webqq(_webqq)
 	{
 		m_webqq->m_group_refresh_queue.async_pop(
-			boost::bind<void>(*this, boost::system::error_code(), _1)
+			boost::bind<void>(*this, _1, _2)
 		);
 
 		m_last_sync = boost::posix_time::from_time_t(std::time(NULL));
@@ -344,7 +355,7 @@ public:
 
 			// 继续获取，嘻嘻.
 			BOOST_ASIO_CORO_YIELD m_webqq->m_group_refresh_queue.async_pop(
-				boost::bind<void>(*this, ec, _1)
+				boost::bind<void>(*this, _1, _2)
 			);
 		}}
 	}

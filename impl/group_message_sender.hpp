@@ -89,13 +89,13 @@ public:
 		: m_webqq(webqq)
 	{
 		// 进入循环吧.
-		webqq->m_group_message_queue.async_pop(*this);
+		webqq->m_group_message_queue.async_pop(
+			boost::bind<void>(*this, _1, 0, _2)
+		);
 	}
 
-	void operator()(boost::tuple<std::string, std::string, WebQQ::send_group_message_cb> v)
+	void operator()(boost::system::error_code ec, std::size_t bytes_transfered, boost::tuple<std::string, std::string, WebQQ::send_group_message_cb> v)
 	{
-		boost::system::error_code ec;
-
 		BOOST_ASIO_CORO_REENTER(this)
 		{for (;m_webqq->m_status != LWQQ_STATUS_QUITTING;){
 			// 等待状态为登录.
@@ -104,7 +104,7 @@ public:
 				BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
 						m_webqq->get_ioservice(),
 						20,
-						boost::asio::detail::bind_handler(*this, v)
+						boost::asio::detail::bind_handler(*this, ec, bytes_transfered, v)
 				);
 			}
 
@@ -113,14 +113,23 @@ public:
 				// 开始发送.
 				BOOST_ASIO_CORO_YIELD send_group_message(v);
 
+				m_stream.reset();
+				m_buffer.reset();
+
+				m_webqq->get_ioservice().post(
+					boost::asio::detail::bind_handler(v.get<2>(), ec)
+				);
+
 				// 发送完毕， 延时 400ms 再发送
 				BOOST_ASIO_CORO_YIELD boost::delayedcallms(
 						m_webqq->get_ioservice(),
 						400,
-						boost::asio::detail::bind_handler(*this, v)
+						boost::asio::detail::bind_handler(*this, ec, bytes_transfered, v)
 				);
 
-				BOOST_ASIO_CORO_YIELD m_webqq->m_group_message_queue.async_pop(*this);
+				BOOST_ASIO_CORO_YIELD m_webqq->m_group_message_queue.async_pop(
+					boost::bind<void>(*this, _1, 0, _2)
+				);
 			}
 		}
 		}
@@ -177,20 +186,6 @@ private:
 			LWQQ_URL_SEND_QUN_MSG,
 			*m_buffer,
 			boost::bind<void>(*this, _1, _2, v)
-		);
-	}
-public:
-	void operator()(boost::system::error_code ec, std::size_t bytes_transfered, boost::tuple<std::string, std::string, WebQQ::send_group_message_cb> v)
-	{
-		m_stream.reset();
-		m_buffer.reset();
-
-		m_webqq->get_ioservice().post(
-			boost::asio::detail::bind_handler(*this, v)
-		);
-
-		m_webqq->get_ioservice().post(
-			boost::asio::detail::bind_handler(v.get<2>(), ec)
 		);
 	}
 private:

@@ -327,5 +327,11 @@ private:
 };
 
 }
+
+detail::login_vc_op make_login_op(boost::shared_ptr<qqimpl::WebQQ> webqq, std::string _vccode, webqq::webqq_handler_t handler)
+{
+	return detail::login_vc_op(webqq, _vccode, handler);
+}
+
 }
 }
