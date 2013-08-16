@@ -124,6 +124,21 @@ public:
 	internal_loop_op(boost::asio::io_service & io_service, boost::shared_ptr<WebQQ> _webqq)
 	  : m_io_service(io_service), m_webqq(_webqq)
 	{
+		firs_start = 0;
+		firs_start = 1;
+
+		// 读取 一些 cookie
+		cookie::cookie webqqcookie =
+			m_webqq->m_cookie_mgr.get_cookie("http://psession.qq.com/"); //.get_value("ptwebqq");
+
+		// load 缓存的 一些信息
+		m_webqq->m_vfwebqq = webqqcookie.get_value("vfwebqq");
+		m_webqq->m_psessionid = webqqcookie.get_value("psessionid");
+		m_webqq->m_clientid = webqqcookie.get_value("clientid");
+
+		// TODO load 缓存的群组信息.
+		// m_status = LWQQ_STATUS_ONLINE;
+
 		avloop_idle_post(
 			m_io_service,
 			boost::asio::detail::bind_handler(
@@ -140,7 +155,44 @@ public:
 			return;
 
 		BOOST_ASIO_CORO_REENTER(this)
-		{for (;m_webqq->m_status!= LWQQ_STATUS_QUITTING;){
+		{
+
+
+		for (;m_webqq->m_status!= LWQQ_STATUS_QUITTING;){
+
+	  		// 首先进入 message 循环! 做到无登录享用!
+			while (m_webqq->m_status == LWQQ_STATUS_ONLINE)
+			{
+				// TODO, 每 12个小时刷新群列表.
+
+				// 获取一次消息。
+				BOOST_ASIO_CORO_YIELD m_webqq->async_poll_message(
+					boost::bind<void>(*this, _1, std::string())
+				);
+
+				// 判断消息处理结果
+
+				if (ec == error::poll_failed_need_login || ec == error::poll_failed_user_kicked_off)
+				{
+					// 重新登录
+					m_webqq->m_status = LWQQ_STATUS_OFFLINE;
+
+					// 延时 60s  第一次的话不延时,  立即登录.
+					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(m_io_service, 60 * firs_start,
+						boost::asio::detail::bind_handler(*this, ec, str)
+					);
+
+					firs_start = 1;
+
+				}else if ( ec == error::poll_failed_network_error )
+				{
+					// 等待等待就好了，等待 12s
+					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(m_io_service, 12,
+						boost::asio::detail::bind_handler(*this, ec, str)
+					);
+				}
+			}
+
 			do {
 				// try check_login
 				BOOST_ASIO_CORO_YIELD detail::check_login(m_webqq, *this);
@@ -207,37 +259,6 @@ public:
 						m_io_service, 30, boost::asio::detail::bind_handler(*this,ec, str));
 			}
 
-			// 进入 message 循环.
-			while (m_webqq->m_status == LWQQ_STATUS_ONLINE)
-			{
-				// TODO, 每 12个小时刷新群列表.
-
-				// 获取一次消息。
-				BOOST_ASIO_CORO_YIELD m_webqq->async_poll_message(
-					boost::bind<void>(*this, _1, std::string())
-				);
-
-				// 判断消息处理结果
-
-				if (ec == error::poll_failed_need_login || ec == error::poll_failed_user_kicked_off)
-				{
-					// 重新登录
-
-					// 延时 60s
-					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(m_io_service, 60,
-						boost::asio::detail::bind_handler(*this, ec, str)
-					);
-
-					m_webqq->m_status = LWQQ_STATUS_OFFLINE;
-				}else if ( ec == error::poll_failed_network_error )
-				{
-					// 等待等待就好了，等待 12s
-					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(m_io_service, 12,
-						boost::asio::detail::bind_handler(*this, ec, str)
-					);
-				}
-			}
-
 			// 掉线了，自动重新进入循环， for (;;) 嘛
 		}}
 	}
@@ -245,6 +266,7 @@ public:
 private:
 	boost::asio::io_service & m_io_service;
 	boost::shared_ptr<WebQQ> m_webqq;
+	int firs_start;
 };
 
 static internal_loop_op internal_loop(boost::asio::io_service & io_service, boost::shared_ptr<WebQQ> _webqq)

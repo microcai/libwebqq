@@ -101,6 +101,10 @@ public:
 			if( json.get<std::string>( "retcode" ) == "0" ) {
 				m_webqq->m_psessionid = json.get_child( "result" ).get<std::string>( "psessionid" );
 				m_webqq->m_vfwebqq = json.get_child( "result" ).get<std::string>( "vfwebqq" );
+
+				m_webqq->m_cookie_mgr.save_cookie("psession.qq.com", "/", "vfwebqq", m_webqq->m_vfwebqq, "session");
+				m_webqq->m_cookie_mgr.save_cookie("psession.qq.com", "/", "psessionid", m_webqq->m_psessionid, "session");
+
 				m_webqq->m_status = LWQQ_STATUS_ONLINE;
 
 				m_webqq->get_ioservice().post(

@@ -335,12 +335,13 @@ inline boost::posix_time::ptime ptime_from_gmt_string(std::string date)
 
 }
 
+class cookie_store;
+
 /*
  * 表示一个 cookie 对象,  可以获取用户 cookie: 的字符串,  也可以继续操纵其存储的 cookie
  */
 class cookie{
 	std::vector<std::pair<std::string, std::string> > m_cookies;
-public:
 
 	cookie(std::vector<std::string> names, std::vector<std::string> values)
 	{
@@ -351,6 +352,8 @@ public:
 			m_cookies.push_back(std::make_pair(names[i], values[i]));
 		}
 	}
+	friend class cookie_store;
+public:
 
 	operator bool()
 	{
