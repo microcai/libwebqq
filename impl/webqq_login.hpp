@@ -181,10 +181,13 @@ public:
 
 				BOOST_LOG_TRIVIAL(info) <<  "redirecting success!!";
 
-				m_webqq->m_clientid = generate_clientid();
-				m_webqq->m_cookie_mgr.save_cookie(
-					"psession.qq.com", "/", "clientid", m_webqq->m_clientid, "session"
-				);
+				if (m_webqq->m_clientid.empty())
+				{
+					m_webqq->m_clientid = generate_clientid();
+					m_webqq->m_cookie_mgr.save_cookie(
+						"psession.qq.com", "/", "clientid", m_webqq->m_clientid, "session"
+					);
+				}
 				//change status,  this is the last step for login
 				// 设定在线状态.
 
