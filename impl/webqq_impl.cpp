@@ -541,13 +541,14 @@ public:
 		{
 			for( i = 0 ; i < m_uins.size() ; i++ )
 			{
-				if (m_webqq->m_buddy_mgr.buddy_has_qqnum(m_uins[i]))
+				if (!m_webqq->m_buddy_mgr.buddy_has_qqnum(m_uins[i]))
 				{
 					yield buddy_uin_to_qqnumber( m_webqq, m_uins[i], *this );
 					if ( qqnum == "-1")
-					return;
+						return;
+					else
+						m_webqq->m_buddy_mgr.map_buddy_qqnum(m_uins[i], qqnum);
 				}
-				m_webqq->m_buddy_mgr.map_buddy_qqnum(m_uins[i], qqnum);
 			}
 		}
 	}
