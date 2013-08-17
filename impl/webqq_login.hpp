@@ -42,7 +42,7 @@ namespace js = boost::property_tree::json_parser;
 
 #include "constant.hpp"
 
-#include "lwqq_status.hpp"
+#include "webqq_status.hpp"
 
 namespace webqq {
 namespace qqimpl {
@@ -193,8 +193,10 @@ public:
 
 				BOOST_LOG_TRIVIAL(info) <<  "changing status...";
 
-				BOOST_ASIO_CORO_YIELD
-					m_webqq->change_status(LWQQ_STATUS_ONLINE, boost::bind<void>(*this, _1, 0));
+				BOOST_ASIO_CORO_YIELD async_change_status(
+					m_webqq, LWQQ_STATUS_ONLINE,
+					boost::bind<void>(*this, _1, 0)
+				);
 
 				if(ec)
 				{

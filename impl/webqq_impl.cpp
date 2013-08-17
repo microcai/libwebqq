@@ -43,7 +43,7 @@ namespace js = boost::property_tree::json_parser;
 #include "constant.hpp"
 
 #include "utf8.hpp"
-#include "lwqq_status.hpp"
+#include "webqq_status.hpp"
 #include "clean_cache.hpp"
 #include "webqq_check_login.hpp"
 #include "webqq_login.hpp"
@@ -51,6 +51,7 @@ namespace js = boost::property_tree::json_parser;
 #include "webqq_group_list.hpp"
 #include "webqq_group_qqnumber.hpp"
 #include "webqq_poll_message.hpp"
+#include "webqq_keepalive.hpp"
 #include "group_message_sender.hpp"
 
 #ifdef WIN32
@@ -89,12 +90,16 @@ static pt::wptree json_parse( const wchar_t * doc )
 
 // build webqq and setup defaults
 WebQQ::WebQQ( boost::asio::io_service& _io_service,
-		std::string _qqnum, std::string _passwd)
-: m_io_service( _io_service ), m_qqnum( _qqnum ), m_passwd( _passwd ), m_status( LWQQ_STATUS_OFFLINE ),
-	m_cookie_mgr("webqqcookies"),
-	m_vc_queue(_io_service, 1),
-	m_group_message_queue(_io_service, 20), // 最多保留最后的20条未发送消息.
-	m_group_refresh_queue(_io_service)
+	std::string _qqnum, std::string _passwd)
+	: m_io_service( _io_service )
+	, m_qqnum( _qqnum )
+	, m_passwd( _passwd )
+	, m_status( LWQQ_STATUS_OFFLINE )
+	, m_cookie_mgr("webqq_persistent")
+	, m_buddy_mgr("webqq_persistent")
+	, m_vc_queue(_io_service, 1)
+	, m_group_message_queue(_io_service, 20) // 最多保留最后的20条未发送消息.
+	, m_group_refresh_queue(_io_service)
 {
 #ifndef _WIN32
 	/* Set msg_id */
@@ -401,25 +406,13 @@ void WebQQ::start()
 	group_message_sender(shared_from_this());
 
 	group_auto_refresh(shared_from_this());
-/*
-				// 搞一个 GET 的长维护
-			std::string url = "http://webqq.qq.com/web2/get_msg_tip?uin=&tp=1&id=0&retype=1&rc=1&lv=3&t=1348458711542";
-			read_streamptr get_msg_tip( new avhttp::http_stream( m_io_service ) );
-			get_msg_tip->request_options( avhttp::request_opts()
-										  ( avhttp::http_options::cookie, m_cookie_mgr.get_cookie(url)() )
-										  ( avhttp::http_options::referer, "http://d.web2.qq.com/proxy.html?v=20101025002" )
-										  ( avhttp::http_options::connection, "close" )
-										);
-			boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
-
-			avhttp::async_read_body( *get_msg_tip, url,
-								* buffer, boost::bind(&cb_get_msg_tip, _1, _2, get_msg_tip, buffer));*/
-
 
 	// 开启个程序去清理过期 cache_* 文件
 	// webqq 每天登录 uid 变化,  而不是每次都变化.
 	// 所以 cache 有效期只有一天.
 	start_clean_cache(shared_from_this());
+
+	webqq_keepalive(shared_from_this());
 }
 
 void WebQQ::stop()
@@ -433,7 +426,7 @@ void WebQQ::stop()
 // and this will be callded every other minutes to prevent foce kick off.
 void  WebQQ::change_status(LWQQ_STATUS status, boost::function<void (boost::system::error_code) > handler)
 {
-	detail::lwqq_change_status op(shared_from_this(), status, handler);
+	async_change_status(shared_from_this(), status, handler);
 }
 
 void WebQQ::async_poll_message(webqq::webqq_handler_t handler)

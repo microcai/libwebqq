@@ -51,6 +51,7 @@ typedef boost::shared_ptr<avhttp::http_stream> read_streamptr;
 #include "../webqq.hpp"
 #include "../error_code.hpp"
 #include "cookie_mgr.hpp"
+#include "buddy_mgr.hpp"
 
 #if !defined(_MSC_VER)
 #pragma GCC visibility push(hidden)
@@ -166,7 +167,7 @@ public:
 	void cb_join_group(qqGroup_ptr, const boost::system::error_code& ec, read_streamptr stream,  boost::shared_ptr<boost::asio::streambuf> buf, webqq::join_group_handler handler);
 
 public:
-	std::string	m_vfwebqq;
+
 
 public:
 	boost::asio::io_service & m_io_service;
@@ -177,7 +178,9 @@ public:
 	std::string m_nick; // nick of the avbot account
 
 	std::string	m_version;
-	std::string m_clientid, m_psessionid;
+	std::string m_clientid;
+	std::string m_psessionid;
+	std::string	m_vfwebqq;
 	std::string m_login_sig; // 安全参数
 	long m_msg_id; // update on every message.
 
@@ -186,8 +189,6 @@ public:
 	grouplist	m_groups;
 
 	std::map<int, int> facemap;
-
-	cookie::cookie_store m_cookie_mgr;
 
 	// 消息发送异步列队
 	boost::async_coro_queue<
@@ -214,7 +215,9 @@ public:
 		std::list<group_refresh_queue_type>
 	> m_group_refresh_queue;
 
-	soci::session	m_storage;
+	cookie::cookie_store m_cookie_mgr;
+
+	buddy_mgr	m_buddy_mgr;
 };
 
 };
