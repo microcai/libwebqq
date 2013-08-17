@@ -333,22 +333,22 @@ public:
 				}
 				else
 				{
-					// 检查是否刷新了群 GID, 如果是，就要刷新群列表！
-					if ( ! m_webqq->m_groups.empty() &&
-						! m_webqq->m_groups.begin()->second->memberlist.empty())
-					{
-						// 刷新群列表！
-						// 接着是刷新群成员列表.
-						for (iter = m_webqq->m_groups.begin(); iter != m_webqq->m_groups.end(); ++iter)
-						{
-							BOOST_ASIO_CORO_YIELD
-								m_webqq->update_group_member(iter->second , boost::bind<void>(*this, _1, v));
-
-							using namespace boost::asio::detail;
-							BOOST_ASIO_CORO_YIELD
-								boost::delayedcallms(m_webqq->get_ioservice(), 530, bind_handler(*this, ec, v));
-						}
-					}
+// 					// 检查是否刷新了群 GID, 如果是，就要刷新群列表！
+// 					if ( ! m_webqq->m_groups.empty() &&
+// 						! m_webqq->m_groups.begin()->second->memberlist.empty())
+// 					{
+// 						// 刷新群列表！
+// 						// 接着是刷新群成员列表.
+// 						for (iter = m_webqq->m_groups.begin(); iter != m_webqq->m_groups.end(); ++iter)
+// 						{
+// 							BOOST_ASIO_CORO_YIELD
+// 								m_webqq->update_group_member(iter->second , boost::bind<void>(*this, _1, v));
+//
+// 							using namespace boost::asio::detail;
+// 							BOOST_ASIO_CORO_YIELD
+// 								boost::delayedcallms(m_webqq->get_ioservice(), 530, bind_handler(*this, ec, v));
+// 						}
+// 					}
 				}
 			}
 			else if (type == 1)
@@ -527,7 +527,11 @@ public:
 	update_group_member_qq_op( boost::shared_ptr<WebQQ>  _webqq, boost::shared_ptr<qqGroup> _group )
 		: group( _group ), m_webqq( _webqq )
 	{
-		m_webqq->get_ioservice().post( boost::asio::detail::bind_handler(*this, std::string()));
+		m_uins = m_webqq->m_buddy_mgr.get_group_all_buddies_uin(_group->gid);
+
+		m_webqq->get_ioservice().post(
+			boost::asio::detail::bind_handler(*this, std::string())
+		);
 	}
 
 	void operator()( std::string qqnum )
@@ -535,21 +539,25 @@ public:
 		//我说了是一个一个的更新对吧，可不能一次发起　N 个连接同时更新，会被TX拉黑名单的.
 		reenter( this )
 		{
-			for( it = group->memberlist.begin(); it != group->memberlist.end(); it++ ) {
-				if (it->second.qqnum.empty())
+			for( i = 0 ; i < m_uins.size() ; i++ )
+			{
+				if (m_webqq->m_buddy_mgr.buddy_has_qqnum(m_uins[i]))
 				{
-					yield buddy_uin_to_qqnumber( m_webqq, it->second.uin, *this );
+					yield buddy_uin_to_qqnumber( m_webqq, m_uins[i], *this );
 					if ( qqnum == "-1")
 					return;
 				}
-				it->second.qqnum = qqnum;
+				m_webqq->m_buddy_mgr.map_buddy_qqnum(m_uins[i], qqnum);
 			}
 		}
 	}
 private:
-	std::map< std::string, qqBuddy >::iterator it;
 	boost::shared_ptr<qqGroup> group;
 	boost::shared_ptr<WebQQ> m_webqq;
+
+	std::vector<std::string> m_uins;
+
+	int i;
 };
 
 //　将组成员的 QQ 号码一个一个更新过来.

@@ -142,7 +142,7 @@ public:// signals
 	// 获得一个群QQ号码的时候激发.
 	boost::signals2::signal< void ( qqGroup_ptr )> siggroupnumber;
 	// 新人入群的时候激发.
-	boost::signals2::signal< void ( qqGroup_ptr, qqBuddy * buddy) > signewbuddy;
+	boost::signals2::signal< void ( qqGroup_ptr, qqBuddy_ptr buddy) > signewbuddy;
 
 	// 有群消息的时候激发.
 	boost::signals2::signal< void ( const std::string group, const std::string who, const std::vector<qqMsg> & )> siggroupmessage;

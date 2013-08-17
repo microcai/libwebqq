@@ -87,6 +87,8 @@ struct qqBuddy {
 	std::string qqnum;
 };
 
+typedef boost::shared_ptr<qqBuddy> qqBuddy_ptr;
+
 // 群.
 struct qqGroup {
 	// 群ID, 不是群的QQ号，每次登录都变化的.
@@ -101,16 +103,23 @@ struct qqGroup {
 
 	std::string owner;
 
-	std::map<std::string, qqBuddy>	memberlist;
+	boost::function<
+		qqBuddy_ptr (std::string uin)
+	> get_Buddy_by_uin;
+	boost::function<
+		void (std::string uin, std::string qqnum, std::string nick)
+	> add_new_buddy;
 
-	qqBuddy * get_Buddy_by_uin( std::string uin ) {
-		std::map<std::string, qqBuddy>::iterator it = memberlist.find( uin );
+// 	std::map<std::string, qqBuddy>	memberlist;
 
-		if( it != memberlist.end() )
-			return &it->second;
-
-		return NULL;
-	}
+// 	qqBuddy * get_Buddy_by_uin( std::string uin ) {
+// 		std::map<std::string, qqBuddy>::iterator it = memberlist.find( uin );
+//
+// 		if( it != memberlist.end() )
+// 			return &it->second;
+//
+// 		return NULL;
+// 	}
 };
 
 typedef boost::shared_ptr<qqGroup> qqGroup_ptr;
@@ -152,7 +161,7 @@ public:
 	// 发现一个群就回调.
 	void on_group_found(boost::function<void ( qqGroup_ptr )> cb);
 	// 新人入群通知. 注意, 只有管理员才能获得.
-	void on_group_newbee(boost::function<void ( qqGroup_ptr,  qqBuddy * )> cb);
+	void on_group_newbee(boost::function<void (qqGroup_ptr, qqBuddy_ptr)> cb);
 
 	void on_bad_vc(boost::function<void()> reporter);
 

@@ -126,12 +126,11 @@ private:
 
 			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result.minfo"))
 			{
-				qqBuddy buddy;
 				pt::ptree& minfo = v.second;
-				buddy.nick = minfo.get<std::string>("nick");
-				buddy.uin = minfo.get<std::string>("uin");
+				std::string uin = minfo.get<std::string>("uin");
+				std::string nick = minfo.get<std::string>("nick");
 
-				group->memberlist.insert(std::make_pair(buddy.uin, buddy));
+				m_webqq->m_buddy_mgr.group_new_buddy(group->gid, uin, "", nick);
 			}
 
 			BOOST_FOREACH(pt::ptree::value_type & v, jsonobj.get_child("result.ginfo.members"))
@@ -142,7 +141,7 @@ private:
 
 				try
 				{
-					group->get_Buddy_by_uin(muin)->mflag = boost::lexical_cast<unsigned int>(mflag);
+					m_webqq->m_buddy_mgr.buddy_update_mflag(muin, boost::lexical_cast<unsigned int>(mflag));
 				}
 				catch (boost::bad_lexical_cast& e) {}
 			}
@@ -154,7 +153,8 @@ private:
 					pt::ptree& minfo = v.second;
 					std::string muin = minfo.get<std::string>("muin");
 					std::string card = minfo.get<std::string>("card");
-					group->get_Buddy_by_uin(muin)->card = card;
+
+					m_webqq->m_buddy_mgr.buddy_update_card(muin, card);
 				}
 			}
 			catch (const pt::ptree_bad_path& badpath)

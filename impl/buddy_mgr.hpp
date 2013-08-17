@@ -42,7 +42,19 @@ public:
 	qqGroup_ptr get_group_by_gid(std::string gid);
 	qqGroup_ptr get_group_by_qq(std::string qqnum);
 
+	std::vector<std::string> get_group_all_buddies_uin(std::string gid);
+
+	qqBuddy_ptr get_buddy_by_uin(std::string uid);
+
+	bool buddy_has_qqnum(std::string uid);
+	void map_buddy_qqnum(std::string uid, std::string qqnum);
+
 	void set_group_owner(std::string gid, std::string owner);
+
+	void group_new_buddy(std::string gid, std::string uid, std::string qqnum, std::string nick);
+
+	void buddy_update_mflag(std::string uid,  unsigned int mflag);
+	void buddy_update_card(std::string uid, std::string card);
 
 private:
 
