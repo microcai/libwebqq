@@ -73,18 +73,28 @@ typedef enum LWQQ_STATUS {
 
 struct qqBuddy {
 	// 号码，每次登录都变化的.
-	std::string uin;
+	const std::string uin;
 
 	// qq昵称.
-	std::string nick;
+	const std::string nick;
 	// 群昵称.
-	std::string card;
+	const std::string card;
 
 	// 成员类型. 21/20/85 是管理员.
-	unsigned int mflag;
+	const unsigned int mflag;
 
 	// qq号码，不一定有，需要调用 get_qqnumber后才有.
-	std::string qqnum;
+	const std::string qqnum;
+
+	qqBuddy(std::string _uin, std::string _nick, std::string _card,
+		unsigned int _mflag,std::string _qqnum)
+		: uin(_uin)
+		, nick(_nick)
+		, card(_card)
+		, mflag(_mflag)
+		, qqnum(_qqnum)
+	{
+	}
 };
 
 typedef boost::shared_ptr<qqBuddy> qqBuddy_ptr;
@@ -109,17 +119,6 @@ struct qqGroup {
 	boost::function<
 		void (std::string uin, std::string qqnum, std::string nick)
 	> add_new_buddy;
-
-// 	std::map<std::string, qqBuddy>	memberlist;
-
-// 	qqBuddy * get_Buddy_by_uin( std::string uin ) {
-// 		std::map<std::string, qqBuddy>::iterator it = memberlist.find( uin );
-//
-// 		if( it != memberlist.end() )
-// 			return &it->second;
-//
-// 		return NULL;
-// 	}
 };
 
 typedef boost::shared_ptr<qqGroup> qqGroup_ptr;

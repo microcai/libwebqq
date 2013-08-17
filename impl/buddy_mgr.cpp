@@ -123,7 +123,7 @@ qqGroup_ptr buddy_mgr::get_group_by_qq(std::string qqnum)
 {
 	std::string gid;
 
-	m_sql << "select gid from groups where qqnum = :qqnum"
+	m_sql << "select gid from groups where qqnum = :qqnum order by generate_time desc"
 	  , soci::into(gid)
 	  , soci::use(qqnum);
 
@@ -148,17 +148,18 @@ qqBuddy_ptr buddy_mgr::get_buddy_by_uin(std::string uid)
 {
 	using namespace soci;
 
-	qqBuddy buddy;
+	std::string uin, nick, card, qqnum;
+	unsigned int mflag;
 
 	m_sql << "select uid, nick, card, mflag, qqnum from group_buddies where uid=:uid"
-		, into(buddy.uin)
-		, into(buddy.nick)
-		, into(buddy.card)
-		, into(buddy.mflag)
-		, into(buddy.qqnum)
+		, into(uin)
+		, into(nick)
+		, into(card)
+		, into(mflag)
+		, into(qqnum)
 		, use(uid);
 
-	return boost::make_shared<qqBuddy>(buddy);
+	return boost::make_shared<qqBuddy>(uin, nick, card, mflag, qqnum);
 }
 
 void buddy_mgr::set_group_owner(std::string gid, std::string owner)
@@ -179,7 +180,7 @@ void buddy_mgr::group_new_buddy(std::string gid, std::string uid, std::string qq
 
 	transaction trans(m_sql);
 
-	m_sql << "insert into group_buddies (gid, uid, qqnum, nick) values (:gid, :uid, :nick)"
+	m_sql << "insert into group_buddies (gid, uid, qqnum, nick) values (:gid, :uid, :qqnum, :nick)"
 		, use(gid), use(uid), use(qqnum), use(nick);
 
 	trans.commit();
