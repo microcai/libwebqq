@@ -504,6 +504,7 @@ public:
 
  	cookie_store(const std::string & dbpath = std::string(":memory:"))
 	{
+		sqlite_api::sqlite3_enable_shared_cache(1);
 		db.open(soci::sqlite3, dbpath);
 		check_db_initialized();
 	}
@@ -564,31 +565,13 @@ public:
 		std::vector<soci::indicator> inds_names;
 		std::vector<soci::indicator> inds_values;
 
-		bool errored = false, must_top = false;
+		std::string sql = boost::str(
+			boost::format("select name, value from cookies where %s and %s")
+				% build_domain_conditions(url.host())
+				% build_path_conditions(url.path())
+		);
 
-		do {
-			try
-			{
-
-				std::string sql = boost::str(boost::format("select name, value from cookies where %s and %s") % build_domain_conditions(url.host()) % build_path_conditions(url.path()));
-
-				db << sql , soci::into(names, inds_names), soci::into(values, inds_values) ;
-
-				must_top = true;
-			}
-			catch (const soci::soci_error& err)
-			{
-				if (errored)
-					must_top = true;
-
-				errored = true;
-
-				if ( errored && must_top)
-					throw;
-				else
-					db.reconnect();
-			}
-		} while (!must_top);
+		db << sql , soci::into(names, inds_names), soci::into(values, inds_values) ;
 
 		return cookie(names, values);
 	}
@@ -641,7 +624,6 @@ public:
 	// 详细参数直接设置一个 cookie
 	void save_cookie(std::string domain, std::string path, std::string name, std::string value, std::string expiration)
 	{
-		db.reconnect();
 		using namespace soci;
 		transaction transac(db);
 
@@ -656,7 +638,6 @@ public:
 
 	void delete_cookie(std::string domain, std::string path, std::string name)
 	{
-	 	db.reconnect();
 		using namespace soci;
 		db<< "delete from cookies where domain = :domain and path = :path and name = :name"
 		  , use(domain), use(path), use(name);

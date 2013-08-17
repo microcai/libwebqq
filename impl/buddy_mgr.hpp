@@ -27,8 +27,8 @@ class buddy_mgr
 public:
 	buddy_mgr(std::string dbname  = ":memory:")
 	{
+		sqlite_api::sqlite3_enable_shared_cache(1);
 		m_sql.open(soci::sqlite3, dbname);
-
 		db_initialize();
 	}
 
@@ -58,9 +58,6 @@ private:
 				"`card` TEXT,"
 				"`mflag` INTEGER,"
 				"`qqnum` TEXT"
-				// last time that this group information retrived from TX
-				// libwebqq will remove outdated one
-				"`generate_time` TEXT not null"
 			");";
 
 		trans.commit();
