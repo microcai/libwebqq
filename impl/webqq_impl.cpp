@@ -131,7 +131,7 @@ public:
 	  : m_io_service(io_service), m_webqq(_webqq)
 	{
 		firs_start = 0;
-		firs_start = 1;
+// 		firs_start = 1;
 
 		// 读取 一些 cookie
 		cookie::cookie webqqcookie =
@@ -143,7 +143,7 @@ public:
 		m_webqq->m_clientid = webqqcookie.get_value("clientid");
 
 		// TODO load 缓存的群组信息.
-		// m_status = LWQQ_STATUS_ONLINE;
+		m_webqq->m_status = LWQQ_STATUS_ONLINE;
 
 		avloop_idle_post(
 			m_io_service,
@@ -569,24 +569,12 @@ void WebQQ::update_group_member_qq(boost::shared_ptr<qqGroup> group )
 
 qqGroup_ptr WebQQ::get_Group_by_gid( std::string gid )
 {
-	grouplist::iterator it = m_groups.find( gid );
-
-	if( it != m_groups.end() )
-		return it->second;
-
-	return qqGroup_ptr();
+	return m_buddy_mgr.get_group_by_gid(gid);
 }
 
 qqGroup_ptr WebQQ::get_Group_by_qq( std::string qq )
 {
-	grouplist::iterator it = m_groups.begin();
-
-	for( ; it != m_groups.end(); it ++ ) {
-		if( it->second->qqnum == qq )
-			return it->second;
-	}
-
-	return qqGroup_ptr();
+	return m_buddy_mgr.get_group_by_qq(qq);
 }
 
 void WebQQ::get_verify_image( std::string vcimgid, webqq::webqq_handler_string_t handler)

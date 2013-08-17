@@ -77,7 +77,7 @@ private:
 		m_sql << ""
 			"create table if not exists group_buddies ( "
 				"`gid` TEXT not null,"
-				"`uid` TEXT not null,"
+				"`uid` TEXT not null  UNIQUE ON CONFLICT replace,"
 				"`nick` TEXT,"
 				"`card` TEXT,"
 				"`mflag` INTEGER,"
