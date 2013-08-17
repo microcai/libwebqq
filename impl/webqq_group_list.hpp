@@ -117,9 +117,11 @@ public:
 				{
 					boost::shared_ptr<qqGroup> newgroup = boost::make_shared<qqGroup>();
 
-					newgroup->gid = result.second.get<std::string>("gid");
-					newgroup->name = result.second.get<std::string>("name");
-					newgroup->code = result.second.get<std::string>("code");
+					std::string gid, name, code;
+
+					gid = newgroup->gid = result.second.get<std::string>("gid");
+					name = newgroup->name = result.second.get<std::string>("name");
+					code = newgroup->code = result.second.get<std::string>("code");
 
 					if(newgroup->gid[0] == '-')
 					{
@@ -127,6 +129,8 @@ public:
 						BOOST_LOG_TRIVIAL(error) <<  "qqGroup get error" << std::endl;
 
 					}else{
+
+						m_webqq->m_buddy_mgr.update_group_list(gid, name, code);
 
 						if (m_webqq->m_groups.find(newgroup->gid)!= m_webqq->m_groups.end())
 						{

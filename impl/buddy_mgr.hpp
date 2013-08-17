@@ -32,6 +32,37 @@ public:
 		db_initialize();
 	}
 
+	void update_group_list(std::string gid, std::string name, std::string code)
+	{
+		using namespace soci;
+
+		std::string qqnum, owner;
+
+		soci::indicator qqnum_indicator, owner_indicator;
+
+		transaction trans(m_sql);
+
+		m_sql << "select qqnum, owner from groups where group_code= :group_code"
+			, into(qqnum, qqnum_indicator), into(owner, owner_indicator), use(code);
+
+		if (qqnum_indicator == i_null)
+			qqnum = "";
+
+		if (owner_indicator == i_null)
+			owner = "";
+
+		m_sql << "delete from groups where gid = :gid or group_code = :group_code "
+			, use(gid), use(code);
+
+		m_sql << "insert into groups "
+			"(gid, group_code, name, qqnum, owner, generate_time)"
+				" values "
+			"(:gid, :group_code, :name, :qqnum, :owner, datetime('now') )"
+			, use(gid), use(code), use(name), use(qqnum), use(owner);
+
+		trans.commit();
+	}
+
 private:
 
 	void db_initialize()
@@ -43,8 +74,8 @@ private:
 				"`gid` TEXT not null,"
 				"`group_code` TEXT not null,"
 				"`name` TEXT not null, "
-				"`qqnum` TEXT not null, "
-				"`owner` TEXT not null, "
+				"`qqnum` TEXT, "
+				"`owner` TEXT, "
 				// last time that this group information retrived from TX
 				// libwebqq will remove outdated one
 				"`generate_time` TEXT not null"
