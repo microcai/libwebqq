@@ -35,12 +35,12 @@ namespace webqq{
 webqq::webqq( boost::asio::io_service& asio_service, std::string qqnum, std::string passwd)
 {
 	impl = boost::make_shared<qqimpl::WebQQ>( boost::ref(asio_service), qqnum, passwd);
-	impl->start_schedule_work();
+	impl->start();
 }
 
 webqq::~webqq()
 {
-	impl->stop_schedule_work();
+	impl->stop();
 }
 
 void webqq::on_verify_code( boost::function< void ( std::string ) >  cb )

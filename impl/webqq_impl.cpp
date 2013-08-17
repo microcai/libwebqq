@@ -394,7 +394,7 @@ static group_auto_refresh_op group_auto_refresh(boost::shared_ptr<WebQQ> _webqq)
 	return group_auto_refresh_op(_webqq);
 }
 
-void WebQQ::start_schedule_work()
+void WebQQ::start()
 {
 	internal_loop(get_ioservice(), shared_from_this());
 
@@ -419,10 +419,10 @@ void WebQQ::start_schedule_work()
 	// 开启个程序去清理过期 cache_* 文件
 	// webqq 每天登录 uid 变化,  而不是每次都变化.
 	// 所以 cache 有效期只有一天.
-	clean_cache(get_ioservice());
+	start_clean_cache(shared_from_this());
 }
 
-void WebQQ::stop_schedule_work()
+void WebQQ::stop()
 {
 	m_group_message_queue.cancele();
 	m_group_refresh_queue.cancele();

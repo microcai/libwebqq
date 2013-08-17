@@ -102,9 +102,9 @@ public:
 	WebQQ( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd);
 
 	// called by webqq.hpp
-	void start_schedule_work();
+	void start();
 	// called by webqq.hpp distructor
-	void stop_schedule_work();
+	void stop();
 	
 	// change status. This is the last step of login process.
 	void change_status(LWQQ_STATUS status, boost::function<void (boost::system::error_code) > handler);
@@ -213,6 +213,8 @@ public:
 		// 列队里数据解释
 		std::list<group_refresh_queue_type>
 	> m_group_refresh_queue;
+
+	soci::session	m_storage;
 };
 
 };
