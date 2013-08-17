@@ -35,5 +35,35 @@ void buddy_mgr::update_group_list(std::string gid, std::string name, std::string
 	trans.commit();
 }
 
+bool buddy_mgr::group_has_qqnum(std::string code)
+{
+	using namespace soci;
+
+	std::string qqnum;
+	soci::indicator qqnum_indicator;
+
+	m_sql << "select qqnum from groups where group_code = :group_code"
+		, into(qqnum, qqnum_indicator), use(code);
+
+	if (qqnum_indicator == soci::i_ok)
+	{
+		return  !qqnum.empty();
+	}
+
+	return false;
+}
+
+void buddy_mgr::map_group_qqnum(std::string code, std::string qqnum)
+{
+	using namespace soci;
+
+	transaction trans(m_sql);
+
+	m_sql << "update groups set qqnum = :qqnum where group_code = :group_code "
+		, use(qqnum), use(code);
+
+	trans.commit();
+}
+
 } // nsmespace qqimpl
 } // namespace webqq

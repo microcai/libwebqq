@@ -34,6 +34,9 @@ public:
 
 	void update_group_list(std::string gid, std::string name, std::string code);
 
+	bool group_has_qqnum(std::string code);
+	void map_group_qqnum(std::string code, std::string qqnum);
+
 private:
 
 	void db_initialize()

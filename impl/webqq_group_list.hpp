@@ -163,19 +163,27 @@ public:
 
 	void operator()(boost::system::error_code ec)
 	{
-		using namespace boost::asio::detail;
 		BOOST_ASIO_CORO_REENTER(this)
 		{
 			// 先更新群的 QQ 号.
 			for (iter = m_webqq->m_groups.begin(); iter != m_webqq->m_groups.end(); ++iter)
 			{
-				BOOST_ASIO_CORO_YIELD
-					m_webqq->update_group_qqnumber(iter->second, *this);
+				if (!m_webqq->m_buddy_mgr.group_has_qqnum(iter->second->code))
+				{
+					BOOST_ASIO_CORO_YIELD
+						m_webqq->update_group_qqnumber(iter->second, *this);
 
-				BOOST_ASIO_CORO_YIELD
-					boost::delayedcallms(m_webqq->get_ioservice(), 600, bind_handler(*this, ec));
+					if (!ec)
+						m_webqq->m_buddy_mgr.map_group_qqnum(
+							iter->second->code, iter->second->qqnum);
+
+					BOOST_ASIO_CORO_YIELD boost::delayedcallms(
+						m_webqq->get_ioservice(), 600,
+						boost::bind<void>(*this, ec)
+					);
+				}
 			}
-			m_webqq->get_ioservice().post(bind_handler(m_handler, ec));
+			m_webqq->get_ioservice().post(boost::bind<void>(m_handler, ec));
 		}
 	}
 
