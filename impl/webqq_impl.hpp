@@ -154,9 +154,6 @@ public:
 
 	void get_verify_image( std::string vcimgid, webqq::webqq_handler_string_t handler);
 
-	void cb_group_member_process_json(pt::ptree	&jsonobj, boost::shared_ptr<qqGroup>);
-	void cb_group_member( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf>, boost::shared_ptr<qqGroup>, webqq::webqq_handler_t handler);
-
 	void cb_newbee_group_join(qqGroup_ptr group, std::string uid);
 
 	void cb_search_group(std::string, const boost::system::error_code& ec, read_streamptr stream,  boost::shared_ptr<boost::asio::streambuf> buf, webqq::search_group_handler handler);

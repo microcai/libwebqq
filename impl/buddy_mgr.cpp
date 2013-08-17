@@ -1,5 +1,6 @@
 
 #include "buddy_mgr.hpp"
+#include <boost/smart_ptr/make_shared_object.hpp>
 
 namespace webqq {
 namespace qqimpl {
@@ -61,6 +62,50 @@ void buddy_mgr::map_group_qqnum(std::string code, std::string qqnum)
 
 	m_sql << "update groups set qqnum = :qqnum where group_code = :group_code "
 		, use(qqnum), use(code);
+
+	trans.commit();
+}
+
+
+
+qqGroup_ptr buddy_mgr::get_group_by_gid(std::string gid)
+{
+	qqGroup group;
+
+	m_sql << "select gid, group_code, name, qqnum, owner from groups where gid = :gid"
+	  , soci::into(group.gid)
+	  , soci::into(group.code)
+	  , soci::into(group.name)
+	  , soci::into(group.qqnum)
+	  , soci::into(group.owner)
+	  , soci::use(gid);
+
+	return boost::make_shared<qqGroup>(group);
+}
+
+qqGroup_ptr buddy_mgr::get_group_by_qq(std::string qqnum)
+{
+	qqGroup group;
+
+	m_sql << "select gid, group_code, name, qqnum, owner from groups where qqnum = :qqnum"
+	  , soci::into(group.gid)
+	  , soci::into(group.code)
+	  , soci::into(group.name)
+	  , soci::into(group.qqnum)
+	  , soci::into(group.owner)
+	  , soci::use(qqnum);
+
+	return boost::make_shared<qqGroup>(group);
+}
+
+void buddy_mgr::set_group_owner(std::string gid, std::string owner)
+{
+	using namespace soci;
+
+	transaction trans(m_sql);
+
+	m_sql << "update groups set owner = :owner where gid = :gid "
+		, use(owner), use(gid);
 
 	trans.commit();
 }

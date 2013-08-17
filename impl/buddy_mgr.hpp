@@ -16,6 +16,8 @@
 #include <boost-gregorian-date.h>
 #include <soci.h>
 
+#include "../webqq.hpp"
+
 namespace webqq {
 namespace qqimpl {
 namespace detail {
@@ -36,6 +38,11 @@ public:
 
 	bool group_has_qqnum(std::string code);
 	void map_group_qqnum(std::string code, std::string qqnum);
+
+	qqGroup_ptr get_group_by_gid(std::string gid);
+	qqGroup_ptr get_group_by_qq(std::string qqnum);
+
+	void set_group_owner(std::string gid, std::string owner);
 
 private:
 
