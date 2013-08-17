@@ -151,12 +151,13 @@ qqBuddy_ptr buddy_mgr::get_buddy_by_uin(std::string uid)
 	std::string uin, nick, card, qqnum;
 	unsigned int mflag;
 
-	m_sql << "select uid, nick, card, mflag, qqnum from group_buddies where uid=:uid"
-		, into(uin)
-		, into(nick)
-		, into(card)
-		, into(mflag)
-		, into(qqnum)
+	indicator nick_indicator, card_indicator, mflag_indicator, qqnum_indicator;
+
+	m_sql << "select nick, card, mflag, qqnum from group_buddies where uid=:uid"
+		, into(nick, nick_indicator)
+		, into(card, card_indicator)
+		, into(mflag, mflag_indicator)
+		, into(qqnum, qqnum_indicator)
 		, use(uid);
 
 	return boost::make_shared<qqBuddy>(uin, nick, card, mflag, qqnum);
