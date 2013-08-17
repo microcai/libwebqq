@@ -28,6 +28,8 @@ public:
 	buddy_mgr(std::string dbname  = ":memory:")
 	{
 		m_sql.open(soci::sqlite3, dbname);
+
+		db_initialize();
 	}
 
 private:
