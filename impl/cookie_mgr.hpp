@@ -391,6 +391,7 @@ class cookie_store : boost::noncopyable
 
 	void check_db_initialized()
 	{
+		soci::transaction trans(db);
 		db <<
 			"create table if not exists cookies ("
 				"`domain` TEXT not null,"
@@ -399,6 +400,7 @@ class cookie_store : boost::noncopyable
 				"`value` TEXT not null default \"\", "
 				"`expiration` TEXT not null default \"session\""
 			");";
+		trans.commit();
 	}
 
 	// 以 set-cookie: 行的字符串设置 cookie
@@ -562,9 +564,31 @@ public:
 		std::vector<soci::indicator> inds_names;
 		std::vector<soci::indicator> inds_values;
 
-		std::string sql = boost::str(boost::format("select name, value from cookies where %s and %s") % build_domain_conditions(url.host()) % build_path_conditions(url.path()) );
+		bool errored = false, must_top = false;
 
-		db << sql , soci::into(names, inds_names), soci::into(values, inds_values) ;
+		do {
+			try
+			{
+
+				std::string sql = boost::str(boost::format("select name, value from cookies where %s and %s") % build_domain_conditions(url.host()) % build_path_conditions(url.path()));
+
+				db << sql , soci::into(names, inds_names), soci::into(values, inds_values) ;
+
+				must_top = true;
+			}
+			catch (const soci::soci_error& err)
+			{
+				if (errored)
+					must_top = true;
+
+				errored = true;
+
+				if ( errored && must_top)
+					throw;
+				else
+					db.reconnect();
+			}
+		} while (!must_top);
 
 		return cookie(names, values);
 	}
@@ -617,10 +641,12 @@ public:
 	// 详细参数直接设置一个 cookie
 	void save_cookie(std::string domain, std::string path, std::string name, std::string value, std::string expiration)
 	{
+		db.reconnect();
 		using namespace soci;
 		transaction transac(db);
 
-		db<< "delete from cookies where domain = :domain and path = :path and name = :name" ,  use(domain), use(path), use(name);
+		db<< "delete from cookies where domain = :domain and path = :path and name = :name"
+			, use(domain), use(path), use(name);
 
 		db << "insert into cookies (domain, path, name, value, expiration) values ( :name  , :value  , :domain, :path , :expiration)"
 			, use(domain), use(path), use(name), use(value), use(expiration) ;
@@ -630,8 +656,10 @@ public:
 
 	void delete_cookie(std::string domain, std::string path, std::string name)
 	{
+	 	db.reconnect();
 		using namespace soci;
-		db<< "delete from cookies where domain = :domain and path = :path and name = :name" ,  use(domain), use(path), use(name);
+		db<< "delete from cookies where domain = :domain and path = :path and name = :name"
+		  , use(domain), use(path), use(name);
 	}
 };
 
