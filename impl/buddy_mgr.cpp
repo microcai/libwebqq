@@ -215,5 +215,53 @@ void buddy_mgr::buddy_update_card(std::string uid, std::string card)
 	trans.commit();
 }
 
+/**
+ * @brief 删除过时的一些信息
+ *
+ * @return void
+ */
+void buddy_mgr::clean_out_outdated()
+{
+	// what is 过时 ?
+	// 当然是说时间超过2天的，　以及，失去　gid　衔接的　group_buddies
+	soci::transaction transaction(m_sql);
+
+	m_sql << "delete from groups where datetime(generate_time) < datetime('now', '-2 days');";
+
+	m_sql << "delete from group_buddies where gid not in (select gid from groups);";
+
+	transaction.commit();
+}
+
+void buddy_mgr::db_initialize()
+{
+	soci::transaction trans(m_sql);
+	// 初始化存储数据库
+	m_sql << ""
+		  "create table if not exists groups ( "
+		  "`gid` TEXT not null,"
+		  "`group_code` TEXT not null,"
+		  "`name` TEXT not null, "
+		  "`qqnum` TEXT, "
+		  "`owner` TEXT, "
+		  // last time that this group information retrived from TX
+		  // libwebqq will remove outdated one
+		  "`generate_time` TEXT not null"
+		  ");";
+
+	m_sql << ""
+		  "create table if not exists group_buddies ( "
+		  "`gid` TEXT not null,"
+		  "`uid` TEXT not null  UNIQUE ON CONFLICT replace,"
+		  "`nick` TEXT,"
+		  "`card` TEXT,"
+		  "`mflag` INTEGER,"
+		  "`qqnum` TEXT"
+		  ");";
+
+	trans.commit();
+}
+
+
 } // nsmespace qqimpl
 } // namespace webqq

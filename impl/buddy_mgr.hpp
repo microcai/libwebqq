@@ -56,36 +56,10 @@ public:
 	void buddy_update_mflag(std::string uid,  unsigned int mflag);
 	void buddy_update_card(std::string uid, std::string card);
 
+	void clean_out_outdated();
 private:
 
-	void db_initialize()
-	{
-		soci::transaction trans(m_sql);
-		// 初始化存储数据库
-		m_sql << ""
-			"create table if not exists groups ( "
-				"`gid` TEXT not null,"
-				"`group_code` TEXT not null,"
-				"`name` TEXT not null, "
-				"`qqnum` TEXT, "
-				"`owner` TEXT, "
-				// last time that this group information retrived from TX
-				// libwebqq will remove outdated one
-				"`generate_time` TEXT not null"
-			");";
-
-		m_sql << ""
-			"create table if not exists group_buddies ( "
-				"`gid` TEXT not null,"
-				"`uid` TEXT not null  UNIQUE ON CONFLICT replace,"
-				"`nick` TEXT,"
-				"`card` TEXT,"
-				"`mflag` INTEGER,"
-				"`qqnum` TEXT"
-			");";
-
-		trans.commit();
-	}
+	void db_initialize();
 
 private:
 	soci::session	m_sql;
