@@ -201,9 +201,7 @@ public:
 
 	typedef boost::tuple<
 		webqq::webqq_handler_t  // 更新回调，如果push的那个数据被更新到了就会回调.
-		, int   // 更新类型.
 		, std::string   // 群 QQ 号  为空表示更新所有的群.
-		, std::string   // new user id, 如果是 type = 2 的话
 	> group_refresh_queue_type;
 
 	// 用于重新刷新群列表的异步命令列队

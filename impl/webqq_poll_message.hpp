@@ -202,9 +202,7 @@ public:
 							boost::make_tuple(
 								// callback
 								boost::bind(&WebQQ::cb_newbee_group_join, m_webqq, group, newuseruid),
-								1,
-								groupnumber,
-								newuseruid
+								groupnumber
 							)
 						);
 					}else if(result->second.get<std::wstring>( L"value.type" ) == L"group_leave")

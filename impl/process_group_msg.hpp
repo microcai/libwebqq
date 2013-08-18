@@ -72,6 +72,24 @@ struct process_group_message_op : boost::asio::coroutine
 
 		BOOST_ASIO_CORO_REENTER(this)
 		{
+
+			if (!m_webqq->m_buddy_mgr.get_group_by_gid(group_code))
+			{
+				// 群号未知! 需要重新登录.
+				ec = error::make_error_code(error::poll_failed_need_refresh);
+			}
+			else
+			{
+				if (!m_webqq->m_buddy_mgr.get_buddy_by_uin(who))
+				{
+					// 新人? TODO 需要刷新群信息.
+					BOOST_ASIO_CORO_YIELD m_webqq->update_group_member(
+						m_webqq->m_buddy_mgr.get_group_by_gid(group_code),
+						boost::bind<void>(*this, _1, url)
+					);
+				}
+			}
+
 			m_iterator = m_jstree->get_child( L"value.content" ).begin();
 			m_iterator_end = m_jstree->get_child( L"value.content" ).end();
 

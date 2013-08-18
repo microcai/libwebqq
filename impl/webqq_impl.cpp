@@ -296,7 +296,7 @@ public:
 	// pop call back
 	void operator()(boost::system::error_code ec, WebQQ::group_refresh_queue_type v)
 	{
-		int type;
+		std::string gid;
 		// 检查最后一次同步时间.
 		boost::posix_time::ptime curtime = boost::posix_time::from_time_t(std::time(NULL));
 
@@ -317,10 +317,10 @@ public:
 			// good, 现在可以更新了.
 
 			// 先检查 type
-			type = v.get<1>();
+			gid = v.get<1>();
 
 
-			if (type == 0) // 更新全部.
+			if (gid.empty()) // 更新全部.
 			{
 				BOOST_ASIO_CORO_YIELD m_webqq->update_group_list(
 					boost::bind<void>(*this, _1, v)
@@ -351,31 +351,31 @@ public:
 // 					}
 				}
 			}
-			else if (type == 1)
+			else
 			{
-				if (m_webqq->get_Group_by_gid(v.get<2>()))
-				{
-					// 更新特定的 group 即可！
-					BOOST_ASIO_CORO_YIELD m_webqq->update_group_member(
-								m_webqq->get_Group_by_gid(v.get<2>()),
-								boost::bind<void>(*this, _1, v)
+
+				// 更新特定的 group 即可！
+				BOOST_ASIO_CORO_YIELD qqimpl::update_group_member(
+					m_webqq,
+					m_webqq->m_buddy_mgr.get_group_by_gid(gid),
+					boost::bind<void>(*this, _1, v)
+				);
+
+				if (ec){
+					// 应该是群GID都变了，重新刷新
+					m_webqq->m_group_refresh_queue.push(
+						boost::make_tuple(
+							webqq::webqq_handler_t(),
+							std::string()
+						)
 					);
-					if (ec){
-						// 应该是群GID都变了，重新刷新
-						m_webqq->m_group_refresh_queue.push(
-							boost::make_tuple(
-								webqq::webqq_handler_t(),
-								0,
-								std::string(),
-								std::string()
-							)
-						);
-					}
 				}
+
 			}
 
 			// 更新完毕
-			if (v.get<0>()){
+			if (v.get<0>())
+			{
 				v.get<0>()(ec);
 			}
 
@@ -459,7 +459,9 @@ void WebQQ::update_group_qqnumber(boost::shared_ptr<qqGroup> group, webqq::webqq
 
 void WebQQ::update_group_member(boost::shared_ptr<qqGroup> group, webqq::webqq_handler_t handler)
 {
-	qqimpl::update_group_member(shared_from_this(), group, handler);
+	m_group_refresh_queue.push(
+		boost::make_tuple(handler, group->gid)
+	);
 }
 
 class SYMBOL_HIDDEN buddy_uin_to_qqnumber {
