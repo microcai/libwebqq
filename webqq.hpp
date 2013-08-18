@@ -162,14 +162,12 @@ public:
 	// 新人入群通知. 注意, 只有管理员才能获得.
 	void on_group_newbee(boost::function<void (qqGroup_ptr, qqBuddy_ptr)> cb);
 
-	void on_bad_vc(boost::function<void()> reporter);
-
 	bool is_online();
 
 	void on_verify_code( boost::function<void ( std::string )> );
 	// login with vc, call this if you got signeedvc signal.
 	// in signeedvc signal, you can retreve images from server.
-	void login_withvc( std::string vccode );
+	void feed_vc( std::string vccode, boost::function<void()> bad_vcreporter);
 
 	void send_group_message( std::string group, std::string msg, boost::function<void ( const boost::system::error_code& ec )> donecb );
 	void send_group_message( qqGroup &  group, std::string msg, boost::function<void ( const boost::system::error_code& ec )> donecb );
