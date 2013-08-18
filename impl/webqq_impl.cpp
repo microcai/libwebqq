@@ -407,7 +407,8 @@ void WebQQ::start()
 	// 开启个程序去清理过期 cache_* 文件
 	// webqq 每天登录 uid 变化,  而不是每次都变化.
 	// 所以 cache 有效期只有一天.
-	start_clean_cache(shared_from_this());
+	if (boost::filesystem::exists("cache"))
+		start_clean_cache(shared_from_this());
 
 	webqq_keepalive(shared_from_this());
 }
