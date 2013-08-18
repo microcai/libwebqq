@@ -153,7 +153,7 @@ public:
 // 	typedef boost::function<void(boost::system::error_code )> webqq_handler_t;
 
 public:
-	webqq( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd);
+	webqq(boost::asio::io_service & asioservice, std::string qqnum, std::string passwd, bool no_persistent_db=false);
 	~webqq();
 	// 设置受到群消息的回调.
 	void on_group_msg( boost::function<void ( const std::string group_code, const std::string who, const std::vector<qqMsg> & )> cb );

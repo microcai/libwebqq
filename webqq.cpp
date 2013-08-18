@@ -32,9 +32,9 @@ namespace fs = boost::filesystem;
 
 namespace webqq{
 
-webqq::webqq( boost::asio::io_service& asio_service, std::string qqnum, std::string passwd)
+webqq::webqq( boost::asio::io_service& asio_service, std::string qqnum, std::string passwd, bool no_persistent_db)
 {
-	impl = boost::make_shared<qqimpl::WebQQ>( boost::ref(asio_service), qqnum, passwd);
+	impl = boost::make_shared<qqimpl::WebQQ>(boost::ref(asio_service), qqnum, passwd, no_persistent_db);
 	impl->start();
 }
 

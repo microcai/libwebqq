@@ -91,13 +91,13 @@ static pt::wptree json_parse( const wchar_t * doc )
 
 // build webqq and setup defaults
 WebQQ::WebQQ( boost::asio::io_service& _io_service,
-	std::string _qqnum, std::string _passwd)
+	std::string _qqnum, std::string _passwd, bool no_persistent_db)
 	: m_io_service( _io_service )
 	, m_qqnum( _qqnum )
 	, m_passwd( _passwd )
 	, m_status( LWQQ_STATUS_OFFLINE )
-	, m_cookie_mgr("webqq_persistent")
-	, m_buddy_mgr("webqq_persistent")
+	, m_cookie_mgr(no_persistent_db? ":memory:": "webqq_persistent")
+	, m_buddy_mgr(no_persistent_db? "buddy_cache": "webqq_persistent")
 	, m_vc_queue(_io_service, 1)
 	, m_group_message_queue(_io_service, 20) // 最多保留最后的20条未发送消息.
 	, m_group_refresh_queue(_io_service)
@@ -116,9 +116,6 @@ WebQQ::WebQQ( boost::asio::io_service& _io_service,
 #endif
 
 	init_face_map();
-
-	if (!boost::filesystem::exists("cache"))
-		boost::filesystem::create_directories("cache");
 }
 
 /*
@@ -130,9 +127,6 @@ public:
 	internal_loop_op(boost::asio::io_service & io_service, boost::shared_ptr<WebQQ> _webqq)
 	  : m_io_service(io_service), m_webqq(_webqq)
 	{
-		firs_start = 0;
-// 		firs_start = 1;
-
 		// 读取 一些 cookie
 		cookie::cookie webqqcookie =
 			m_webqq->m_cookie_mgr.get_cookie("http://psession.qq.com/"); //.get_value("ptwebqq");
@@ -142,8 +136,10 @@ public:
 		m_webqq->m_psessionid = webqqcookie.get_value("psessionid");
 		m_webqq->m_clientid = webqqcookie.get_value("clientid");
 
+		firs_start = m_webqq->m_clientid.empty();
+
 		// TODO load 缓存的群组信息.
-		m_webqq->m_status = LWQQ_STATUS_ONLINE;
+		m_webqq->m_status = firs_start==0? LWQQ_STATUS_ONLINE:LWQQ_STATUS_OFFLINE;
 
 		avloop_idle_post(
 			m_io_service,
@@ -162,7 +158,9 @@ public:
 
 		BOOST_ASIO_CORO_REENTER(this)
 		{
-
+		if (firs_start==0) {
+			BOOST_LOG_TRIVIAL(notice) << "use cached cookie to avoid login...";
+		}
 
 		for (;m_webqq->m_status!= LWQQ_STATUS_QUITTING;){
 

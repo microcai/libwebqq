@@ -100,7 +100,7 @@ class SYMBOL_HIDDEN WebQQ  : public boost::enable_shared_from_this<WebQQ>
 public:
 	using boost::enable_shared_from_this<WebQQ>::shared_from_this;
 public:
-	WebQQ( boost::asio::io_service & asioservice, std::string qqnum, std::string passwd);
+	WebQQ(boost::asio::io_service & asioservice, std::string qqnum, std::string passwd, bool no_persistent_db=false);
 
 	// called by webqq.hpp
 	void start();
