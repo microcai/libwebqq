@@ -290,7 +290,7 @@ public:
 			boost::bind<void>(*this, _1, _2)
 		);
 
-		m_last_sync = boost::posix_time::from_time_t(std::time(NULL));
+		m_last_sync = boost::posix_time::from_time_t(0);
 	}
 
 	// pop call back
@@ -302,17 +302,6 @@ public:
 
 		BOOST_ASIO_CORO_REENTER(this)
 		{for (;m_webqq->m_status!= LWQQ_STATUS_QUITTING;){
-
-			// 需要最少休眠 5min 才能再次发起一次，否则会被 TX 拉黑
-			if (boost::posix_time::time_duration(curtime - m_last_sync).minutes() < 5)
-			{
-
-				BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
-					m_webqq->get_ioservice(),
-					300 - boost::posix_time::time_duration(curtime - m_last_sync).seconds(),
-					boost::asio::detail::bind_handler(*this, ec, v)
-				);
-			}
 
 			// good, 现在可以更新了.
 
@@ -363,7 +352,6 @@ public:
 			}
 			else
 			{
-
 				// 更新特定的 group 即可！
 				BOOST_ASIO_CORO_YIELD qqimpl::update_group_member(
 					m_webqq,
