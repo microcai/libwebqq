@@ -159,7 +159,7 @@ public:
 		BOOST_ASIO_CORO_REENTER(this)
 		{
 		if (firs_start==0) {
-			BOOST_LOG_TRIVIAL(notice) << "use cached cookie to avoid login...";
+			BOOST_LOG_TRIVIAL(info) << "use cached cookie to avoid login...";
 		}
 
 		for (;m_webqq->m_status!= LWQQ_STATUS_QUITTING;){
