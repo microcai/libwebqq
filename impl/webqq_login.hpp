@@ -99,9 +99,10 @@ inline std::string generate_clientid()
 }
 
 // qq 登录办法-验证码登录
+template<class Handler>
 class SYMBOL_HIDDEN login_vc_op : boost::asio::coroutine{
 public:
-	login_vc_op(boost::shared_ptr<qqimpl::WebQQ> webqq, std::string _vccode, webqq::webqq_handler_t handler)
+	login_vc_op(boost::shared_ptr<qqimpl::WebQQ> webqq, std::string _vccode, Handler handler)
 		: m_webqq(webqq), vccode(_vccode), m_handler(handler)
 	{
 		std::string md5 = webqq_password_encode(m_webqq->m_passwd, vccode, m_webqq->m_verifycode.uin);
@@ -322,7 +323,7 @@ private:
 
 private:
 	boost::shared_ptr<qqimpl::WebQQ> m_webqq;
-	webqq::webqq_handler_t m_handler;
+	Handler m_handler;
 	std::string m_next_url;
 
 	read_streamptr m_stream;
@@ -334,12 +335,20 @@ private:
 	grouplist::iterator iter;
 };
 
-}
-
-detail::login_vc_op make_login_op(boost::shared_ptr<qqimpl::WebQQ> webqq, std::string _vccode, webqq::webqq_handler_t handler)
+template<class Handler>
+login_vc_op<Handler> make_async_login_vc_op(boost::shared_ptr<qqimpl::WebQQ> webqq, std::string _vccode, Handler handler)
 {
-	return detail::login_vc_op(webqq, _vccode, handler);
+	return login_vc_op<Handler>(webqq, _vccode, handler);
 }
 
+} // namespace detail
+
+
+template<class Handler>
+void async_login(boost::shared_ptr<qqimpl::WebQQ> webqq, std::string _vccode, Handler handler)
+{
+	detail::make_async_login_vc_op(webqq, _vccode, handler);
 }
-}
+
+} // namespace qqimpl
+} // namespace webqq
