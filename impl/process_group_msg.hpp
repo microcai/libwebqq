@@ -87,6 +87,12 @@ struct process_group_message_op : boost::asio::coroutine
 						m_webqq->m_buddy_mgr.get_group_by_gid(group_code),
 						boost::bind<void>(*this, _1, url)
 					);
+
+					if (m_webqq->m_buddy_mgr.get_buddy_by_uin(who))
+						m_webqq->signewbuddy(
+							m_webqq->m_buddy_mgr.get_group_by_gid(group_code),
+							m_webqq->m_buddy_mgr.get_buddy_by_uin(who)
+						);
 				}
 			}
 
