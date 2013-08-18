@@ -303,15 +303,15 @@ public:
 		BOOST_ASIO_CORO_REENTER(this)
 		{for (;m_webqq->m_status!= LWQQ_STATUS_QUITTING;){
 
-			if (boost::posix_time::time_duration(curtime - m_last_sync).minutes() <= 30)
+			// 需要最少休眠 5min 才能再次发起一次，否则会被 TX 拉黑
+			if (boost::posix_time::time_duration(curtime - m_last_sync).minutes() < 5)
 			{
-				// 需要最少休眠 30min 才能再次发起一次，否则会被 TX 拉黑
 
-				BOOST_ASIO_CORO_YIELD
-					boost::delayedcallsec(m_webqq->get_ioservice(),
-						boost::posix_time::time_duration(curtime - m_last_sync).seconds(),
-						boost::asio::detail::bind_handler(*this, ec, v)
-					);
+				BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
+					m_webqq->get_ioservice(),
+					300 - boost::posix_time::time_duration(curtime - m_last_sync).seconds(),
+					boost::asio::detail::bind_handler(*this, ec, v)
+				);
 			}
 
 			// good, 现在可以更新了.
@@ -322,6 +322,16 @@ public:
 
 			if (gid.empty()) // 更新全部.
 			{
+				// 需要最少休眠 30min 才能再次发起一次，否则会被 TX 拉黑
+				if (boost::posix_time::time_duration(curtime - m_last_sync).minutes() <= 30)
+				{
+					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
+						m_webqq->get_ioservice(),
+						1800 - boost::posix_time::time_duration(curtime - m_last_sync).seconds(),
+						boost::asio::detail::bind_handler(*this, ec, v)
+					);
+				}
+
 				BOOST_ASIO_CORO_YIELD m_webqq->update_group_list(
 					boost::bind<void>(*this, _1, v)
 				);
