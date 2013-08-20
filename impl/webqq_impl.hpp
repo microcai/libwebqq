@@ -110,8 +110,6 @@ public:
 	// change status. This is the last step of login process.
 	void change_status(LWQQ_STATUS status, boost::function<void (boost::system::error_code) > handler);
 
-	void async_poll_message(webqq::webqq_handler_t handler);
-
 	typedef boost::function<void ( const boost::system::error_code& ec )> send_group_message_cb;
 	void send_group_message( std::string group, std::string msg, send_group_message_cb donecb );
 	void send_group_message( qqGroup &  group, std::string msg, send_group_message_cb donecb );

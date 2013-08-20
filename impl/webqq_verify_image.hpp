@@ -82,6 +82,6 @@ private:
 };
 
 
-}
-}
-}
+} // namespace detail
+} // namespace qqimpl
+} // namespace webqq

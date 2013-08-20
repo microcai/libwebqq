@@ -48,7 +48,6 @@ namespace js = boost::property_tree::json_parser;
 #include "webqq_verify_image.hpp"
 #include "webqq_group_list.hpp"
 #include "webqq_group_member.hpp"
-#include "webqq_poll_message.hpp"
 #include "webqq_keepalive.hpp"
 #include "group_message_sender.hpp"
 
@@ -264,13 +263,6 @@ void WebQQ::stop()
 void  WebQQ::change_status(LWQQ_STATUS status, boost::function<void (boost::system::error_code) > handler)
 {
 	async_change_status(shared_from_this(), status, handler);
-}
-
-void WebQQ::async_poll_message(webqq::webqq_handler_t handler)
-{
-	// pull one message, if message processed correctly, ec = 0;
-	// if not, report the errors
-	poll_message(shared_from_this(), handler);
 }
 
 void WebQQ::send_group_message( qqGroup& group, std::string msg, send_group_message_cb donecb )

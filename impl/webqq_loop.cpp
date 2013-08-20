@@ -7,7 +7,7 @@
 #include "webqq_impl.hpp"
 #include "webqq_check_login.hpp"
 #include "webqq_login.hpp"
-
+#include "webqq_poll_message.hpp"
 #include "webqq_loop.hpp"
 
 namespace webqq {
@@ -70,7 +70,7 @@ public:
 				// TODO, 每 12个小时刷新群列表.
 
 				// 获取一次消息。
-				BOOST_ASIO_CORO_YIELD m_webqq->async_poll_message(
+				BOOST_ASIO_CORO_YIELD async_poll_message(m_webqq,
 					boost::bind<void>(*this, _1, std::string())
 				);
 
