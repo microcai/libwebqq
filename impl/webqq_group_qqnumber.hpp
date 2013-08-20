@@ -108,10 +108,6 @@ public:
 			if( jsonobj.get<int>( "retcode" ) == 0 ) {
 				m_this_group->qqnum = jsonobj.get<std::string>( "result.account" );
 				BOOST_LOG_TRIVIAL(debug) <<  "qq number of group " <<  console_out_str(m_this_group->name) << " is " <<  m_this_group->qqnum;
-				// 写缓存
-				pt::json_parser::write_json(std::string("cache/group_qqnumber") + m_this_group->gid, jsonobj);
-				//start polling messages, 2 connections!
-				BOOST_LOG_TRIVIAL(info) << "start polling messages";
 
 				m_webqq->siggroupnumber(m_this_group);
 
@@ -125,22 +121,8 @@ public:
 		} catch( const pt::ptree_error & jserr ) {
 		}
 
-		try{
-		// 读取缓存
-			pt::json_parser::read_json(std::string("cache/group_qqnumber") + m_this_group->gid, jsonobj);
-
-			m_this_group->qqnum = jsonobj.get<std::string>( "result.account" );
-			BOOST_LOG_TRIVIAL(debug) <<  "(cached) qq number of group" <<  console_out_str(m_this_group->name) << "is" <<  m_this_group->qqnum << std::endl;
-
-			// 向用户报告一个 group 出来了.
-			m_webqq->siggroupnumber(m_this_group);
-			m_handler(boost::system::error_code());
-			return;
-		}catch (const pt::ptree_error & jserr){
-			boost::delayedcallsec( m_webqq->get_ioservice() , 500 + boost::rand48()() % 100 ,
-				boost::bind( &make_update_group_qqnumber_op, m_webqq, m_this_group, m_handler)
-			);
-		}
+		// 返回错误
+		m_handler(error::make_error_code(error::failed_to_fetch_group_qqnumber));
 	}
 
 	void operator()(boost::system::error_code ec)
