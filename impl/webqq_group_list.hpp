@@ -47,10 +47,11 @@ namespace pt = boost::property_tree;
 #include "webqq_impl.hpp"
 #include "constant.hpp"
 #include "lwqq_status.hpp"
+#include "webqq_group_qqnumber.hpp"
 
-namespace webqq{
-namespace qqimpl{
-namespace detail{
+namespace webqq {
+namespace qqimpl {
+namespace detail {
 
 static std::string create_post_data( std::string vfwebqq )
 {
@@ -170,8 +171,9 @@ public:
 			{
 				if (!m_webqq->m_buddy_mgr.group_has_qqnum(iter->second->code))
 				{
-					BOOST_ASIO_CORO_YIELD
-						m_webqq->update_group_qqnumber(iter->second, *this);
+					BOOST_ASIO_CORO_YIELD async_update_group_qqnumber(
+						m_webqq,  iter->second, *this
+					);
 
 					if (!ec)
 						m_webqq->m_buddy_mgr.map_group_qqnum(
@@ -203,6 +205,6 @@ void update_group_list(boost::shared_ptr<WebQQ> webqq, Handler handler)
 	update_group_list_op::make_update_group_list_op(webqq, handler);
 }
 
-}
-}
-}
+} // namespace detail
+} // namespace qqimpl
+} // namespace webqq

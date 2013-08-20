@@ -43,6 +43,7 @@ namespace js = boost::property_tree::json_parser;
 #include "constant.hpp"
 
 #include "webqq_status.hpp"
+#include "webqq_group_qqnumber.hpp"
 
 namespace webqq {
 namespace qqimpl {
