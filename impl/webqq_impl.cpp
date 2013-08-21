@@ -322,23 +322,22 @@ public:
 		pt::ptree jsonobj;
 		std::iostream resultjson( buffer.get() );
 
-		try {
+		try
+		{
 			// 处理.
 			pt::json_parser::read_json( resultjson, jsonobj );
 			int retcode = jsonobj.get<int>("retcode");
-			if (retcode ==  99999 || retcode ==  100000 ){
-				_io_service.post( boost::asio::detail::bind_handler( handler, std::string("-1") ) );
-			}else{
+			if (retcode ==0)
+			{
 				std::string qqnum = jsonobj.get<std::string>( "result.account" );
-
-				_io_service.post( boost::asio::detail::bind_handler( handler, qqnum ) );
+				return _io_service.post(
+					boost::asio::detail::bind_handler(handler, qqnum)
+				);
 			}
-			return ;
-		} catch( const pt::json_parser_error & jserr ) {
-			BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : " << "parse json error : " <<  jserr.what();
-		} catch( const pt::ptree_bad_path & badpath ) {
+		}
+		catch(const pt::ptree_error & badpath)
+		{
 			BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : " <<  "bad path" <<  badpath.what();
-			js::write_json( std::cout, jsonobj );
 		}
 
 		_io_service.post( boost::asio::detail::bind_handler( handler, std::string( "" ) ) );
