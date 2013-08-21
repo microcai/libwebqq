@@ -210,7 +210,7 @@ void buddy_mgr::buddy_update_card(std::string uid, std::string card)
 	transaction trans(m_sql);
 
 	m_sql << "update group_buddies set card = :card where uid = :uid "
-		, use(uid), use(card);
+		, use(card), use(uid);
 
 	trans.commit();
 }
