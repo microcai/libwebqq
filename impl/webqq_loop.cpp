@@ -100,7 +100,8 @@ public:
 					}
 					firs_start = 1;
 
-				}else if ( ec == error::poll_failed_network_error )
+				}
+				else if ( ec == error::poll_failed_network_error )
 				{
 					// 网络错误计数 +1 遇到连续的多次错误就要重新登录.
 					m_counted_network_error ++;
@@ -108,8 +109,27 @@ public:
 					if (m_counted_network_error >= 3)
 					{
 						m_webqq->m_status = LWQQ_STATUS_OFFLINE;
+
+						BOOST_LOG_TRIVIAL(info)
+							<< "libwebqq: too many network errors, try relogin later...";
 					}
 					// 等待等待就好了，等待 12s
+					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(m_io_service, 12,
+						boost::asio::detail::bind_handler(*this, ec, str)
+					);
+				}
+				else if (ec == error::poll_failed_need_refresh)
+				{
+					// 重新刷新列表.
+
+					// 就目前来说, 重新登录是最快的实现办法
+					// TODO 使用更好的办法.
+					m_webqq->m_status = LWQQ_STATUS_OFFLINE;
+
+					BOOST_LOG_TRIVIAL(info)
+						<< "libwebqq: group uin changed, try relogin...";
+
+					// 等待等待就好了，等待 15s
 					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(m_io_service, 12,
 						boost::asio::detail::bind_handler(*this, ec, str)
 					);
