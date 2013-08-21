@@ -119,6 +119,9 @@ public:
 			}else if (retcode == 110)
 			{
 				ec = error::make_error_code(error::poll_failed_user_quit);
+			}else if (retcode == 100006)
+			{
+				ec = error::make_error_code(error::poll_failed_need_refresh);
 			}else if (retcode){
 				ec = error::make_error_code(error::poll_failed_unknow_ret_code);
 			}else

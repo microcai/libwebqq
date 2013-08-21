@@ -78,7 +78,6 @@ public:
 				{
 					BOOST_LOG_TRIVIAL(info)
 						<< "libwebqq: GOOD NEWS! The cached cookies accepted by TX!";
-					firs_start = 1;
 				}
 
 				// 判断消息处理结果
@@ -98,8 +97,6 @@ public:
 						BOOST_LOG_TRIVIAL(info)
 							<< "libwebqq: failed with last cookies, doing full login";
 					}
-					firs_start = 1;
-
 				}
 				else if ( ec == error::poll_failed_network_error )
 				{
@@ -141,6 +138,7 @@ public:
 					if (m_counted_network_error>0)
 						m_counted_network_error --;
 				}
+				firs_start = 1;
 			}
 
 			do {
