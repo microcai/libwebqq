@@ -132,6 +132,8 @@ public:
 	// pop call back
 	void operator()(boost::system::error_code ec, WebQQ::group_refresh_queue_type v)
 	{
+	 	if (ec == boost::system::errc::operation_canceled)
+			return;
 		std::string gid;
 		// 检查最后一次同步时间.
 		boost::posix_time::ptime curtime = boost::posix_time::from_time_t(std::time(NULL));

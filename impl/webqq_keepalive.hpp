@@ -48,13 +48,13 @@ private:
 		avhttp::async_read_body(*m_stream, url, * m_buffer, *this);
 	}
 public:
-	webqq_keepalive_op(boost::shared_ptr<qqimpl::WebQQ> webqq)
+	webqq_keepalive_op(const boost::shared_ptr<WebQQ>& webqq)
 		: m_webqq(webqq)
 	{
 		start_poll();
 	}
 
-	void operator()( const boost::system::error_code& ec, std::size_t bytes_transfered)
+	void operator()(const boost::system::error_code& ec, std::size_t bytes_transfered)
 	{
 		BOOST_ASIO_CORO_REENTER(this)
 		{for (;m_webqq->m_status!= LWQQ_STATUS_QUITTING;){
@@ -69,19 +69,19 @@ public:
 		}}
 	}
 private:
-	boost::shared_ptr<qqimpl::WebQQ> m_webqq;
+	boost::shared_ptr<WebQQ> m_webqq;
 	boost::shared_ptr<avhttp::http_stream> m_stream;
 	boost::shared_ptr<boost::asio::streambuf> m_buffer;
 };
 
-webqq_keepalive_op make_keepalive_op(boost::shared_ptr<qqimpl::WebQQ> webqq)
+webqq_keepalive_op make_keepalive_op(const boost::shared_ptr<WebQQ>& webqq)
 {
 	return webqq_keepalive_op(webqq);
 }
 
 } // nsmespace detail
 
-void webqq_keepalive(boost::shared_ptr<qqimpl::WebQQ> webqq)
+void webqq_keepalive(const boost::shared_ptr<WebQQ>& webqq)
 {
 	detail::make_keepalive_op(webqq);
 }

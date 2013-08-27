@@ -96,6 +96,8 @@ public:
 
 	void operator()(boost::system::error_code ec, std::size_t bytes_transfered, boost::tuple<std::string, std::string, WebQQ::send_group_message_cb> v)
 	{
+		if (ec == boost::system::errc::operation_canceled)
+			return;
 		BOOST_ASIO_CORO_REENTER(this)
 		{for (;m_webqq->m_status != LWQQ_STATUS_QUITTING;){
 			// 等待状态为登录.

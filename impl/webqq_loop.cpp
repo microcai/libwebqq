@@ -50,7 +50,7 @@ public:
 
 	void operator()(boost::system::error_code ec, std::string str)
 	{
-		if (ec == boost::asio::error::operation_aborted)
+		if (ec == boost::system::errc::operation_canceled)
 			return;
 
 		BOOST_ASIO_CORO_REENTER(this)

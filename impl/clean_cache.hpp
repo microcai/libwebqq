@@ -19,7 +19,7 @@ namespace detail {
 class clean_cache_op : boost::asio::coroutine
 {
 public:
-	clean_cache_op(boost::shared_ptr<WebQQ> webqq)
+	clean_cache_op(const boost::shared_ptr<WebQQ> & webqq)
 		: m_webqq(webqq)
 	{
 		boost::async_dir_walk(
@@ -90,7 +90,7 @@ private:
 	boost::shared_ptr<WebQQ> m_webqq;
 };
 
-clean_cache_op make_clean_cache_op(boost::shared_ptr<WebQQ> webqq)
+clean_cache_op make_clean_cache_op(const boost::shared_ptr<WebQQ>& webqq)
 {
 	return clean_cache_op(webqq);
 }
@@ -98,7 +98,7 @@ clean_cache_op make_clean_cache_op(boost::shared_ptr<WebQQ> webqq)
 } // namespace detail
 
 
-inline void start_clean_cache(boost::shared_ptr<WebQQ> webqq)
+inline void start_clean_cache(const boost::shared_ptr<WebQQ> & webqq)
 {
 	detail::make_clean_cache_op(webqq);
 }
