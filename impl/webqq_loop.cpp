@@ -36,7 +36,6 @@ public:
 
 		firs_start = m_webqq->m_clientid.empty();
 
-		// TODO load 缓存的群组信息.
 		m_webqq->m_status = firs_start==0? LWQQ_STATUS_ONLINE:LWQQ_STATUS_OFFLINE;
 
 		avloop_idle_post(
@@ -56,7 +55,8 @@ public:
 
 		BOOST_ASIO_CORO_REENTER(this)
 		{
-		if (firs_start==0) {
+		if (firs_start==0)
+		{
 			BOOST_LOG_TRIVIAL(info) << "libwebqq: use cached cookie to avoid login...";
 		}
 
