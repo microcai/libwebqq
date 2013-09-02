@@ -44,10 +44,8 @@ namespace js = boost::property_tree::json_parser;
 
 #include "utf8.hpp"
 #include "webqq_status.hpp"
-#include "clean_cache.hpp"
 #include "webqq_verify_image.hpp"
 #include "webqq_group_list.hpp"
-#include "webqq_group_member.hpp"
 #include "webqq_keepalive.hpp"
 #include "group_message_sender.hpp"
 
@@ -116,139 +114,11 @@ WebQQ::WebQQ( boost::asio::io_service& _io_service,
 	init_face_map();
 }
 
-class group_auto_refresh_op : boost::asio::coroutine
-{
-public:
-	group_auto_refresh_op(boost::shared_ptr<WebQQ> _webqq)
-		:m_webqq(_webqq)
-	{
-		m_webqq->m_group_refresh_queue.async_pop(
-			boost::bind<void>(*this, _1, _2)
-		);
-
-		m_last_sync = boost::posix_time::from_time_t(0);
-	}
-
-	// pop call back
-	void operator()(boost::system::error_code ec, WebQQ::group_refresh_queue_type v)
-	{
-	 	if (ec == boost::system::errc::operation_canceled)
-			return;
-		std::string gid;
-		// 检查最后一次同步时间.
-		boost::posix_time::ptime curtime = boost::posix_time::from_time_t(std::time(NULL));
-
-		BOOST_ASIO_CORO_REENTER(this)
-		{for (;m_webqq->m_status!= LWQQ_STATUS_QUITTING;){
-
-			// good, 现在可以更新了.
-
-			// 先检查 type
-			gid = v.get<1>();
-
-
-			if (gid.empty()) // 更新全部.
-			{
-				// 需要最少休眠 30min 才能再次发起一次，否则会被 TX 拉黑
-				if (boost::posix_time::time_duration(curtime - m_last_sync).minutes() <= 30)
-				{
-					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
-						m_webqq->get_ioservice(),
-						1800 - boost::posix_time::time_duration(curtime - m_last_sync).seconds(),
-						boost::asio::detail::bind_handler(*this, ec, v)
-					);
-				}
-
-				BOOST_ASIO_CORO_YIELD m_webqq->update_group_list(
-					boost::bind<void>(*this, _1, v)
-				);
-
-				if (ec)
-				{
-					// 重来！，how？ 当然是 push 咯！
-					m_webqq->m_group_refresh_queue.push(v);
-				}
-				else
-				{
-// 					// 检查是否刷新了群 GID, 如果是，就要刷新群列表！
-// 					if ( ! m_webqq->m_groups.empty() &&
-// 						! m_webqq->m_groups.begin()->second->memberlist.empty())
-// 					{
-// 						// 刷新群列表！
-// 						// 接着是刷新群成员列表.
-// 						for (iter = m_webqq->m_groups.begin(); iter != m_webqq->m_groups.end(); ++iter)
-// 						{
-// 							BOOST_ASIO_CORO_YIELD
-// 								m_webqq->update_group_member(iter->second , boost::bind<void>(*this, _1, v));
-//
-// 							using namespace boost::asio::detail;
-// 							BOOST_ASIO_CORO_YIELD
-// 								boost::delayedcallms(m_webqq->get_ioservice(), 530, bind_handler(*this, ec, v));
-// 						}
-// 					}
-				}
-			}
-			else
-			{
-				// 更新特定的 group 即可！
-				BOOST_ASIO_CORO_YIELD qqimpl::update_group_member(
-					m_webqq,
-					m_webqq->m_buddy_mgr.get_group_by_gid(gid),
-					boost::bind<void>(*this, _1, v)
-				);
-
-				if (ec){
-					// 应该是群GID都变了，重新刷新
-					m_webqq->m_group_refresh_queue.push(
-						boost::make_tuple(
-							webqq::webqq_handler_t(),
-							std::string()
-						)
-					);
-				}
-
-			}
-
-			// 更新完毕
-			if (v.get<0>())
-			{
-				v.get<0>()(ec);
-			}
-
-			m_last_sync = boost::posix_time::from_time_t(std::time(NULL));
-
-			// 继续获取，嘻嘻.
-			BOOST_ASIO_CORO_YIELD m_webqq->m_group_refresh_queue.async_pop(
-				boost::bind<void>(*this, _1, _2)
-			);
-		}}
-	}
-
-private:
-	boost::posix_time::ptime m_last_sync;
-	boost::shared_ptr<WebQQ> m_webqq;
-
-	grouplist::iterator iter;
-};
-
-static group_auto_refresh_op group_auto_refresh(boost::shared_ptr<WebQQ> _webqq)
-{
-	return group_auto_refresh_op(_webqq);
-}
-
 void WebQQ::start()
 {
 	start_internal_loop(get_ioservice(), shared_from_this());
 
 	group_message_sender(shared_from_this());
-
-	group_auto_refresh(shared_from_this());
-
-	// 开启个程序去清理过期 cache_* 文件
-	// webqq 每天登录 uid 变化,  而不是每次都变化.
-	// 所以 cache 有效期只有一天.
-	if (boost::filesystem::exists("cache"))
-		start_clean_cache(shared_from_this());
 
 	webqq_keepalive(shared_from_this());
 }
