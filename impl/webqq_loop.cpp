@@ -269,7 +269,8 @@ public:
 					);
 				}
 
-				BOOST_ASIO_CORO_YIELD m_webqq->update_group_list(
+				BOOST_ASIO_CORO_YIELD update_group_list(
+					m_webqq,
 					boost::bind<void>(*this, _1, v)
 				);
 

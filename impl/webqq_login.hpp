@@ -44,6 +44,7 @@ namespace js = boost::property_tree::json_parser;
 
 #include "webqq_status.hpp"
 #include "webqq_group_qqnumber.hpp"
+#include "webqq_group_list.hpp"
 
 namespace webqq {
 namespace qqimpl {
@@ -215,7 +216,7 @@ public:
 
 				// 重试五次，每次延时，如果还失败， 只能说登录失败.
 				do{
-					BOOST_ASIO_CORO_YIELD m_webqq->update_group_list(boost::bind<void>(*this, _1, 0));
+					BOOST_ASIO_CORO_YIELD update_group_list(m_webqq, boost::bind<void>(*this, _1, 0));
 					if ( ec )
 					{
 						BOOST_LOG_TRIVIAL(warning) << "刷新群列表失败，第 " <<  i << " 次重试中(共五次)..." ;

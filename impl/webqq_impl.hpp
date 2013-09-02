@@ -113,7 +113,6 @@ public:
 	typedef boost::function<void ( const boost::system::error_code& ec )> send_group_message_cb;
 	void send_group_message( std::string group, std::string msg, send_group_message_cb donecb );
 	void send_group_message( qqGroup &  group, std::string msg, send_group_message_cb donecb );
-	void update_group_list(webqq::webqq_handler_t handler);
 	void update_group_member(boost::shared_ptr<qqGroup> group, webqq::webqq_handler_t handler);
 
 	// 查找群，如果要验证码，则获取后带vfcode参数进行调用.否则对  vfcode 是 ""

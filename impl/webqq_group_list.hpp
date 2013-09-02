@@ -199,12 +199,13 @@ private:
 	grouplist::iterator iter;
 };
 
+} // namespace detail
+
 template<class Handler>
 void update_group_list(boost::shared_ptr<WebQQ> webqq, Handler handler)
 {
-	update_group_list_op::make_update_group_list_op(webqq, handler);
+	detail::update_group_list_op::make_update_group_list_op(webqq, handler);
 }
 
-} // namespace detail
 } // namespace qqimpl
 } // namespace webqq

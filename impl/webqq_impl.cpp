@@ -45,10 +45,8 @@ namespace js = boost::property_tree::json_parser;
 #include "utf8.hpp"
 #include "webqq_status.hpp"
 #include "webqq_verify_image.hpp"
-#include "webqq_group_list.hpp"
 #include "webqq_keepalive.hpp"
 #include "group_message_sender.hpp"
-
 #include "webqq_loop.hpp"
 
 #ifdef WIN32
@@ -147,10 +145,10 @@ void WebQQ::send_group_message( std::string group, std::string msg, send_group_m
 	m_group_message_queue.push(boost::make_tuple( group, msg, donecb ));
 }
 
-void WebQQ::update_group_list(webqq::webqq_handler_t handler)
-{
-	detail::update_group_list_op::make_update_group_list_op(shared_from_this(), handler);
-}
+// void WebQQ::update_group_list(webqq::webqq_handler_t handler)
+// {
+// 	detail::update_group_list_op::make_update_group_list_op(shared_from_this(), handler);
+// }
 
 void WebQQ::update_group_member(boost::shared_ptr<qqGroup> group, webqq::webqq_handler_t handler)
 {
