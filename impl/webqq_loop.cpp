@@ -18,10 +18,10 @@ namespace detail {
 /*
  * 这是 webqq 的一个内部循环，也是最重要的一个循环
  */
-class internal_loop_op : boost::asio::coroutine
+class webqq_main_loop_op : boost::asio::coroutine
 {
 public:
-	internal_loop_op(boost::asio::io_service & io_service, boost::shared_ptr<WebQQ> _webqq)
+	webqq_main_loop_op(boost::asio::io_service & io_service, boost::shared_ptr<WebQQ> _webqq)
 		: m_io_service(io_service)
 		, m_webqq(_webqq)
 		, m_counted_network_error(0)
@@ -221,15 +221,15 @@ private:
 };
 
 
-internal_loop_op make_internal_loop_op(boost::asio::io_service& io_service, boost::shared_ptr<qqimpl::WebQQ> _webqq)
+webqq_main_loop_op make_webqq_main_loop_op(boost::asio::io_service& io_service, boost::shared_ptr<qqimpl::WebQQ> _webqq)
 {
-	return internal_loop_op(io_service, _webqq);
+	return webqq_main_loop_op(io_service, _webqq);
 }
 
-class group_auto_refresh_op : boost::asio::coroutine
+class group_refresh_loop_op : boost::asio::coroutine
 {
 public:
-	group_auto_refresh_op(boost::shared_ptr<WebQQ> _webqq)
+	group_refresh_loop_op(boost::shared_ptr<WebQQ> _webqq)
 		:m_webqq(_webqq)
 	{
 		m_webqq->m_group_refresh_queue.async_pop(
@@ -341,19 +341,19 @@ private:
 	grouplist::iterator iter;
 };
 
-static group_auto_refresh_op make_group_auto_refresh_loop_op(boost::shared_ptr<WebQQ> _webqq)
+static group_refresh_loop_op make_group_refresh_loop_op(boost::shared_ptr<WebQQ> _webqq)
 {
-	return group_auto_refresh_op(_webqq);
+	return group_refresh_loop_op(_webqq);
 }
 
 } // namespace detail
 
-void start_internal_loop(boost::asio::io_service& io_service, boost::shared_ptr<qqimpl::WebQQ> _webqq)
+void webqq_loop_start(boost::asio::io_service& io_service, boost::shared_ptr<qqimpl::WebQQ> _webqq)
 {
 	// 开启第一个 loop
-	detail::make_internal_loop_op(io_service, _webqq);
+	detail::make_webqq_main_loop_op(io_service, _webqq);
 	// 开启第二个 loop
-	detail::make_group_auto_refresh_loop_op(_webqq);
+	detail::make_group_refresh_loop_op(_webqq);
 }
 
 } // namespace qqimpl

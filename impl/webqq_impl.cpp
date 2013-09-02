@@ -116,7 +116,7 @@ WebQQ::WebQQ( boost::asio::io_service& _io_service,
 
 void WebQQ::start()
 {
-	start_internal_loop(get_ioservice(), shared_from_this());
+	webqq_loop_start(get_ioservice(), shared_from_this());
 
 	group_message_sender(shared_from_this());
 
