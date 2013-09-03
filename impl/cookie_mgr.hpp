@@ -306,7 +306,6 @@ public:
 
  	cookie_store(const std::string & dbpath = std::string(":memory:"))
 	{
-		sqlite_api::sqlite3_enable_shared_cache(1);
 		db.open(soci::sqlite3, dbpath);
 		check_db_initialized();
 	}
