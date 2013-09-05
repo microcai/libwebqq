@@ -49,10 +49,10 @@ public:
 
 		m_buffer = boost::make_shared<boost::asio::streambuf>();
 		m_stream = boost::make_shared<avhttp::http_stream>(boost::ref( m_webqq->get_ioservice()));
+		m_webqq->m_cookie_mgr.get_cookie(LWQQ_URL_POLL_MESSAGE, *m_stream);
 
 		m_stream->request_options( avhttp::request_opts()
 									( avhttp::http_options::request_method, "POST" )
-									( avhttp::http_options::cookie, m_webqq->m_cookie_mgr.get_cookie(LWQQ_URL_POLL_MESSAGE)() )
 									( "cookie2", "$Version=1" )
 									( avhttp::http_options::referer, "http://d.web2.qq.com/proxy.html?v=20101025002" )
 									( avhttp::http_options::request_body, msg )

@@ -128,9 +128,9 @@ public:
 						  );
 
 		m_stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
+		m_webqq->m_cookie_mgr.get_cookie(url, *m_stream);
 		m_stream->request_options(
 			avhttp::request_opts()
-			(avhttp::http_options::cookie, m_webqq->m_cookie_mgr.get_cookie(url)())
 			(avhttp::http_options::connection, "close")
 		);
 
@@ -150,9 +150,9 @@ public:
 
 				// 再次　login
 				m_stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
+				m_webqq->m_cookie_mgr.get_cookie(m_next_url, *m_stream);
 				m_stream->request_options(
 					avhttp::request_opts()
-					(avhttp::http_options::cookie, m_webqq->m_cookie_mgr.get_cookie(m_next_url)())
 					(avhttp::http_options::connection, "close")
 					(avhttp::http_options::referer, "https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=5&mibao_css=m_webqq&appid=1003903&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fweb2.qq.com%2Floginproxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20130723001")
 					(avhttp::http_options::accept, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
@@ -170,10 +170,11 @@ public:
 
 				m_buffer = boost::make_shared<boost::asio::streambuf>();
 
+				m_webqq->m_cookie_mgr.get_cookie(m_stream->location(), *m_stream);
+
 				if (ec == avhttp::errc::found){
 					m_stream->request_options(
 						avhttp::request_opts()
-						(avhttp::http_options::cookie, m_webqq->m_cookie_mgr.get_cookie(m_stream->location())())
 						(avhttp::http_options::connection, "close")
 						(avhttp::http_options::accept, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 						(avhttp::http_options::user_agent, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.32 Safari/537.36")

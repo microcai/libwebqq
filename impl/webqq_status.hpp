@@ -52,9 +52,9 @@ public:
 		r.put("status", lwqq_status_to_str( LWQQ_STATUS_ONLINE ));
 		r.put("passwd_sig", "");
 
-		cookie::cookie cookies =  m_webqq->m_cookie_mgr.get_cookie(LWQQ_URL_SET_STATUS);
+		avhttp::cookies cookies = m_webqq->m_cookie_mgr.get_cookie(LWQQ_URL_SET_STATUS);
 
-		r.put("ptwebqq", cookies.get_value("ptwebqq"));
+		r.put("ptwebqq", cookies["ptwebqq"]);
 
 		r.put("clientid", m_webqq->m_clientid);
 		if (m_webqq->m_psessionid.empty())
@@ -72,10 +72,10 @@ public:
 			  );
 
 		stream.reset( new avhttp::http_stream( m_webqq->get_ioservice() ) );
+		stream->http_cookies(cookies);
 		stream->request_options(
 			avhttp::request_opts()
 			( avhttp::http_options::request_method, "POST" )
-			( avhttp::http_options::cookie, cookies() )
 			( avhttp::http_options::referer, "http://d.web2.qq.com/proxy.html?v=20110331002&callback=1&id=3" )
 			( avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8" )
 			( avhttp::http_options::request_body, msg )

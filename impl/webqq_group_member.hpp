@@ -72,9 +72,10 @@ public:
 				% std::time(NULL)
 		);
 
+		m_webqq->m_cookie_mgr.get_cookie(url, *m_stream);
+
 		m_stream->request_options(
 			avhttp::request_opts()
-			( avhttp::http_options::cookie, m_webqq->m_cookie_mgr.get_cookie(url)() )
 			( avhttp::http_options::referer, LWQQ_URL_REFERER_QUN_DETAIL )
 			( avhttp::http_options::connection, "close" )
 			);

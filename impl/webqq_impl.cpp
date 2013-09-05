@@ -162,18 +162,21 @@ public:
 	// 将　qqBuddy 里的　uin 转化为　qq 号码.
 	template<class Handler>
 	buddy_uin_to_qqnumber( boost::shared_ptr<WebQQ> _webqq, std::string uin, Handler handler )
-		: _io_service( _webqq->get_ioservice() ) {
-		read_streamptr stream;
+		: _io_service(_webqq->get_ioservice())
+		, m_webqq(_webqq)
+	{
 		std::string url = boost::str(
-							  boost::format( "%s/api/get_friend_uin2?tuin=%s&verifysession=&type=1&code=&vfwebqq=%s" )
-							  % "http://s.web2.qq.com" % uin % _webqq->m_vfwebqq
-						  );
+			boost::format( "%s/api/get_friend_uin2?tuin=%s&verifysession=&type=1&code=&vfwebqq=%s" )
+			% "http://s.web2.qq.com"
+			% uin
+			% _webqq->m_vfwebqq
+		);
 
-		stream.reset( new avhttp::http_stream( _webqq->get_ioservice() ) );
-		stream->request_options(
+		m_stream = boost::make_shared<avhttp::http_stream>(boost::ref(_io_service));
+		m_webqq->m_cookie_mgr.get_cookie(url, *m_stream);
+		m_stream->request_options(
 			avhttp::request_opts()
 			( avhttp::http_options::http_version , "HTTP/1.0" )
-			( avhttp::http_options::cookie, _webqq->m_cookie_mgr.get_cookie(url)() )
 			( avhttp::http_options::referer, "http://s.web2.qq.com/proxy.html?v=201304220930&callback=1&id=3" )
 			( avhttp::http_options::content_type, "UTF-8" )
 			( avhttp::http_options::connection, "close" )
@@ -181,11 +184,14 @@ public:
 
 		boost::shared_ptr<boost::asio::streambuf> buffer = boost::make_shared<boost::asio::streambuf>();
 
-		avhttp::async_read_body(*stream, url, *buffer, boost::bind<void>( *this, _1, stream, buffer, handler ) );
+		avhttp::async_read_body(
+			*m_stream, url, *buffer,
+			boost::bind<void>( *this, _1, buffer, handler)
+		);
 	}
 
 	template <class Handler>
-	void operator()( const boost::system::error_code& ec, read_streamptr stream, boost::shared_ptr<boost::asio::streambuf> buffer, Handler handler )
+	void operator()( const boost::system::error_code& ec, boost::shared_ptr<boost::asio::streambuf> buffer, Handler handler )
 	{
 		// 获得的返回代码类似
 		// {"retcode":0,"result":{"uiuin":"","account":2664046919,"uin":721281587}}
@@ -214,6 +220,8 @@ public:
 	}
 private:
 	boost::asio::io_service& _io_service;
+	boost::shared_ptr<WebQQ> m_webqq;
+	read_streamptr m_stream;
 };
 
 class SYMBOL_HIDDEN update_group_member_qq_op : boost::asio::coroutine {
@@ -305,10 +313,10 @@ void WebQQ::fetch_aid(std::string arg, boost::function<void(const boost::system:
 	);
 
 	read_streamptr stream(new avhttp::http_stream(m_io_service));
+	m_cookie_mgr.get_cookie(url, *stream);
 	stream->request_options(
 		avhttp::request_opts()
 			(avhttp::http_options::referer, "http://web.qq.com/")
-			(avhttp::http_options::cookie, m_cookie_mgr.get_cookie(url)())
 			(avhttp::http_options::connection, "close")
 	);
 
@@ -365,10 +373,10 @@ void WebQQ::search_group(std::string groupqqnum, std::string vfcode, webqq::sear
 	);
 
 	read_streamptr stream(new avhttp::http_stream(m_io_service));
+	m_cookie_mgr.get_cookie(url, *stream);
 	stream->request_options(avhttp::request_opts()
 		(avhttp::http_options::content_type, "utf-8")
 		(avhttp::http_options::referer, "http://cgi.web2.qq.com/proxy.html?v=201304220930&callback=1&id=2")
-		(avhttp::http_options::cookie, m_cookie_mgr.get_cookie(url)())
 		(avhttp::http_options::connection, "close")
 	);
 
@@ -428,18 +436,19 @@ void WebQQ::join_group(qqGroup_ptr group, std::string vfcode, webqq::join_group_
 									"\"vfwebqq\":\"%s\"}" )
 								% group->code
 								% vfcode
-								% m_cookie_mgr.get_cookie(url).get_value("verifysession")
+								% m_cookie_mgr.get_cookie(url)["verifysession"]
 								% m_vfwebqq
 							);
 
 	postdata = std::string("r=") + boost::url_encode(postdata);
 
 	read_streamptr stream(new avhttp::http_stream(m_io_service));
+	m_cookie_mgr.get_cookie(url, *stream);
+
 	stream->request_options(avhttp::request_opts()
 		(avhttp::http_options::http_version, "HTTP/1.0")
 		(avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8")
 		(avhttp::http_options::referer, "http://s.web2.qq.com/proxy.html?v=201304220930&callback=1&id=1")
-		(avhttp::http_options::cookie, m_cookie_mgr.get_cookie(url)())
 		(avhttp::http_options::connection, "close")
 		(avhttp::http_options::request_method, "POST")
 		(avhttp::http_options::request_body, postdata)

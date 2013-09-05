@@ -62,129 +62,7 @@
 #include <avhttp/url.hpp>
 #include <avhttp/http_stream.hpp>
 
-namespace cookie{
-namespace error{
-
-template<class Error_category>
-const boost::system::error_category& error_category_single()
-{
-	static Error_category error_category_instance;
-	return reinterpret_cast<const boost::system::error_category&>(error_category_instance);
-}
-
-class error_category_impl;
-
-inline const boost::system::error_category& error_category()
-{
-	return error_category_single<error_category_impl>();
-}
-
-enum errc_t
-{
-	DATABASE_ERROR = 1,
-};
-
-inline boost::system::error_code make_error_code(errc_t e)
-{
-	return boost::system::error_code(static_cast<int>(e), avhttp::error_category());
-}
-
-class error_category_impl
-  : public boost::system::error_category
-{
-	virtual const char* name() const BOOST_SYSTEM_NOEXCEPT
-	{
-		return "cookie_manager";
-	};
-
-	virtual std::string message(int e) const
-	{
-		switch (e)
-		{
-			case DATABASE_ERROR:
-				return "error in database";
-		}
-		return "unknow";
-	}
-};
-
-} // namespace error
-} // namespace cookie
-
-namespace boost {
-namespace system {
-
-template <>
-struct is_error_code_enum<cookie::error::errc_t>
-{
-  static const bool value = true;
-};
-
-} // namespace system
-} // namespace boost
-
-namespace cookie{
-namespace detail{
-
-inline boost::posix_time::ptime ptime_from_gmt_string(std::string date)
-{
-	boost::posix_time::ptime ptime;
-
-	avhttp::detail::parse_http_date(date, ptime);
-
-	return ptime;
-}
-
-}
-
-class cookie_store;
-
-/*
- * 表示一个 cookie 对象,  可以获取用户 cookie: 的字符串,  也可以继续操纵其存储的 cookie
- */
-class cookie{
-	std::vector<std::pair<std::string, std::string> > m_cookies;
-
-	cookie(std::vector<std::string> names, std::vector<std::string> values)
-	{
-		BOOST_ASSERT(names.size() == values.size());
-
-		for(int i=0;i<names.size(); i++)
-		{
-			m_cookies.push_back(std::make_pair(names[i], values[i]));
-		}
-	}
-	friend class cookie_store;
-public:
-
-	operator bool()
-	{
-		return !m_cookies.empty();
-	}
-
-	// 返回 cookie: 所应该使用的字符串.
-	std::string operator()()
-	{
-		if (m_cookies.empty())
-		{
-			return "null=null";
-		}
-		std::stringstream outline;
-
-		for (int i =0; i < m_cookies.size(); i++)
-			outline << m_cookies[i].first << "=" << m_cookies[i].second << "; ";
-
-		return outline.str();
-	}
-
-	std::string get_value(std::string name)
-	{
-		for (int i =0; i < m_cookies.size(); i++)
-			if (m_cookies[i].first == name)
-				return  m_cookies[i].second;
-		return "";
-	}
-};
+namespace cookie {
 
 /* 管理和存储 cookie, WebQQ 最重要的任务就是保护这么一个对象*/
 class cookie_store : boost::noncopyable
@@ -205,88 +83,42 @@ class cookie_store : boost::noncopyable
 		trans.commit();
 	}
 
-	// 以 set-cookie: 行的字符串设置 cookie
-	void save_cookie(std::string domain, const std::string &set_cookie_line,
-			std::vector< boost::tuple<std::string, std::string, std::string> > & inserted)
+	void save_cookie(const avhttp::cookies & cookies, std::string domain)
 	{
-		std::string name, value, path = "/", expires = "session";
+		std::vector< boost::tuple<std::string, std::string, std::string> > inserted;
 
-		// 调用　set_cookie
-		std::vector<std::string> tokens;
-
-		if (boost::split(tokens, set_cookie_line, boost::is_any_of(";")).size()>1)
+		BOOST_FOREACH(avhttp::cookies::http_cookie cookie, cookies)
 		{
-			BOOST_FOREACH(std::string & t, tokens){boost::trim_left(t);}
+			bool shall_delete = cookie.value.empty();
 
-			std::string cookie = tokens[0];
+			if (cookie.domain.empty())
+				cookie.domain = domain;
+			if (cookie.path.empty())
+				cookie.path = "/";
 
-			boost::smatch what;
-			boost::regex ex("^(.+)=(.*)$");
-			if ( boost::regex_match(cookie, what, ex))
+			if ( !shall_delete && cookie.expires.is_not_a_date_time() )
 			{
-				name = what[1];
-				value = what[2];
+				// 根据　expires 确定是否为删除操作
+				shall_delete = cookie.expires < boost::posix_time::second_clock::local_time();
+			}
 
-				// 接下来是根据 Expires
-				for(int i=1;i < tokens.size();i++)
+			if (shall_delete)
+			{
+				// 检查是否在　inserted 有了！　如果有了，则删除操作是不可以的。
+				if (
+					std::find(
+						inserted.begin(), inserted.end(),
+						boost::make_tuple(cookie.domain, cookie.path, cookie.name)
+					) == inserted.end()
+				)
 				{
-					std::string token = tokens[i];
-
-					if (boost::regex_match(token, what, ex))
-					{
-						std::string k;
-						std::string v;
-
-						k = boost::to_lower_copy(std::string(what[1]));
-						v = what[2];
-
-						// 设置超时时间.
-						if ( k == "expires")
-						{
-							expires = v;
-						}else if (k == "path")
-						{
-							path = v;
-						}else if (k == "domain")
-						{
-							domain = boost::to_lower_copy(v);
-						}else if (k == "max-age")
-						{
-							// set expires with age
-							expires =  boost::posix_time::to_iso_string(
-		   						boost::posix_time::from_time_t(std::time(NULL)) +
-								boost::posix_time::seconds(boost::lexical_cast<long>(v))
-							);
-						}
-					}
+					// 可删！
+					delete_cookie(cookie.domain, cookie.path, cookie.name);
 				}
-
-				bool is_delete = value.empty();
-
-				if ( !is_delete && expires!="session")
-				{
-					// 根据　expires 确定是否为删除操作
-					boost::posix_time::time_duration dur =
-						detail::ptime_from_gmt_string(expires)
-						-
-						boost::posix_time::from_time_t(std::time(NULL));
-
-					is_delete = dur.is_negative();
-				}
-
-				if (is_delete)
-				{
-					// 检查是否在　inserted 有了！　如果有了，则删除操作是不可以的。
-					if (std::find(inserted.begin(), inserted.end(), boost::make_tuple(domain, path, name)) == inserted.end() )
-					{
-						// 可删！
-						delete_cookie(domain, path, name);
-					}
-				}else{
-					// 更新到数据库！
-					save_cookie(domain, path, name, value, expires);
-					inserted.push_back(boost::make_tuple(domain, path, name));
-				}
+			}else{
+				// 更新到数据库！
+				save_cookie(cookie.domain, cookie.path, cookie.name, cookie.value, to_str(cookie.expires));
+				inserted.push_back(boost::make_tuple(cookie.domain, cookie.path, cookie.name));
 			}
 		}
 	}
@@ -355,7 +187,7 @@ public:
 
 	// 以 url 对象为参数调用就可以获得这个请求应该带上的 cookie
 	//
-	cookie get_cookie(const avhttp::url & url)
+	avhttp::cookies get_cookie(const avhttp::url & url)
 	{
 		// 遍历 cookie store, 找到符合 PATH 和 domain 要求的 cookie
 		// 然后构建 cookie 对象.
@@ -374,22 +206,19 @@ public:
 
 		db << sql , soci::into(names, inds_names), soci::into(values, inds_values) ;
 
-		return cookie(names, values);
+		avhttp::cookies cookie;
+
+		for (int i = 0; i < names.size() ; i++)
+			cookie(names[i], values[i]);
+
+		return cookie;
 	}
 
 	// 直接设置 cookie
 	void get_cookie(const avhttp::url & url, avhttp::http_stream & avstream)
 	{
-		avhttp::request_opts opts = avstream.request_options();
-
-		opts.remove(avhttp::http_options::cookie);
-
-		opts.insert(avhttp::http_options::cookie,
-			get_cookie(avstream.final_url())()
-		);
-		avstream.request_options(opts);
+		avstream.http_cookies(get_cookie(url));
 	}
-
 
 	// 直接设置 cookie
 	void get_cookie(avhttp::http_stream & avstream)
@@ -400,26 +229,7 @@ public:
 	// 调用以设置 cookie, 这个是其中一个重载, 用于从 http_stream 获取 set-cookie 头
 	void save_cookie(const avhttp::http_stream & stream)
 	{
-		avhttp::url url(stream.final_url());
-		avhttp::option::option_item_list opts = stream.response_options().option_all();
-
-		std::vector< boost::tuple<std::string, std::string, std::string> > inserted;
-		// process in reverse order
-		BOOST_FOREACH(avhttp::option::option_item v, opts)
-		{
-			// 寻找 set-cookie
-			if (boost::algorithm::to_lower_copy(v.first) == "set-cookie")
-			{
-				save_cookie(url.host(), v.second, inserted);
-			}
-		}
-	}
-
-	// 以 set-cookie: 行的字符串设置 cookie
-	void save_cookie(std::string domain, const std::string &set_cookie_line)
-	{
- 		std::vector< boost::tuple<std::string, std::string, std::string> > inserted;
- 		save_cookie(domain, set_cookie_line, inserted);
+		save_cookie(stream.http_cookies(), avhttp::url(stream.final_url()).host());
 	}
 
 	// 详细参数直接设置一个 cookie
@@ -443,6 +253,22 @@ public:
 		db<< "delete from cookies where domain = :domain and path = :path and name = :name"
 		  , use(domain), use(path), use(name);
 	}
+protected:
+	std::string to_str(const boost::posix_time::ptime & expires)const
+	{
+		if (expires.is_not_a_date_time())
+			return "session";
+
+		std::stringstream ss;
+
+		boost::posix_time::time_input_facet* rfc850_date =
+			new boost::posix_time::time_input_facet("%A, %d-%b-%y %H:%M:%S GMT");
+		ss.imbue(std::locale(ss.getloc(), rfc850_date));
+
+		ss <<  expires;
+
+		return ss.str();
+	}
 };
 
-}
+} // namespace cookie

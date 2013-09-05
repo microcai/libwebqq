@@ -72,10 +72,11 @@ class update_group_list_op : boost::asio::coroutine
 		std::string postdata = create_post_data(m_webqq->m_vfwebqq);
 		std::string url = boost::str(boost::format("%s/api/get_group_name_list_mask2") % "http://s.web2.qq.com");
 
+		m_webqq->m_cookie_mgr.get_cookie(url, *m_stream);
+
 		m_stream->request_options(
 			avhttp::request_opts()
 			(avhttp::http_options::request_method, "POST")
-			(avhttp::http_options::cookie, m_webqq->m_cookie_mgr.get_cookie(url)())
 			(avhttp::http_options::referer, "http://s.web2.qq.com/proxy.html?v=20110412001&callback=1&id=1")
 			(avhttp::http_options::content_type, "application/x-www-form-urlencoded; charset=UTF-8")
 			(avhttp::http_options::request_body, postdata)
