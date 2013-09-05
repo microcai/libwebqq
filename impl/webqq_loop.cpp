@@ -64,7 +64,11 @@ public:
 		for (;m_webqq->m_status!= LWQQ_STATUS_QUITTING;){
 
 			m_counted_network_error = 0;
-
+			if (firs_start!=0)
+			{
+				BOOST_LOG_TRIVIAL(info)
+					<< "start polling messages!";
+			}
 	  		// 首先进入 message 循环! 做到无登录享用!
 			while (m_webqq->m_status == LWQQ_STATUS_ONLINE)
 			{
