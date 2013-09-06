@@ -254,7 +254,7 @@ public:
 		  , use(domain), use(path), use(name);
 	}
 protected:
-	std::string to_str(const boost::posix_time::ptime & expires)const
+	std::string to_str(const boost::posix_time::ptime & expires) const
 	{
 		if (expires.is_not_a_date_time())
 			return "session";
