@@ -45,6 +45,7 @@ namespace js = boost::property_tree::json_parser;
 #include "webqq_status.hpp"
 #include "webqq_group_qqnumber.hpp"
 #include "webqq_group_list.hpp"
+#include "webqq_buddy_info.hpp"
 
 namespace webqq {
 namespace qqimpl {
@@ -140,7 +141,7 @@ public:
 	}
 
 	// 在这里实现　QQ 的登录.
-	void operator()(boost::system::error_code ec, std::size_t bytes_transfered)
+	void operator()(boost::system::error_code ec, std::size_t bytes_transfered=0)
 	{
 		BOOST_ASIO_CORO_REENTER(this)
 		{
@@ -211,9 +212,13 @@ public:
 
 				BOOST_LOG_TRIVIAL(info) <<  "status => online";
 
-				i = 0;
+				// 先是 刷新 buddy 列表
+				BOOST_LOG_TRIVIAL(info) <<  "fetching buddy list";
+				BOOST_ASIO_CORO_YIELD async_update_buddy_list(m_webqq, *this);
+				BOOST_LOG_TRIVIAL(info) <<  "fetching buddy complete";
 
 				//polling group list
+				i = 0;
 
 				// 重试五次，每次延时，如果还失败， 只能说登录失败.
 				do{

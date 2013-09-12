@@ -142,7 +142,7 @@ private:
 
 				try
 				{
-					m_webqq->m_buddy_mgr.buddy_update_mflag(muin, boost::lexical_cast<unsigned int>(mflag));
+					m_webqq->m_buddy_mgr.group_buddy_update_mflag(muin, boost::lexical_cast<unsigned int>(mflag));
 				}
 				catch (boost::bad_lexical_cast& e) {}
 			}
@@ -155,7 +155,7 @@ private:
 					std::string muin = minfo.get<std::string>("muin");
 					std::string card = minfo.get<std::string>("card");
 
-					m_webqq->m_buddy_mgr.buddy_update_card(muin, card);
+					m_webqq->m_buddy_mgr.group_buddy_update_card(muin, card);
 				}
 			}
 			catch (const pt::ptree_bad_path& badpath)

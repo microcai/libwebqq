@@ -70,6 +70,7 @@ enum errc_t
 	// 登录后的一些错误消息.
 
 	failed_to_fetch_group_list,
+	failed_to_fetch_buddy_list,
 
 	failed_to_fetch_group_qqnumber,
 

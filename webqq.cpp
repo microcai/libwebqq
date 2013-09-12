@@ -48,6 +48,11 @@ void webqq::on_verify_code( boost::function< void ( std::string ) >  cb )
 	impl->m_signeedvc.connect( cb );
 }
 
+void webqq::on_logined(boost::function< void() > cb)
+{
+	impl->siglogined.connect(cb);
+}
+
 void webqq::on_group_msg( boost::function< void( const std::string, const std::string, const std::vector<qqMsg>& )> cb )
 {
 	this->impl->siggroupmessage.connect( cb );
@@ -86,14 +91,19 @@ void webqq::feed_vc( std::string vccode, boost::function<void()> bad_vcreporter)
 	impl->m_sigbadvc = bad_vcreporter;
 }
 
-void webqq::send_group_message( std::string group, std::string msg, boost::function<void ( const boost::system::error_code& ec )> donecb )
+void webqq::send_group_message( std::string group, std::string msg, webqq_handler_t donecb )
 {
 	impl->send_group_message( group, msg, donecb );
 }
 
-void webqq::send_group_message( qqGroup& group, std::string msg, boost::function<void ( const boost::system::error_code& ec )> donecb )
+void webqq::send_group_message( qqGroup& group, std::string msg, webqq_handler_t donecb )
 {
 	impl->send_group_message( group, msg, donecb );
+}
+
+void webqq::send_offline_file(qqBuddy& buddy, std::string filename, webqq_handler_t donecb)
+{
+	impl->send_offline_file(buddy.uin, filename, donecb);
 }
 
 boost::asio::io_service& webqq::get_ioservice()
@@ -185,5 +195,11 @@ void webqq::join_group( qqGroup_ptr group, std::string vfcode, webqq::join_group
 {
 	impl->join_group(group, vfcode, handler);
 }
+
+std::vector<qqBuddy_ptr> webqq::get_buddies()
+{
+	return impl->get_buddies();
+}
+
 
 } // namespace webqq

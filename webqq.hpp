@@ -141,12 +141,16 @@ public:
 	bool is_online();
 
 	void on_verify_code( boost::function<void ( std::string )> );
+
+	void on_logined(boost::function<void()>);
+
 	// login with vc, call this if you got signeedvc signal.
 	// in signeedvc signal, you can retreve images from server.
 	void feed_vc( std::string vccode, boost::function<void()> bad_vcreporter);
 
-	void send_group_message( std::string group, std::string msg, boost::function<void ( const boost::system::error_code& ec )> donecb );
-	void send_group_message( qqGroup &  group, std::string msg, boost::function<void ( const boost::system::error_code& ec )> donecb );
+	void send_group_message( std::string group, std::string msg, webqq_handler_t donecb );
+	void send_group_message( qqGroup &  group, std::string msg, webqq_handler_t donecb );
+	void send_offline_file(qqBuddy & buddy, std::string filename, webqq_handler_t donecb );
 
 	void update_group_member(boost::shared_ptr<qqGroup> group );
 
@@ -167,6 +171,9 @@ public:
 
 	qqGroup_ptr get_Group_by_gid( std::string );
 	qqGroup_ptr get_Group_by_qq( std::string qq );
+
+	std::vector<qqBuddy_ptr> get_buddies();
+
 	boost::asio::io_service	&get_ioservice();
 private:
 	boost::shared_ptr<qqimpl::WebQQ> impl;

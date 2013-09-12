@@ -1,4 +1,4 @@
- 
+
 /*
  * Copyright (C) 2012 - 2013  微蔡 <microcai@fedoraproject.org>
  *
@@ -54,7 +54,7 @@ namespace qqimpl {
 namespace detail {
 
 template<class Handler>
-class update_group_list_op : boost::asio::coroutine
+class update_buddy_list_op : boost::asio::coroutine
 {
 	static std::string create_post_data( std::string vfwebqq )
 	{
@@ -67,11 +67,11 @@ class update_group_list_op : boost::asio::coroutine
 		m_stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
 		m_buffer = boost::make_shared<boost::asio::streambuf>();
 
-		BOOST_LOG_TRIVIAL(debug) << "getting group list";
+		BOOST_LOG_TRIVIAL(debug) << "getting buddy list";
 
 		/* Create post data: {"h":"hello","vfwebqq":"4354j53h45j34"} */
 		std::string postdata = create_post_data(m_webqq->m_vfwebqq);
-		std::string url = WEBQQ_S_HOST "/api/get_group_name_list_mask2";
+		std::string url =  WEBQQ_S_HOST "/api/get_user_friends2";
 
 		m_webqq->m_cookie_mgr.get_cookie(url, *m_stream);
 
@@ -89,18 +89,28 @@ class update_group_list_op : boost::asio::coroutine
 	}
 
 public:
-	update_group_list_op(boost::shared_ptr<WebQQ> webqq, Handler handler)
+	update_buddy_list_op(const boost::shared_ptr<WebQQ>& webqq, Handler handler)
 		: m_webqq(webqq)
 		, m_handler(handler)
 	{
 		do_fetch();
 	}
 
+	/**
+	* Here, we got a json object like this:
+	* {"retcode":0,"result":{
+	* "friends":[{"flag":0,"uin":1907104721,"categories":0},i...
+	* "marknames":[{"uin":276408653,"markname":""},...
+	* "categories":[{"index":1,"sort":1,"name":""},...
+	* "vipinfo":[{"vip_level":1,"u":1907104721,"is_vip":1},i...
+	* "info":[{"face":294,"flag":8389126,"nick":"","uin":1907104721},
+	*
+	*/
 	void operator()(boost::system::error_code ec, std::size_t bytes_transfered)
 	{
  		pt::ptree	jsonobj;
  		std::istream jsondata(m_buffer.get());
- 		bool retry = false;
+ 		bool errored = false;
 
 		try{
 			js::read_json(jsondata, jsonobj);
@@ -110,80 +120,48 @@ public:
 				grouplist newlist;
 				bool replace_list = false;
 
-				BOOST_FOREACH(pt::ptree::value_type result,
-								jsonobj.get_child("result.gnamelist"))
+				BOOST_FOREACH(pt::ptree::value_type result, jsonobj.get_child("result.friends"))
 				{
-					boost::shared_ptr<qqGroup> newgroup = boost::make_shared<qqGroup>();
-
-					std::string gid, name, code;
-
-					gid = newgroup->gid = result.second.get<std::string>("gid");
-					name = newgroup->name = result.second.get<std::string>("name");
-					code = newgroup->code = result.second.get<std::string>("code");
-
-					if(newgroup->gid[0] == '-')
-					{
-						retry = true;
-						BOOST_LOG_TRIVIAL(error) <<  "qqGroup get error" << std::endl;
-
-					}else{
-
-						m_webqq->m_buddy_mgr.update_group_list(gid, name, code);
-
-						if (m_webqq->m_groups.find(newgroup->gid)!= m_webqq->m_groups.end())
-						{
-							// 出现了 老的 list 里没有的群GID，说明群GID变更
-							// 这样老的列表就过时了，该丢.
-							replace_list = true;
-						}
-
-						newlist.insert(std::make_pair(newgroup->gid, newgroup));
-						m_webqq->m_groups.insert(std::make_pair(newgroup->gid, newgroup));
-						BOOST_LOG_TRIVIAL(info) << console_out_str("qq群 ") << console_out_str(newgroup->gid) << " " <<  console_out_str(newgroup->name);
-					}
+					std::string uin = result.second.get<std::string>("uin");
+					int flag = result.second.get<int>("flag");
+					int categories = result.second.get<int>("categories");
+					m_webqq->m_buddy_mgr.new_buddy(uin, flag, categories);
 				}
-				if (replace_list){
-					std::swap(m_webqq->m_groups, newlist);
-				}
+
+				try {BOOST_FOREACH(pt::ptree::value_type result, jsonobj.get_child("result.marknames"))
+				{
+					std::string uin = result.second.get<std::string>("uin");
+					std::string markname = result.second.get<std::string>("markname");
+					m_webqq->m_buddy_mgr.buddy_update_markname(uin, markname);
+				}}catch (const pt::ptree_error&){}
+
+				try {BOOST_FOREACH(pt::ptree::value_type result, jsonobj.get_child("result.categories"))
+				{
+					int index =  result.second.get<int>("index");
+					int sort =  result.second.get<int>("sort");
+					std::string name =  result.second.get<std::string>("name");
+
+					m_webqq->m_buddy_mgr.new_catgory(index, sort, name);
+				}}catch (const pt::ptree_error&){}
+
+				try {BOOST_FOREACH(pt::ptree::value_type result, jsonobj.get_child("result.info"))
+				{
+					std::string uin = result.second.get<std::string>("uin");
+					std::string nick = result.second.get<std::string>("nick");
+
+					m_webqq->m_buddy_mgr.buddy_update_nick(uin, nick);
+				}}catch (const pt::ptree_error&){}
+
 			}
-		}catch (const pt::ptree_error &){retry = true;}
+		}catch (const pt::ptree_error &){errored = true;}
 
-		if (retry){
-			m_handler(error::make_error_code(error::failed_to_fetch_group_list));
+		if (errored){
+			m_handler(error::make_error_code(error::failed_to_fetch_buddy_list));
 			return;
 		}
 
 		// and then update_group_detail
-		m_webqq->get_ioservice().post(
-				boost::asio::detail::bind_handler(*this, boost::system::error_code())
-		);
-	}
-
-	void operator()(boost::system::error_code ec)
-	{
-		BOOST_ASIO_CORO_REENTER(this)
-		{
-			// 先更新群的 QQ 号.
-			for (iter = m_webqq->m_groups.begin(); iter != m_webqq->m_groups.end(); ++iter)
-			{
-				if (!m_webqq->m_buddy_mgr.group_has_qqnum(iter->second->code))
-				{
-					BOOST_ASIO_CORO_YIELD async_update_group_qqnumber(
-						m_webqq,  iter->second, *this
-					);
-
-					if (!ec)
-						m_webqq->m_buddy_mgr.map_group_qqnum(
-							iter->second->code, iter->second->qqnum);
-
-					BOOST_ASIO_CORO_YIELD boost::delayedcallms(
-						m_webqq->get_ioservice(), 600,
-						boost::bind<void>(*this, ec)
-					);
-				}
-			}
-			m_webqq->get_ioservice().post(boost::bind<void>(m_handler, ec));
-		}
+		m_handler(boost::system::error_code());
 	}
 
 private:
@@ -192,22 +170,21 @@ private:
 
 	read_streamptr m_stream;
 	boost::shared_ptr<boost::asio::streambuf> m_buffer;
-
-	grouplist::iterator iter;
 };
 
 template<class Handler>
-update_group_list_op<Handler> make_update_group_list_op(boost::shared_ptr<WebQQ> webqq, Handler handler)
+update_buddy_list_op<Handler>
+make_update_buddy_list_op(const boost::shared_ptr<WebQQ> & _webqq, Handler handler)
 {
-	return update_group_list_op<Handler>(webqq, handler);
+	return update_buddy_list_op<Handler>(_webqq, handler);
 }
 
 } // namespace detail
 
 template<class Handler>
-void update_group_list(boost::shared_ptr<WebQQ> webqq, Handler handler)
+void async_update_buddy_list(const boost::shared_ptr<WebQQ>& _webqq, Handler handler)
 {
-	detail::make_update_group_list_op(webqq, handler);
+	detail::make_update_buddy_list_op(_webqq, handler);
 }
 
 } // namespace qqimpl

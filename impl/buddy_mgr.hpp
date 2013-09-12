@@ -40,6 +40,7 @@ public:
 
 	qqGroup_ptr get_group_by_gid(std::string gid);
 	qqGroup_ptr get_group_by_qq(std::string qqnum);
+	std::vector< qqBuddy_ptr > get_buddies();
 
 	std::vector<std::string> get_group_all_buddies_uin(std::string gid);
 
@@ -52,8 +53,14 @@ public:
 
 	void group_new_buddy(std::string gid, std::string uid, std::string qqnum, std::string nick);
 
-	void buddy_update_mflag(std::string uid,  unsigned int mflag);
-	void buddy_update_card(std::string uid, std::string card);
+	void group_buddy_update_mflag(std::string uid,  unsigned int mflag);
+	void group_buddy_update_card(std::string uid, std::string card);
+
+	void new_catgory(int index, int sort, std::string name);
+	void new_buddy(std::string uid, int flag, int category);
+
+	void buddy_update_markname(std::string uid,  std::string markname);
+	void buddy_update_nick(std::string uid,  std::string nickname);
 
 	void clean_out_outdated();
 private:

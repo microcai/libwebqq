@@ -217,9 +217,11 @@ public:
 
 				BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
 						m_io_service, 30, boost::asio::detail::bind_handler(*this,ec, str));
+			}else {
+				m_webqq->siglogined();
 			}
 
-			// 掉线了，自动重新进入循环， for (;;) 嘛
+			// 重新进入循环， for (;;) 嘛
 		}}
 	}
 

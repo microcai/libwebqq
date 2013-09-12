@@ -130,6 +130,30 @@ qqGroup_ptr buddy_mgr::get_group_by_qq(std::string qqnum)
 	return get_group_by_gid(gid);
 }
 
+std::vector< qqBuddy_ptr > buddy_mgr::get_buddies()
+{
+	std::vector<std::string> uins(1000), nicks(1000), marknames(1000), qqnums(1000);
+	std::vector<int> flags(1000);
+
+	std::vector<soci::indicator> ind_uins;
+
+	m_sql <<  "select uin, nick, markname from buddies",
+		soci::into(uins, ind_uins), soci::into(nicks), soci::into(marknames);
+
+	std::vector<qqBuddy_ptr> ret;
+
+	ret.reserve(uins.size());
+
+	// 组合
+	for (int i=0; i < uins.size();++i)
+	{
+		qqBuddy_ptr budy = boost::make_shared<qqBuddy>(uins[i], nicks[i], marknames[i], flags[i], qqnums[i]);
+		ret.push_back(budy);
+	}
+
+	return ret;
+}
+
 std::vector<std::string> buddy_mgr::get_group_all_buddies_uin(std::string gid)
 {
 	// 一个群最多  500 个,  高级群也不过 2000 个而已. 这里限制一万个, 足够了.
@@ -191,7 +215,7 @@ void buddy_mgr::group_new_buddy(std::string gid, std::string uid, std::string qq
 	trans.commit();
 }
 
-void buddy_mgr::buddy_update_mflag(std::string uid, unsigned int mflag)
+void buddy_mgr::group_buddy_update_mflag(std::string uid, unsigned int mflag)
 {
 	using namespace soci;
 
@@ -203,7 +227,7 @@ void buddy_mgr::buddy_update_mflag(std::string uid, unsigned int mflag)
 	trans.commit();
 }
 
-void buddy_mgr::buddy_update_card(std::string uid, std::string card)
+void buddy_mgr::group_buddy_update_card(std::string uid, std::string card)
 {
 	using namespace soci;
 
@@ -238,30 +262,71 @@ void buddy_mgr::db_initialize()
 	soci::transaction trans(m_sql);
 	// 初始化存储数据库
 	m_sql << ""
-		  "create table if not exists groups ( "
-		  "`gid` TEXT not null,"
-		  "`group_code` TEXT not null,"
-		  "`name` TEXT not null, "
-		  "`qqnum` TEXT, "
-		  "`owner` TEXT, "
-		  // last time that this group information retrived from TX
-		  // libwebqq will remove outdated one
-		  "`generate_time` TEXT not null"
-		  ");";
+		"create table if not exists groups ( "
+		"`gid` TEXT not null,"
+		"`group_code` TEXT not null,"
+		"`name` TEXT not null, "
+		"`qqnum` TEXT, "
+		"`owner` TEXT, "
+		// last time that this group information retrived from TX
+		// libwebqq will remove outdated one
+		"`generate_time` TEXT not null"
+		");";
 
 	m_sql << ""
-		  "create table if not exists group_buddies ( "
-		  "`gid` TEXT not null,"
-		  "`uid` TEXT not null  UNIQUE ON CONFLICT replace,"
-		  "`nick` TEXT,"
-		  "`card` TEXT,"
-		  "`mflag` INTEGER,"
-		  "`qqnum` TEXT"
-		  ");";
+		"create table if not exists group_buddies ( "
+		"`gid` TEXT not null,"
+		"`uid` TEXT not null  UNIQUE ON CONFLICT replace,"
+		"`nick` TEXT,"
+		"`card` TEXT,"
+		"`mflag` INTEGER,"
+		"`qqnum` TEXT"
+		");";
+
+	m_sql << ""
+		"create table if not exists buddy_categories ( "
+		"`index` INTEGER UNIQUE ON CONFLICT replace,"
+		"`sort` INTEGER,"
+		"`name` TEXT"
+		");";
+
+	m_sql << ""
+		"create table if not exists buddies ( "
+		"`uid` TEXT not null  UNIQUE ON CONFLICT replace,"
+		"`nick` TEXT,"
+		"`flag` INTEGER,"
+		"`qqnum` TEXT, "
+		"`markname` TEXT, "
+		"`category` INTEGER, "
+		"`vip_level` INTEGER default 0"
+		");";
 
 	trans.commit();
 }
 
+void buddy_mgr::new_catgory(int index, int sort, std::string name)
+{
+	m_sql <<  "insert into buddy_categories (index, sort, name) values (:index, :sort, :name)",
+		soci::use(index), soci::use(sort), soci::use(name);
+}
+
+void buddy_mgr::new_buddy(std::string uid, int flag, int category)
+{
+	m_sql <<  "insert into buddies (uin, flag, category) values (:uin, :flag, :category)",
+		soci::use(uid), soci::use(flag), soci::use(category);
+}
+
+void buddy_mgr::buddy_update_markname(std::string uid, std::string markname)
+{
+ 	m_sql <<  "update buddies set markname=:markname where uid=:uid",
+		soci::use(markname), soci::use(uid);
+}
+
+void buddy_mgr::buddy_update_nick(std::string uid, std::string nickname)
+{
+ 	m_sql <<  "update buddies set nick=:nick where uid=:uid",
+		soci::use(nickname), soci::use(uid);
+}
 
 } // nsmespace qqimpl
 } // namespace webqq

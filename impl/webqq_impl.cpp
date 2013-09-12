@@ -240,13 +240,13 @@ public:
 	void operator()( std::string qqnum )
 	{
 		//我说了是一个一个的更新对吧，可不能一次发起　N 个连接同时更新，会被TX拉黑名单的.
-		reenter( this )
+		BOOST_ASIO_CORO_REENTER( this )
 		{
 			for( i = 0 ; i < m_uins.size() ; i++ )
 			{
 				if (!m_webqq->m_buddy_mgr.buddy_has_qqnum(m_uins[i]))
 				{
-					yield buddy_uin_to_qqnumber( m_webqq, m_uins[i], *this );
+					BOOST_ASIO_CORO_YIELD buddy_uin_to_qqnumber( m_webqq, m_uins[i], *this );
 					if ( qqnum == "-1")
 						return;
 					else
@@ -278,6 +278,11 @@ qqGroup_ptr WebQQ::get_Group_by_gid( std::string gid )
 qqGroup_ptr WebQQ::get_Group_by_qq( std::string qq )
 {
 	return m_buddy_mgr.get_group_by_qq(qq);
+}
+
+std::vector< qqBuddy_ptr > WebQQ::get_buddies()
+{
+	return m_buddy_mgr.get_buddies();
 }
 
 void WebQQ::get_verify_image( std::string vcimgid, webqq::webqq_handler_string_t handler)

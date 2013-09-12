@@ -126,6 +126,8 @@ public:
 
 	qqGroup_ptr get_Group_by_gid( std::string gid );
 	qqGroup_ptr get_Group_by_qq( std::string qq );
+	std::vector<qqBuddy_ptr> get_buddies();
+
 	boost::asio::io_service	&get_ioservice() {
 		return m_io_service;
 	};
@@ -144,6 +146,9 @@ public:// signals
 
 	// 有群消息的时候激发.
 	boost::signals2::signal< void ( const std::string group, const std::string who, const std::vector<qqMsg> & )> siggroupmessage;
+
+	// 登录完成的时候激发.
+	boost::signals2::signal< void()> siglogined;
 
 public:
 	void init_face_map();
