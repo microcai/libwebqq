@@ -19,6 +19,39 @@
 
 #pragma once
 
+
+#if LWQQ_ENABLE_SSL
+//ssl switcher
+#define SSL_(ssl,normal) ssl
+#else
+#define SSL_(ssl,normal) normal
+#endif
+
+#define H_ SSL_("https://","http://")
+//normal ssl switcher
+#define S_(normal) SSL_("ssl.",normal)
+//standard http header+ssl switcher
+#define H_S_ H_ S_("")
+
+#define WEBQQ_PROXY SSL_("cfproxy.html?v=20110331002&callback=1","proxy.html?v=20110331002&callback=1")
+
+#define WEBQQ_LOGIN_UI_HOST H_"ui.ptlogin2.qq.com"
+#define WEBQQ_CHECK_HOST    H_ S_("check.")"ptlogin2.qq.com"
+#define WEBQQ_LOGIN_HOST    H_S_"ptlogin2.qq.com"
+#define WEBQQ_CAPTCHA_HOST  H_S_"captcha.qq.com"
+#define WEBQQ_D_HOST        H_"d.web2.qq.com"
+#define WEBQQ_S_HOST        "http://s.web2.qq.com"
+
+#define WEBQQ_D_REF_URL     WEBQQ_D_HOST"/"WEBQQ_PROXY
+#define WEBQQ_S_REF_URL     WEBQQ_S_HOST"/proxy.html?v=201103311002&callback=1"
+#define WEBQQ_LOGIN_REF_URL WEBQQ_LOGIN_HOST"/proxy.html"
+#define WEBQQ_VERSION_URL   WEBQQ_LOGIN_UI_HOST"/cgi-bin/ver"
+
+#define WEBQQ_LOGIN_LONG_REF_URL(buf) (snprintf(buf,sizeof(buf),\
+            WEBQQ_LOGIN_UI_HOST"/cgi-bin/login?daid=164&target=self&style=5&mibao_css=m_webqq&appid=1003903&enable_qlogin=0&no_verifyimg=1&s_url=http%%3A%%2F%%2Fweb2.qq.com%%2Floginproxy.html&f_url=loginerroralert&strong_login=1&login_stat=%d&t=%lu",lc->stat,LTIME),buf)
+
+
+
 /* URL for webqq login */
 #define LWQQ_URL_LOGIN_HOST "https://ssl.ptlogin2.qq.com"
 #define LWQQ_URL_CHECK_HOST "http://check.ptlogin2.qq.com"
@@ -29,6 +62,7 @@
 #define LWQQ_URL_SET_STATUS "http://d.web2.qq.com/channel/login2"
 
 #define LWQQ_URL_POLL_MESSAGE "http://d.web2.qq.com/channel/poll2"
+#define LWQQ_URL_SEND_OFFFILE "http://d.web2.qq.com/channel/send_offfile2"
 
 /* URL for get webqq version */
 #define LWQQ_URL_VERSION "http://ui.ptlogin2.qq.com/cgi-bin/ver"

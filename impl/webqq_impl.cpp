@@ -48,6 +48,7 @@ namespace js = boost::property_tree::json_parser;
 #include "webqq_keepalive.hpp"
 #include "group_message_sender.hpp"
 #include "webqq_loop.hpp"
+#include "webqq_send_offfile.hpp"
 
 #ifdef WIN32
 
@@ -145,16 +146,16 @@ void WebQQ::send_group_message( std::string group, std::string msg, send_group_m
 	m_group_message_queue.push(boost::make_tuple( group, msg, donecb ));
 }
 
-// void WebQQ::update_group_list(webqq::webqq_handler_t handler)
-// {
-// 	detail::update_group_list_op::make_update_group_list_op(shared_from_this(), handler);
-// }
-
 void WebQQ::update_group_member(boost::shared_ptr<qqGroup> group, webqq::webqq_handler_t handler)
 {
 	m_group_refresh_queue.push(
 		boost::make_tuple(handler, group->gid)
 	);
+}
+
+void WebQQ::send_offline_file(std::string uin, std::string filename, webqq::webqq_handler_t handler)
+{
+	async_send_offline_file(shared_from_this(), uin, filename, handler);
 }
 
 class SYMBOL_HIDDEN buddy_uin_to_qqnumber {

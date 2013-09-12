@@ -115,6 +115,8 @@ public:
 	void send_group_message( qqGroup &  group, std::string msg, send_group_message_cb donecb );
 	void update_group_member(boost::shared_ptr<qqGroup> group, webqq::webqq_handler_t handler);
 
+	void send_offline_file(std::string uin, std::string filename, webqq::webqq_handler_t handler);
+
 	// 查找群，如果要验证码，则获取后带vfcode参数进行调用.否则对  vfcode 是 ""
 	void search_group(std::string groupqqnum, std::string vfcode, webqq::search_group_handler handler);
 
@@ -174,6 +176,7 @@ public:
 	std::string m_clientid;
 	std::string m_psessionid;
 	std::string	m_vfwebqq;
+	std::string m_myself_uin;
 	std::string m_login_sig; // 安全参数
 	long m_msg_id; // update on every message.
 
