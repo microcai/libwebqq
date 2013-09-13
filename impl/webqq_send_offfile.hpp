@@ -225,7 +225,7 @@ public:
 	{
 		if (ec)
 		{
-			m_handler(ec);
+			return m_handler(ec);
 		}
 
 		std::string post_data = boost::str(
