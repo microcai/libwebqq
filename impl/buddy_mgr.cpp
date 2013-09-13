@@ -136,9 +136,11 @@ std::vector< qqBuddy_ptr > buddy_mgr::get_buddies()
 	std::vector<int> flags(1000);
 
 	std::vector<soci::indicator> ind_uins;
+	std::vector<soci::indicator> ind_nick;
+	std::vector<soci::indicator> ind_markname;
 
 	m_sql <<  "select uid, nick, markname from buddies",
-		soci::into(uins, ind_uins), soci::into(nicks), soci::into(marknames);
+		soci::into(uins, ind_uins), soci::into(nicks, ind_nick), soci::into(marknames, ind_markname);
 
 	std::vector<qqBuddy_ptr> ret;
 
