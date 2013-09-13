@@ -217,6 +217,13 @@ public:
 				BOOST_ASIO_CORO_YIELD async_update_buddy_list(m_webqq, *this);
 				BOOST_LOG_TRIVIAL(info) <<  "fetching buddy complete";
 
+				if (!m_webqq->m_fetch_groups)
+				{
+					BOOST_LOG_TRIVIAL(info) <<  "group fetching disable.";
+					return m_webqq->get_ioservice().post(
+						boost::asio::detail::bind_handler(m_handler, ec)
+					);
+				}
 				//polling group list
 				i = 0;
 

@@ -106,6 +106,16 @@ void webqq::send_offline_file(qqBuddy& buddy, std::string filename, webqq_handle
 	impl->send_offline_file(buddy.uin, filename, donecb);
 }
 
+void webqq::send_offline_file(std::string uin, std::string filename, webqq::webqq_handler_t donecb)
+{
+	impl->send_offline_file(uin, filename, donecb);
+}
+
+void webqq::disable_group_fetch()
+{
+	impl->m_fetch_groups = false;
+}
+
 boost::asio::io_service& webqq::get_ioservice()
 {
 	return impl->get_ioservice();

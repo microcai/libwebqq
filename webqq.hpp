@@ -151,6 +151,7 @@ public:
 	void send_group_message( std::string group, std::string msg, webqq_handler_t donecb );
 	void send_group_message( qqGroup &  group, std::string msg, webqq_handler_t donecb );
 	void send_offline_file(qqBuddy & buddy, std::string filename, webqq_handler_t donecb );
+	void send_offline_file(std::string uin, std::string filename, webqq_handler_t donecb );
 
 	void update_group_member(boost::shared_ptr<qqGroup> group );
 
@@ -175,6 +176,10 @@ public:
 	std::vector<qqBuddy_ptr> get_buddies();
 
 	boost::asio::io_service	&get_ioservice();
+
+	// settings
+
+	void disable_group_fetch();
 private:
 	boost::shared_ptr<qqimpl::WebQQ> impl;
 };

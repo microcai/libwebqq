@@ -137,7 +137,7 @@ std::vector< qqBuddy_ptr > buddy_mgr::get_buddies()
 
 	std::vector<soci::indicator> ind_uins;
 
-	m_sql <<  "select uin, nick, markname from buddies",
+	m_sql <<  "select uid, nick, markname from buddies",
 		soci::into(uins, ind_uins), soci::into(nicks), soci::into(marknames);
 
 	std::vector<qqBuddy_ptr> ret;
@@ -306,13 +306,13 @@ void buddy_mgr::db_initialize()
 
 void buddy_mgr::new_catgory(int index, int sort, std::string name)
 {
-	m_sql <<  "insert into buddy_categories (index, sort, name) values (:index, :sort, :name)",
+	m_sql <<  "insert into buddy_categories (`index`, `sort`, `name`) values (:index, :sort, :name)",
 		soci::use(index), soci::use(sort), soci::use(name);
 }
 
 void buddy_mgr::new_buddy(std::string uid, int flag, int category)
 {
-	m_sql <<  "insert into buddies (uin, flag, category) values (:uin, :flag, :category)",
+	m_sql <<  "insert into buddies (uid, flag, category) values (:uid, :flag, :category)",
 		soci::use(uid), soci::use(flag), soci::use(category);
 }
 

@@ -217,6 +217,10 @@ public:
 	cookie::cookie_store m_cookie_mgr;
 
 	buddy_mgr	m_buddy_mgr;
+
+	// settings!
+
+	bool m_fetch_groups;
 };
 
 };

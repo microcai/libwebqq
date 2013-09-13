@@ -111,6 +111,8 @@ WebQQ::WebQQ( boost::asio::io_service& _io_service,
 #endif
 
 	init_face_map();
+
+	m_fetch_groups = true;
 }
 
 void WebQQ::start()

@@ -20,7 +20,7 @@
 #pragma once
 
 #include <iostream>
-
+#include <boost/array.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
@@ -48,6 +48,7 @@ namespace pt = boost::property_tree;
 #include "constant.hpp"
 #include "lwqq_status.hpp"
 #include "webqq_group_qqnumber.hpp"
+#include "webqq_hash.hpp"
 
 namespace webqq {
 namespace qqimpl {
@@ -56,9 +57,20 @@ namespace detail {
 template<class Handler>
 class update_buddy_list_op : boost::asio::coroutine
 {
-	static std::string create_post_data( std::string vfwebqq )
+    static std::string hashP(std::string uin,std::string ptwebqq)
 	{
-		std::string m = boost::str( boost::format( "{\"vfwebqq\":\"%s\"}" ) % vfwebqq );
+		return hash_func_P(uin, ptwebqq);
+	}
+
+	std::string create_post_data(std::string vfwebqq)
+	{
+		std::string m = boost::str(
+			boost::format( "{\"hash\":\"%s\", \"vfwebqq\":\"%s\"}" )
+			% hashP(m_webqq->m_myself_uin,
+				m_webqq->m_cookie_mgr.get_cookie(WEBQQ_S_HOST "/api/get_user_friends2")["ptwebqq"]
+			)
+			% vfwebqq
+		);
 		return std::string( "r=" ) + boost::url_encode(m);
 	}
 
