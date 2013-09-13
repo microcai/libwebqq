@@ -103,12 +103,16 @@ void webqq::send_group_message( qqGroup& group, std::string msg, webqq_handler_t
 
 void webqq::send_offline_file(qqBuddy& buddy, std::string filename, webqq_handler_t donecb)
 {
-	impl->send_offline_file(buddy.uin, filename, donecb);
+	impl->get_ioservice().post(
+		boost::bind<void>(&qqimpl::WebQQ::send_offline_file, impl, buddy.uin, filename, donecb)
+	);
 }
 
 void webqq::send_offline_file(std::string uin, std::string filename, webqq::webqq_handler_t donecb)
 {
-	impl->send_offline_file(uin, filename, donecb);
+	impl->get_ioservice().post(
+		boost::bind<void>(&qqimpl::WebQQ::send_offline_file, impl, uin, filename, donecb)
+	);
 }
 
 void webqq::disable_group_fetch()

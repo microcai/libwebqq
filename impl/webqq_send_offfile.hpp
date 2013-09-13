@@ -62,7 +62,7 @@ public:
 			% lwqq_time()
 		);
 
-		m_uploader = boost::make_shared<avhttp::file_upload>(boost::ref(m_webqq->get_ioservice()));
+		m_uploader = boost::make_shared<avhttp::file_upload>(boost::ref(m_webqq->get_ioservice()), true);
 
 		m_uploader->request_option(
 			avhttp::request_opts()
@@ -212,7 +212,7 @@ class send_offline_file_op : boost::asio::coroutine
 {
 public:
 	send_offline_file_op(const boost::shared_ptr<WebQQ>& _webqq,
-		const std::string& filename, const std::string& _to_uin,
+		const std::string& _to_uin, const std::string& filename,
 		Handler handler)
 		: m_webqq(_webqq)
 		, m_handler(handler)
@@ -270,18 +270,18 @@ private:
 template<class Handler>
 send_offline_file_op<Handler>
 make_send_offline_file_op(const boost::shared_ptr<WebQQ> & _webqq,
-		const std::string &filename, const std::string &to_uin, Handler handler)
+		const std::string &to_uin, const std::string &filename, Handler handler)
 {
-	return send_offline_file_op<Handler>(_webqq, filename, to_uin, handler);
+	return send_offline_file_op<Handler>(_webqq, to_uin, filename, handler);
 }
 
 } // namespace detail
 
 template<class Handler>
 void async_send_offline_file(const boost::shared_ptr<WebQQ> & _webqq,
-		const std::string &filename, const std::string &to_uin, Handler handler)
+		const std::string &to_uin, const std::string &filename, Handler handler)
 {
-	detail::make_send_offline_file_op(_webqq, filename, to_uin, handler);
+	detail::make_send_offline_file_op(_webqq, to_uin, filename, handler);
 }
 
 } // namespace qqimpl

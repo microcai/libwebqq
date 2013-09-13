@@ -92,7 +92,7 @@ WebQQ::WebQQ( boost::asio::io_service& _io_service,
 	, m_passwd( _passwd )
 	, m_status( LWQQ_STATUS_OFFLINE )
 	, m_cookie_mgr(no_persistent_db? ":memory:": "webqq_persistent")
-	, m_buddy_mgr(no_persistent_db? "buddy_cache": "webqq_persistent")
+	, m_buddy_mgr(no_persistent_db? ":memory:": "webqq_persistent")
 	, m_vc_queue(_io_service, 1)
 	, m_group_message_queue(_io_service, 20) // 最多保留最后的20条未发送消息.
 	, m_group_refresh_queue(_io_service)
