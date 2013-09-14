@@ -54,7 +54,7 @@ public:
 		if (ec)
 		{
 			std::cerr << "Error: " << ec.message() << std::endl;
-			return failed_invode_handler(ec);
+			failed_invode_handler(ec);
 		}
 
 		std::string url = boost::str(
