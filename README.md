@@ -14,14 +14,14 @@ libwebqq 的用法非常简单, 构造一个 webqq 对象, 当 io\_service::run(
 
 ```c++
 
-boost::asio::io\_service io\_service;
+boost::asio::io_service io_service;
 
-webqq myqq(io\_service, "your qqnum", "your qqpassword");
+webqq myqq(io_service, "your qqnum", "your qqpassword");
 
-myqq.on\_group\_msg(&my\_qq\_message\_callback);
-myqq.on\_verify\_code(&my\_qq\_vcode\_decoder);
+myqq.on_group_msg(&my_qq_message_callback);
+myqq.on_verify_code(&my_qq\_vcode_decoder);
 
-io\_service.run();
+io_service.run();
 
 ```
 
