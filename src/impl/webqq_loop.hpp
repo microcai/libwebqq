@@ -1,6 +1,6 @@
 
 #include <boost/asio.hpp>
-#include "../webqq.hpp"
+#include "libwebqq/webqq.hpp"
 
 namespace webqq{
 namespace qqimpl{

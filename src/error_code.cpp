@@ -1,5 +1,5 @@
 
-#include "error_code.hpp"
+#include "libwebqq/error_code.hpp"
 
 const boost::system::error_category& webqq::error::error_category()
 {

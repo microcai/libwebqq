@@ -48,8 +48,8 @@ namespace pt = boost::property_tree;
 #include <avhttp/async_read_body.hpp>
 typedef boost::shared_ptr<avhttp::http_stream> read_streamptr;
 
-#include "../webqq.hpp"
-#include "../error_code.hpp"
+#include "libwebqq/webqq.hpp"
+#include "libwebqq/error_code.hpp"
 #include "cookie_mgr.hpp"
 #include "buddy_mgr.hpp"
 

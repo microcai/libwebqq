@@ -6,7 +6,11 @@ include_directories(${Boost_INCLUDE_DIRS})
 include_directories(../avhttp/include/)
 include_directories(..)
 
-add_library(webqq STATIC error_code.cpp webqq.cpp impl/webqq_face.cpp impl/webqq_impl.cpp impl/buddy_mgr.cpp impl/webqq_loop.cpp)
+include_directories(${PROJECT_SOURCE_DIR}/include)
+
+add_library(webqq STATIC src/error_code.cpp src/webqq.cpp
+	src/impl/webqq_face.cpp src/impl/webqq_impl.cpp src/impl/buddy_mgr.cpp src/impl/webqq_loop.cpp
+)
 
 target_link_libraries(webqq ${Boost_LIBRARIES} soci_sqlite3)
 INCLUDE (CheckLibraryExists)

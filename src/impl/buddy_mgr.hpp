@@ -16,7 +16,7 @@
 #include <boost-gregorian-date.h>
 #include <soci.h>
 
-#include "../webqq.hpp"
+#include "libwebqq/webqq.hpp"
 
 namespace webqq {
 namespace qqimpl {

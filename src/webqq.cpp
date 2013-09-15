@@ -25,8 +25,8 @@ namespace fs = boost::filesystem;
 #include "boost/urlencode.hpp"
 #include "boost/timedcall.hpp"
 
-#include "webqq.hpp"
-#include "error_code.hpp"
+#include "libwebqq/webqq.hpp"
+#include "libwebqq/error_code.hpp"
 
 #include "impl/webqq_impl.hpp"
 
