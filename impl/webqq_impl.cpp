@@ -34,6 +34,7 @@ namespace js = boost::property_tree::json_parser;
 #include <boost/scope_exit.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/json_create_escapes_utf8.hpp>
 
 #include "boost/timedcall.hpp"
 #include "boost/consolestr.hpp"

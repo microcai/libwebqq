@@ -32,6 +32,7 @@ namespace js = boost::property_tree::json_parser;
 
 #include <boost/property_tree/json_parser.hpp>
 namespace pt = boost::property_tree;
+#include <boost/json_create_escapes_utf8.hpp>
 
 #include <boost/format.hpp>
 
