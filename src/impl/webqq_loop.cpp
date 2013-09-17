@@ -149,6 +149,9 @@ public:
 			BOOST_LOG_TRIVIAL(info)
 				<< "stoped polling messages!";
 
+			// clear the session cookie
+			m_webqq->m_cookie_mgr.drop_session();
+
 			do {
 				// try check_login
 				BOOST_ASIO_CORO_YIELD async_check_login(m_webqq, *this);
