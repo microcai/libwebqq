@@ -41,7 +41,8 @@ public:
 	{
 		/* Create a POST request */
 		std::string msg = boost::str(
-							boost::format( "{\"clientid\":\"%s\",\"psessionid\":\"%s\"}" )
+							boost::format( "{\"ptwebqq\":\"%s\", \"clientid\":\"%s\",\"psessionid\":\"%s\", \"key\":\"\"}" )
+							% m_webqq->m_cookie_mgr.get_cookie("http://qq.com")["ptwebqq"]
 							% m_webqq->m_clientid
 							% m_webqq->m_psessionid
 						);
