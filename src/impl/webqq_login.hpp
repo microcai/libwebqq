@@ -256,6 +256,8 @@ public:
 					);
 				}
 
+				BOOST_LOG_TRIVIAL(info) <<  "group fetching numbers......";
+
 				// 接着是刷新群成员列表.
 				for (iter = m_webqq->m_groups.begin(); iter != m_webqq->m_groups.end(); ++iter)
 				{
@@ -265,6 +267,8 @@ public:
 					BOOST_ASIO_CORO_YIELD
 						boost::delayedcallms(m_webqq->get_ioservice(), 530, boost::bind<void>(*this, ec, 0));
 				}
+
+				BOOST_LOG_TRIVIAL(info) <<  "group numbers fetched";
 			}
 			return m_webqq->get_ioservice().post(
 				boost::asio::detail::bind_handler(m_handler, ec)

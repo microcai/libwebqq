@@ -51,6 +51,7 @@ public:
 
 		m_buffer = boost::make_shared<boost::asio::streambuf>();
 		m_stream = boost::make_shared<avhttp::http_stream>(boost::ref( m_webqq->get_ioservice()));
+		m_webqq->m_cookie_mgr.save_cookie("web2.qq.com", "/", "usehttps", "1", "session");
 		m_webqq->m_cookie_mgr.get_cookie(LWQQ_URL_POLL_MESSAGE, *m_stream);
 
 		m_stream->request_options( avhttp::request_opts()

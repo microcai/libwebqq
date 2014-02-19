@@ -48,11 +48,13 @@ public:
 	check_login_op( boost::shared_ptr<qqimpl::WebQQ> webqq, Handler handler)
 		: m_webqq( webqq ), m_handler(handler)
 	{
-		// 首先获得版本.
+		// 首先登录一下 w.qq.com
 		stream = boost::make_shared<avhttp::http_stream>( boost::ref(m_webqq->get_ioservice()));
 		m_buffer = boost::make_shared<boost::asio::streambuf>();
-		BOOST_LOG_TRIVIAL(debug) << "Get webqq version from " <<  LWQQ_URL_VERSION ;
-		avhttp::async_read_body( *stream, LWQQ_URL_VERSION, * m_buffer,  *this );
+
+		BOOST_LOG_TRIVIAL(debug) << "go w.qq.com";
+
+		avhttp::async_read_body( *stream, "http://w.qq.com", * m_buffer,  *this );
 	}
 
 	// 在这里实现　QQ 的登录.
@@ -68,6 +70,17 @@ public:
 
 		BOOST_ASIO_CORO_REENTER(this)
 		{
+			m_webqq->m_cookie_mgr.save_cookie(*stream);
+
+	  		// 获得版本.
+	  		stream = boost::make_shared<avhttp::http_stream>( boost::ref(m_webqq->get_ioservice()));
+			m_buffer = boost::make_shared<boost::asio::streambuf>();
+
+	  		BOOST_LOG_TRIVIAL(debug) << "Get webqq version from " <<  LWQQ_URL_VERSION ;
+			BOOST_ASIO_CORO_YIELD avhttp::async_read_body(
+				*stream, LWQQ_URL_VERSION, *m_buffer, *this
+			);
+
 			ex.set_expression("ptuiV\\(([0-9]*)\\);");
 
 			if(boost::regex_search(response, what, ex))
@@ -78,7 +91,6 @@ public:
 			BOOST_LOG_TRIVIAL(info) << "Get webqq version: " << m_webqq->m_version;
 
 			// 接着获得验证码.
-
 			m_webqq->m_clientid.clear();
 			m_webqq->m_groups.clear();
 			m_webqq->m_psessionid.clear();

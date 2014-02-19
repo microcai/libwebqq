@@ -73,7 +73,6 @@ public:
 			while (m_webqq->m_status == LWQQ_STATUS_ONLINE)
 			{
 				// TODO, 每 12个小时刷新群列表.
-
 				// 获取一次消息。
 				BOOST_ASIO_CORO_YIELD async_poll_message(m_webqq,
 					boost::bind<void>(*this, _1, std::string())
