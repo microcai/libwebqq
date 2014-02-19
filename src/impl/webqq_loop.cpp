@@ -152,6 +152,8 @@ public:
 			// clear the session cookie
 			m_webqq->m_cookie_mgr.drop_session();
 
+			m_webqq->m_cookie_mgr.save_cookie("qq.com", "/", "ts_last", "w.qq.com", "session");
+
 			do {
 				// try check_login
 				BOOST_ASIO_CORO_YIELD async_check_login(m_webqq, *this);

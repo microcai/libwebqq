@@ -69,7 +69,7 @@ public:
 			if( json.get<std::string>( "retcode" ) == "0" ) {
 				m_webqq->m_vfwebqq = json.get<std::string>( "result.vfwebqq" );
 
-				m_webqq->m_cookie_mgr.save_cookie("qq.com", "/", "vfwebqq", m_webqq->m_vfwebqq, "session");
+				m_webqq->m_cookie_mgr.save_cookie("psession.qq.com", "/", "vfwebqq", m_webqq->m_vfwebqq, "session");
 
 				m_webqq->m_status = LWQQ_STATUS_ONLINE;
 

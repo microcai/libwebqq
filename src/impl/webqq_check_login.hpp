@@ -92,10 +92,10 @@ public:
 
 			BOOST_ASIO_CORO_YIELD avhttp::async_read_body(*stream,/*url*/
 					boost::str(
-						boost::format("%s?daid=164&target=self&style=5&mibao_css=m_webqq&appid=%s&enable_qlogin=0&s_url=%s")
+						boost::format("%s?daid=164&target=self&style=5&mibao_css=m_webqq&appid=%s&enable_qlogin=0&s_url=%s&strong_login=1&login_state=10&t=20131024001")
 							% LWQQ_URL_CHECK_LOGIN_SIG_HOST
 							% APPID
-							% boost::url_encode(std::string("http://web2.qq.com/loginproxy.html"))
+							% boost::url_encode(std::string("http://w.qq.com/proxy.html"))
 					),
 					*m_buffer,
 					*this);
@@ -114,8 +114,8 @@ public:
 
 			stream->request_options(
 				avhttp::request_opts()
-				(avhttp::http_options::cookie, boost::str(boost::format("chkuin=%s") % m_webqq->m_qqnum))
 				(avhttp::http_options::connection, "close")
+				(avhttp::http_options::referer, "https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=16&mibao_css=m_webqq&appid=501004106&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fw.qq.com%2Fproxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20131024001")
 			);
 
 			url = boost::str(boost::format("%s%s?uin=%s&appid=%s&js_ver=10068&js_type=0&login_sig=%s&u1=%s")
@@ -124,6 +124,8 @@ public:
                     % m_webqq->m_login_sig
                     % "http%3A%2F%2Fw.qq.com%2Fproxy.html&r=0.026550371946748808"
 			);
+
+			m_webqq->m_cookie_mgr.get_cookie(url, *stream);
 
 			BOOST_ASIO_CORO_YIELD avhttp::async_read_body(*stream, url , *m_buffer, *this);
 
