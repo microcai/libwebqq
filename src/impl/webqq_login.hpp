@@ -46,6 +46,7 @@ namespace js = boost::property_tree::json_parser;
 #include "webqq_group_qqnumber.hpp"
 #include "webqq_group_list.hpp"
 #include "webqq_buddy_info.hpp"
+#include "webqq_vfwebqq.hpp"
 
 namespace webqq {
 namespace qqimpl {
@@ -180,6 +181,8 @@ public:
 						(avhttp::http_options::accept, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 						(avhttp::http_options::user_agent, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.32 Safari/537.36")
 					);
+
+					BOOST_LOG_TRIVIAL(info) <<  "redirected again to " <<  m_stream->location();
 					BOOST_ASIO_CORO_YIELD avhttp::async_read_body(*m_stream, m_stream->location(), *m_buffer, *this);
 					m_webqq->m_cookie_mgr.save_cookie(*m_stream);
 				}
@@ -195,6 +198,9 @@ public:
 				}
 				//change status,  this is the last step for login
 				// 设定在线状态.
+
+				//  get vfwebqq
+				async_update_vfwebqq(m_webqq, boost::bind<void>(*this, _1, 0));
 
 				BOOST_LOG_TRIVIAL(info) <<  "changing status...";
 
