@@ -216,7 +216,7 @@ public:
 						m_io_service, 300, boost::asio::detail::bind_handler(*this, ec, str));
 				}
 
-				BOOST_LOG_TRIVIAL(error) << "30s 后重试...";
+				BOOST_LOG_TRIVIAL(error) << "30s 后重试..." <<  ec.message();
 
 				BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
 						m_io_service, 30, boost::asio::detail::bind_handler(*this,ec, str));

@@ -64,6 +64,7 @@ public:
 
 		boost::regex ex;
 		boost::smatch what;
+		std::string url;
 
 		BOOST_ASIO_CORO_REENTER(this)
 		{
@@ -116,10 +117,15 @@ public:
 				(avhttp::http_options::cookie, boost::str(boost::format("chkuin=%s") % m_webqq->m_qqnum))
 				(avhttp::http_options::connection, "close")
 			);
-			BOOST_ASIO_CORO_YIELD avhttp::async_read_body(*stream,
-					/*url*/ boost::str(boost::format("%s%s?uin=%s&appid=%s") % LWQQ_URL_CHECK_HOST % VCCHECKPATH % m_webqq->m_qqnum % APPID),
-					*m_buffer,
-					*this);
+
+			url = boost::str(boost::format("%s%s?uin=%s&appid=%s&js_ver=10068&js_type=0&login_sig=%s&u1=%s")
+                    % LWQQ_URL_CHECK_HOST
+                    % VCCHECKPATH % m_webqq->m_qqnum % APPID
+                    % m_webqq->m_login_sig
+                    % "http%3A%2F%2Fw.qq.com%2Fproxy.html&r=0.026550371946748808"
+			);
+
+			BOOST_ASIO_CORO_YIELD avhttp::async_read_body(*stream, url , *m_buffer, *this);
 
 			// 解析验证码，然后带验证码登录.
 

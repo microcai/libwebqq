@@ -155,7 +155,7 @@ public:
 				m_stream->request_options(
 					avhttp::request_opts()
 					(avhttp::http_options::connection, "close")
-					(avhttp::http_options::referer, "https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=5&mibao_css=m_webqq&appid=1003903&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fweb2.qq.com%2Floginproxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20130723001")
+					(avhttp::http_options::referer, "https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=16&mibao_css=m_webqq&appid=501004106&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fweb2.qq.com%2Floginproxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20131024001")
 					(avhttp::http_options::accept, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 					(avhttp::http_options::user_agent, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.32 Safari/537.36")
 				);
@@ -205,6 +205,8 @@ public:
 
 				if(ec)
 				{
+					BOOST_LOG_TRIVIAL(error) <<  "change online status failed!";
+
 					// 修改在线状态失败!
 					m_webqq->get_ioservice().post(boost::asio::detail::bind_handler(m_handler, ec));
 					return;

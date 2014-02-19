@@ -51,7 +51,6 @@ public:
 		std::stringstream	post_val_r;
 		boost::property_tree::ptree r;
 		r.put("status", lwqq_status_to_str( LWQQ_STATUS_ONLINE ));
-		r.put("passwd_sig", "");
 
 		avhttp::cookies cookies = m_webqq->m_cookie_mgr.get_cookie(LWQQ_URL_SET_STATUS);
 
@@ -66,10 +65,8 @@ public:
 		boost::property_tree::json_parser::write_json(post_val_r , r);
 
 		std::string	msg = boost::str(
-					boost::format( "r=%s&clientid=%s&psessionid=%s" )
+					boost::format( "r=%s" )
 					% boost::url_encode(post_val_r.str())
-					% m_webqq->m_clientid
-					% (m_webqq->m_psessionid.empty() ? std::string("null") : m_webqq->m_psessionid)
 			  );
 
 		stream.reset( new avhttp::http_stream( m_webqq->get_ioservice() ) );
