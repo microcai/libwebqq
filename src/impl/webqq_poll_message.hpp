@@ -18,7 +18,7 @@ namespace js = boost::property_tree::json_parser;
 #include <boost/json_create_escapes_utf8.hpp>
 
 #include "boost/timedcall.hpp"
-#include "boost/consolestr.hpp"
+#include "boost/stringencodings.hpp"
 #include "boost/urlencode.hpp"
 
 #include "webqq_impl.hpp"

@@ -42,7 +42,7 @@ namespace pt = boost::property_tree;
 
 #include "boost/timedcall.hpp"
 #include "boost/urlencode.hpp"
-#include "boost/consolestr.hpp"
+#include "boost/stringencodings.hpp"
 
 #include "webqq_impl.hpp"
 #include "constant.hpp"
@@ -139,7 +139,7 @@ public:
 
 						newlist.insert(std::make_pair(newgroup->gid, newgroup));
 						m_webqq->m_groups.insert(std::make_pair(newgroup->gid, newgroup));
-						BOOST_LOG_TRIVIAL(info) << console_out_str("qq群 ") << console_out_str(newgroup->gid) << " " <<  console_out_str(newgroup->name);
+						BOOST_LOG_TRIVIAL(info) << utf8_to_local_encode("qq群 ") << utf8_to_local_encode(newgroup->gid) << " " <<  utf8_to_local_encode(newgroup->name);
 					}
 				}
 				if (replace_list){

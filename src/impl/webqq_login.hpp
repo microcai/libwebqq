@@ -36,7 +36,7 @@ namespace js = boost::property_tree::json_parser;
 
 #include "boost/timedcall.hpp"
 #include "boost/urlencode.hpp"
-#include "boost/consolestr.hpp"
+#include "boost/stringencodings.hpp"
 
 #include "webqq_impl.hpp"
 
@@ -315,7 +315,7 @@ private:
 		response.resize(bytes_transfered);
 		m_buffer->sgetn(&response[0], bytes_transfered);
 
-		BOOST_LOG_TRIVIAL(debug) << console_out_str(response);
+		BOOST_LOG_TRIVIAL(debug) << utf8_to_local_encode(response);
 
 		int status;
 		boost::cmatch what;

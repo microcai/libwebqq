@@ -42,7 +42,7 @@ namespace pt = boost::property_tree;
 
 #include "boost/timedcall.hpp"
 #include "boost/urlencode.hpp"
-#include "boost/consolestr.hpp"
+#include "boost/stringencodings.hpp"
 
 #include "webqq_impl.hpp"
 #include "constant.hpp"

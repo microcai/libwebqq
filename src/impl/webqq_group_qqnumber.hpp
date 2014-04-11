@@ -43,7 +43,7 @@ namespace pt = boost::property_tree;
 
 #include "boost/timedcall.hpp"
 #include "boost/urlencode.hpp"
-#include "boost/consolestr.hpp"
+#include "boost/stringencodings.hpp"
 
 #include "webqq_impl.hpp"
 #include "constant.hpp"
@@ -108,7 +108,7 @@ public:
 			if( jsonobj.get<int>( "retcode" ) == 0 ) {
 				m_this_group->qqnum = jsonobj.get<std::string>( "result.account" );
 				BOOST_LOG_TRIVIAL(debug) <<  "qq number of group "
-					<<  console_out_str(m_this_group->name) << " is " <<  m_this_group->qqnum;
+					<<  utf8_to_local_encode(m_this_group->name) << " is " <<  m_this_group->qqnum;
 
 				m_webqq->siggroupnumber(m_this_group);
 
@@ -116,7 +116,7 @@ public:
 
 				return ;
 			}else{
-				BOOST_LOG_TRIVIAL(error) << console_out_str("获取群的QQ号码失败");
+				BOOST_LOG_TRIVIAL(error) << utf8_to_local_encode("获取群的QQ号码失败");
 				pt::json_parser::write_json(std::cerr, jsonobj);
 			}
 		} catch( const pt::ptree_error & jserr ) {

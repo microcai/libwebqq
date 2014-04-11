@@ -22,7 +22,7 @@
 #include "webqq_impl.hpp"
 
 #include "constant.hpp"
-#include "boost/consolestr.hpp"
+#include "boost/stringencodings.hpp"
 
 namespace webqq {
 namespace qqimpl {
@@ -206,7 +206,7 @@ private:
 			}
 		}catch (const std::out_of_range &e)
 		{
-			BOOST_LOG_TRIVIAL(error) << __FILE__ <<  __LINE__<<  " "  <<  console_out_str("QQ消息字符串包含非法字符 ");
+			BOOST_LOG_TRIVIAL(error) << __FILE__ <<  __LINE__<<  " "  <<  utf8_to_local_encode("QQ消息字符串包含非法字符 ");
 			result += "broken encode sended";
 		}
 
