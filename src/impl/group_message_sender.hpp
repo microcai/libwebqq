@@ -146,15 +146,15 @@ private:
 
 		//unescape for POST
 		std::string messagejson = boost::str(
-			boost::format("{\"group_uin\":\"%s\", "
-				"\"content\":\"["
-				"\\\"%s\\\","
-				"[\\\"font\\\",{\\\"name\\\":\\\"宋体\\\",\\\"size\\\":\\\"10\\\",\\\"style\\\":[0,0,0],\\\"color\\\":\\\"000000\\\"}]"
-				"]\","
-				"\"face\":600, "
-				"\"msg_id\":%ld,"
-				"\"clientid\":\"%s\","
-				"\"psessionid\":\"%s\"}")
+			boost::format(literal_to_utf8str("{\"group_uin\":\"%s\", \
+				\"content\":\"[\
+				\\\"%s\\\",\
+				[\\\"font\\\",{\\\"name\\\":\\\"宋体\\\",\\\"size\\\":\\\"10\\\",\\\"style\\\":[0,0,0],\\\"color\\\":\\\"000000\\\"}]\
+				]\",\
+				\"face\":600, \
+				\"msg_id\":%ld,\
+				\"clientid\":\"%s\",\
+				\"psessionid\":\"%s\"}"))
 				% group
 				% parse_unescape( msg )
 				% m_webqq->m_msg_id ++

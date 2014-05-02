@@ -240,7 +240,8 @@ public:
 					BOOST_ASIO_CORO_YIELD update_group_list(m_webqq, boost::bind<void>(*this, _1, 0));
 					if ( ec )
 					{
-						BOOST_LOG_TRIVIAL(warning) << "刷新群列表失败，第 " <<  i << " 次重试中(共五次)..." ;
+						BOOST_LOG_TRIVIAL(warning) << literal_to_localstr("刷新群列表失败，第 ")
+							<< i << literal_to_localstr(" 次重试中(共五次)...") ;
 
 						BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
 							m_webqq->get_ioservice(), i*20+50,

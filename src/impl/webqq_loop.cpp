@@ -168,7 +168,8 @@ public:
 					{
 						if (ec)
 						{
-							BOOST_LOG_TRIVIAL(error) << "发生错误: " <<  ec.message() <<  " 重试中...";
+							BOOST_LOG_TRIVIAL(error) << literal_to_localstr("发生错误: ")
+								<< utf8_to_local_encode( ec.message()) <<  literal_to_localstr(" 重试中...");
 							BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
 								m_io_service, 300, boost::asio::detail::bind_handler(*this, ec, str));
 						}
@@ -204,20 +205,20 @@ public:
 				if (ec == error::login_failed_wrong_passwd)
 				{
 					// 密码问题,  直接退出了.
-					BOOST_LOG_TRIVIAL(error) << ec.message();
-					BOOST_LOG_TRIVIAL(error) << "停止登录, 请修改密码重启 avbot";
+					BOOST_LOG_TRIVIAL(error) << utf8_to_local_encode(ec.message());
+					BOOST_LOG_TRIVIAL(error) << literal_to_localstr("停止登录, 请修改密码重启 avbot");
 					m_webqq->m_status = LWQQ_STATUS_QUITTING;
 					return;
 				}
 				if (ec == error::login_failed_blocked_account)
 				{
-					BOOST_LOG_TRIVIAL(error) << "300s 后重试...";
+					BOOST_LOG_TRIVIAL(error) << literal_to_localstr("300s 后重试...");
 					// 帐号冻结, 多等些时间, 嘻嘻
 					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
 						m_io_service, 300, boost::asio::detail::bind_handler(*this, ec, str));
 				}
 
-				BOOST_LOG_TRIVIAL(error) << "30s 后重试..." <<  ec.message();
+				BOOST_LOG_TRIVIAL(error) << literal_to_localstr("30s 后重试...") << utf8_to_local_encode(ec.message());
 
 				BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
 						m_io_service, 30, boost::asio::detail::bind_handler(*this,ec, str));
