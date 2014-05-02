@@ -116,7 +116,7 @@ public:
 
 				return ;
 			}else{
-				BOOST_LOG_TRIVIAL(error) << utf8_to_local_encode("获取群的QQ号码失败");
+				BOOST_LOG_TRIVIAL(error) << literal_to_localstr("获取群的QQ号码失败");
 				pt::json_parser::write_json(std::cerr, jsonobj);
 			}
 		} catch( const pt::ptree_error & jserr ) {

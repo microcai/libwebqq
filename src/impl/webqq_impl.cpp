@@ -419,7 +419,7 @@ void WebQQ::cb_join_group( qqGroup_ptr group, const boost::system::error_code& e
 			// 获取群的其他信息
 			// GET http://s.web2.qq.com/api/get_group_public_info2?gcode=3272859045&vfwebqq=f08e7a200fd0be375d753d3fedfd24e99f6ba0a8063005030bb95f9fa4b7e0c30415ae74e77709e3&t=1365161430494 HTTP/1.1
 		}else if(jsobj.get<int>("retcode") == 100001){
-			std::cout << utf8_to_local_encode("原因： ") <<   jsobj.get<std::string>("tips") <<  std::endl;
+			std::cout << literal_to_localstr("原因： ") <<   jsobj.get<std::string>("tips") <<  std::endl;
 			// 需要验证码, 先获取验证码图片，然后回调
 			fetch_aid(boost::str(boost::format("aid=%s&_=%ld") % APPID % std::time(NULL)), boost::bind(cb_join_group_vcode, _1, _2, handler, group) );
 		}else{

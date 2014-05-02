@@ -139,7 +139,7 @@ public:
 
 						newlist.insert(std::make_pair(newgroup->gid, newgroup));
 						m_webqq->m_groups.insert(std::make_pair(newgroup->gid, newgroup));
-						BOOST_LOG_TRIVIAL(info) << utf8_to_local_encode("qq群 ") << utf8_to_local_encode(newgroup->gid) << " " <<  utf8_to_local_encode(newgroup->name);
+						BOOST_LOG_TRIVIAL(info) << literal_to_localstr("qq群 ") << utf8_to_local_encode(newgroup->gid) << " " <<  utf8_to_local_encode(newgroup->name);
 					}
 				}
 				if (replace_list){
