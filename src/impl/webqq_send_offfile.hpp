@@ -1,4 +1,4 @@
-
+﻿
 #pragma once
 
 #include <boost/log/trivial.hpp>
@@ -25,7 +25,7 @@ namespace detail{
 inline long lwqq_time()
 {
     struct timeval tv;
-    gettimeofday(&tv, NULL);
+   // gettimeofday(&tv, NULL);
     long ret;
     ret = tv.tv_sec*1000+tv.tv_usec/1000;
     return ret;

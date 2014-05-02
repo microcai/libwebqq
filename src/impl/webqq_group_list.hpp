@@ -1,4 +1,4 @@
- 
+﻿ 
 /*
  * Copyright (C) 2012 - 2013  微蔡 <microcai@fedoraproject.org>
  *
@@ -59,7 +59,7 @@ class update_group_list_op : boost::asio::coroutine
 	static std::string create_post_data( std::string vfwebqq )
 	{
 		std::string m = boost::str( boost::format( "{\"vfwebqq\":\"%s\"}" ) % vfwebqq );
-		return std::string( "r=" ) + boost::url_encode(m);
+		return std::string("r=") + avhttp::detail::escape_string(m);
 	}
 
 	void do_fetch()

@@ -66,7 +66,7 @@ public:
 
 		std::string	msg = boost::str(
 					boost::format( "r=%s" )
-					% boost::url_encode(post_val_r.str())
+					% avhttp::detail::escape_string(post_val_r.str())
 			  );
 
 		stream.reset( new avhttp::http_stream( m_webqq->get_ioservice() ) );

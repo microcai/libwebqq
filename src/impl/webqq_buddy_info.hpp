@@ -71,7 +71,7 @@ class update_buddy_list_op : boost::asio::coroutine
 			)
 			% vfwebqq
 		);
-		return std::string( "r=" ) + boost::url_encode(m);
+		return std::string("r=") + avhttp::detail::escape_string(m);
 	}
 
 	void do_fetch()

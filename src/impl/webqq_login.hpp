@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) 2012 - 2013  微蔡 <microcai@fedoraproject.org>
  *
@@ -125,7 +125,7 @@ public:
 							  % vccode
 							  % m_webqq->m_status
 							  % APPID
-							  % boost::url_encode(std::string("http://web2.qq.com/loginproxy.html?login2qq=1&webqq_type=10"))
+							  % avhttp::detail::escape_string(std::string("http://web2.qq.com/loginproxy.html?login2qq=1&webqq_type=10"))
 							  % m_webqq->m_login_sig
 						  );
 

@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) 2012 - 2013  微蔡 <microcai@fedoraproject.org>
  *
@@ -107,7 +107,7 @@ public:
 						boost::format("%s?daid=164&target=self&style=5&mibao_css=m_webqq&appid=%s&enable_qlogin=0&s_url=%s&strong_login=1&login_state=10&t=20131024001")
 							% LWQQ_URL_CHECK_LOGIN_SIG_HOST
 							% APPID
-							% boost::url_encode(std::string("http://w.qq.com/proxy.html"))
+							% avhttp::detail::escape_string(std::string("http://w.qq.com/proxy.html"))
 					),
 					*m_buffer,
 					*this);

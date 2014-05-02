@@ -1,4 +1,4 @@
-
+﻿
 /*
  *
  */
@@ -164,7 +164,7 @@ private:
 
 		std::string postdata =  boost::str(
 				boost::format( "r=%s&clientid=%s&psessionid=%s" )
-				% boost::url_encode(messagejson)
+				% avhttp::detail::escape_string(messagejson)
 				% m_webqq->m_clientid
 				% m_webqq->m_psessionid
 				);

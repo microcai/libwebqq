@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2012 - 2013  微蔡 <microcai@fedoraproject.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -449,7 +449,7 @@ void WebQQ::join_group(qqGroup_ptr group, std::string vfcode, webqq::join_group_
 								% m_vfwebqq
 							);
 
-	postdata = std::string("r=") + boost::url_encode(postdata);
+	postdata = std::string("r=") + avhttp::detail::escape_string(postdata);
 
 	read_streamptr stream(new avhttp::http_stream(m_io_service));
 	m_cookie_mgr.get_cookie(url, *stream);

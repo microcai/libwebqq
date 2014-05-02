@@ -1,4 +1,4 @@
-
+﻿
 #include <boost/log/trivial.hpp>
 
 #include <boost/avloop.hpp>

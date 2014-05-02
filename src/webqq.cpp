@@ -160,7 +160,7 @@ void webqq::async_fetch_cface(boost::asio::io_service & io_service, const qqMsgC
 						% cface.gid
 						% cface.uin
 						% cface.file_id
-						% boost::url_encode( cface.name )
+						% avhttp::detail::escape_string(cface.name)
 						% cface.vfwebqq
 					);
 
@@ -187,7 +187,7 @@ void webqq::async_cface_url_final(boost::asio::io_service & io_service, const qq
 						% cface.gid
 						% cface.uin
 						% cface.file_id
-						% boost::url_encode( cface.name )
+						% avhttp::detail::escape_string(cface.name)
 						% cface.vfwebqq
 					);
 

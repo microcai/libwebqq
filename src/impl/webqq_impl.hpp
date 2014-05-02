@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2012  微蔡 <microcai@fedoraproject.org>
  *
  * This program is free software: you can redistribute it and/or modify

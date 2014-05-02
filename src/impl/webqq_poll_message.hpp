@@ -1,4 +1,4 @@
-
+﻿
 /*
  *
  */
@@ -47,7 +47,7 @@ public:
 							% m_webqq->m_psessionid
 						);
 
-		msg = boost::str( boost::format( "r=%s\r\n" ) %  boost::url_encode(msg) );
+		msg = boost::str( boost::format( "r=%s\r\n" ) %  avhttp::detail::escape_string(msg) );
 
 		m_buffer = boost::make_shared<boost::asio::streambuf>();
 		m_stream = boost::make_shared<avhttp::http_stream>(boost::ref( m_webqq->get_ioservice()));
