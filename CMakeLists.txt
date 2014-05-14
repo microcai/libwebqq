@@ -8,8 +8,14 @@ include_directories(..)
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
-add_library(webqq STATIC src/error_code.cpp src/webqq.cpp
-	src/impl/webqq_face.cpp src/impl/webqq_impl.cpp src/impl/buddy_mgr.cpp src/impl/webqq_loop.cpp
+file(GLOB AVHTTP_IMPL_SOURCES "src/impl/*.cpp")
+file(GLOB AVHTTP_IMPL_HEADERS "src/impl/*.hpp")
+
+add_library(webqq STATIC
+	include/libwebqq/webqq.hpp include/libwebqq/error_code.hpp
+	src/error_code.cpp src/webqq.cpp
+	${AVHTTP_IMPL_SOURCES}
+	${AVHTTP_IMPL_HEADERS}
 )
 
 target_link_libraries(webqq ${Boost_LIBRARIES} soci_sqlite3)
