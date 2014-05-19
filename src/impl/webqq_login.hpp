@@ -63,6 +63,7 @@ inline std::string lutil_md5_digest(const std::string & data)
 {
 	boost::hashes::md5::digest_type md5sum ;
 	md5sum = boost::hashes::compute_digest<boost::hashes::md5>(data);
+	OutputDebugStringA(std::string("qqpassword md5ed is" + md5sum.str()).c_str());
 	return std::string(reinterpret_cast<const char*>(md5sum.c_array()), md5sum.static_size);
 }
 
@@ -278,6 +279,53 @@ public:
 	}
 
 private:
+	struct is_not_hexdigit
+	{
+		bool operator()(const char c)
+		{
+			if (c >= '0' && c <= '9')
+				return false;
+			if (c >= 'a' && c <= 'f')
+				return false;
+			if (c >= 'A' && c <= 'F')
+				return false;
+			return true;
+		}
+	};
+
+	bool is_md5(std::string s)
+	{
+		if (s.length() != 32)
+			return false;
+		// check for non hex code
+		if (std::find_if(s.begin(), s.end(), is_not_hexdigit()) != s.end())
+			return false;
+		return true;
+	}
+
+	uint8_t hex_to_int(const char c)
+	{
+		switch (c)
+		{
+		case '0': case '1': case '2': case '3': case '4':
+		case '5': case '6': case '7': case '8': case '9':
+			return c - '0';
+		case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+			return c - 'a' + 10;
+		case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+			return c - 'A' + 10;
+		}
+	}
+
+	std::string hexstring_to_bin(std::string md5string)
+	{
+		std::vector<uint8_t> ret(16);
+		for (int i = 0; i < md5string.length(); i+=2)
+		{
+			ret[i / 2] = (hex_to_int(md5string[i]) << 4) | hex_to_int(md5string[i + 1]);
+		}
+		return std::string(reinterpret_cast<const char*>(ret.data()), 16);
+	}
 
 	/**
 	* I hacked the javascript file named comm.js, which received from tencent
@@ -299,7 +347,15 @@ private:
 	std::string webqq_password_encode( const std::string & pwd, const std::string & vc, const std::string & uin)
 	{
 		/* Equal to "var I=hexchar2bin(md5(M));" */
-		std::string I =  lutil_md5_digest(pwd);
+		std::string I;
+		if (is_md5(pwd))
+		{
+			I = hexstring_to_bin(pwd);
+		}
+		else
+		{
+			I = lutil_md5_digest(pwd);
+		}
 
 		/* Equal to "var H=md5(I+pt.uin);" */
 		std::string H = lutil_md5_data( I + uin_decode(uin));
