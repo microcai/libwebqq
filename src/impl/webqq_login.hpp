@@ -63,7 +63,6 @@ inline std::string lutil_md5_digest(const std::string & data)
 {
 	boost::hashes::md5::digest_type md5sum ;
 	md5sum = boost::hashes::compute_digest<boost::hashes::md5>(data);
-	OutputDebugStringA(std::string("qqpassword md5ed is" + md5sum.str()).c_str());
 	return std::string(reinterpret_cast<const char*>(md5sum.c_array()), md5sum.static_size);
 }
 
