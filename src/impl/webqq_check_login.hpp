@@ -165,7 +165,7 @@ public:
 			*/
 
 			ex.set_expression("ptui_checkVC\\('([0-9])',[ ]?'([0-9a-zA-Z!]*)',[ ]?'([0-9a-zA-Z\\\\]*)'");
-			ex2.set_expression("ptui_checkVC\\('([0-9])','([0-9a-zA-Z!]*)','([0-9a-zA-Z\\\\]*)'");
+			ex2.set_expression("ptui_checkVC\\('([0-9])','([0-9a-zA-Z!_]*)','([0-9a-zA-Z\\\\]*)'");
 
 			if (boost::regex_search(response, what, ex) || boost::regex_search(response, what, ex2))
 			{
