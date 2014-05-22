@@ -156,6 +156,7 @@ public:
 			* The http message body has two format:
 			*
 			* ptui_checkVC('1','9ed32e3f644d968809e8cbeaaf2cce42de62dfee12c14b74', '\x00\x00\x00\x00\x54\xb3\x3c\x53');
+			* ptui_checkVC('1','6kn6cK_Xz9skMLUNbxNq3RcG9uYR7-H2','\\x00\\x00\\x00\\x00\\x68\\xe9\\x0b\\x58');
 			* ptui_checkVC('0','!IJG', '\x00\x00\x00\x00\x54\xb3\x3c\x53');
 			* The former means we need verify code image and the second
 			* parameter is vc_type.
@@ -163,9 +164,8 @@ public:
 			* parameter is the verify code. The vc_type is in the header
 			* "Set-Cookie".
 			*/
-
 			ex.set_expression("ptui_checkVC\\('([0-9])',[ ]?'([0-9a-zA-Z!]*)',[ ]?'([0-9a-zA-Z\\\\]*)'");
-			ex2.set_expression("ptui_checkVC\\('([0-9])','([0-9a-zA-Z!_]*)','([0-9a-zA-Z\\\\]*)'");
+			ex2.set_expression("ptui_checkVC\\('([0-9])','([_\\-0-9a-zA-Z!]*)','([0-9a-zA-Z\\\\]*)'");
 
 			if (boost::regex_search(response, what, ex) || boost::regex_search(response, what, ex2))
 			{
