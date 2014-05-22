@@ -375,7 +375,7 @@ private:
 
 		int status;
 		boost::cmatch what;
-		boost::regex ex("ptuiCB\\('([0-9])',[ ]?'([0-9])',[ ]?'([^']*)',[ ]?'([0-9])',[ ]?'([^']*)',[ ]?'([^']*)'[ ]*\\);");
+		boost::regex ex("ptuiCB\\('([0-9]+)',[ ]?'([0-9])',[ ]?'([^']*)',[ ]?'([0-9])',[ ]?'([^']*)',[ ]?'([^']*)'[ ]*\\);");
 
 		if(boost::regex_search(response.c_str(), what, ex))
 		{

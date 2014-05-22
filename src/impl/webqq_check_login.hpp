@@ -64,7 +64,7 @@ public:
 		response.resize(bytes_transfered);
 		m_buffer->sgetn(&response[0], bytes_transfered);
 
-		boost::regex ex;
+		boost::regex ex, ex2;
 		boost::smatch what;
 		std::string url;
 
@@ -116,9 +116,17 @@ public:
 			// 是一个正常的 HTML 文件，　但是内容包含
 			// g_login_sig=encodeURIComponent("PpbBnX213jzzSH8*xXyySm9qq1jAnP2uo1fXkGaC5t0ZDaxE5MzSR59qh1EhmjqA");
 
-			boost::regex_search(response, what, boost::regex("g_login_sig *= *encodeURIComponent\\(\"([^\"]*)\"\\);"));
+			if (boost::regex_search(response, what, boost::regex("g_login_sig *= *encodeURIComponent\\(\"([^\"]*)\"\\);")))
+			{
+				m_webqq->m_login_sig = what[1];
+			}
+			else if (boost::regex_search(response, what, boost::regex("g_login_sig=encodeURIComponent\\(\"([^\"]*)\"\\);")))
+			{
+				m_webqq->m_login_sig = what[1];
+			}
 
-			m_webqq->m_login_sig = what[1];
+			BOOST_LOG_TRIVIAL(info) << "Get g_login_sig: " << m_webqq->m_login_sig;
+
 			//获取验证码.
 
 			stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
@@ -157,8 +165,9 @@ public:
 			*/
 
 			ex.set_expression("ptui_checkVC\\('([0-9])',[ ]?'([0-9a-zA-Z!]*)',[ ]?'([0-9a-zA-Z\\\\]*)'");
+			ex2.set_expression("ptui_checkVC\\('([0-9])','([0-9a-zA-Z!]*)','([0-9a-zA-Z\\\\]*)'");
 
-			if(boost::regex_search(response, what, ex))
+			if (boost::regex_search(response, what, ex) || boost::regex_search(response, what, ex2))
 			{
 				std::string type = what[1];
 				std::string vc = what[2];
