@@ -37,6 +37,7 @@ namespace js = boost::property_tree::json_parser;
 #include "boost/timedcall.hpp"
 #include "boost/urlencode.hpp"
 #include "boost/stringencodings.hpp"
+#include "boost/bin_from_hex.hpp"
 
 #include "webqq_impl.hpp"
 
@@ -288,73 +289,14 @@ private:
 		return true;
 	}
 
-	template<typename Base>
-	struct  transform_hex_to_int   :  public boost::iterator_adaptor <
-		transform_hex_to_int<Base>,
-		Base,
-		uint8_t,
-		boost::single_pass_traversal_tag,
-		uint8_t
-	>
-	{
-		friend class boost::iterator_core_access;
-		typedef BOOST_DEDUCED_TYPENAME boost::iterator_adaptor <
-			transform_hex_to_int<Base>,
-			Base,
-			uint8_t,
-			boost::single_pass_traversal_tag,
-			uint8_t
-		> super_t;
-
-		typedef transform_hex_to_int<Base> this_t;
-		typedef uint8_t CharType;
-
-		typedef typename boost::iterator_value<Base>::type base_value_type;
-
-		Base m_base;
-
-		static uint8_t hex_to_int(const char c)
-		{
-			switch (c)
-			{
-			case '0': case '1': case '2': case '3': case '4':
-			case '5': case '6': case '7': case '8': case '9':
-				return c - '0';
-			case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-				return c - 'a' + 10;
-			case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-				return c - 'A' + 10;
-			}
-		}
-
-		CharType dereference() const {
-			return hex_to_int(*m_base);
-		}
-
-		// standard iterator interface
-		bool equal(const this_t & rhs) const {
-			return m_base == rhs.m_base;
-		}
-
-		void increment(){
-			++m_base;
-		}
-
-		transform_hex_to_int(const Base & _base)
-			: m_base(_base)
-		{
-		}
-	};
-
 	std::string hexstring_to_bin(std::string md5string)
 	{
 		typedef boost::archive::iterators::transform_width<
-			transform_hex_to_int<std::string::iterator>,
-			8, 4, uint8_t> hexstring_to_bin_iterator;
-		hexstring_to_bin_iterator begin(md5string.begin());
-		hexstring_to_bin_iterator end(md5string.end());
+			boost::bin_from_hex<std::string::iterator>,
+			8, 4, uint8_t> bin_from_hex_iterator;
 
-		return std::string(begin, end);
+		return std::string(bin_from_hex_iterator(md5string.begin()),
+			bin_from_hex_iterator(md5string.end()));
 	}
 
 	/**
