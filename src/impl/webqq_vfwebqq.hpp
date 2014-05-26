@@ -1,7 +1,6 @@
 
 #pragma once
 
-#include <boost/log/trivial.hpp>
 #include <boost/function.hpp>
 #include <boost/asio.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -79,7 +78,7 @@ public:
 				return;
 			}
 		} catch( const pt::ptree_error & jserr ) {
-			BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " <<__LINE__ << " :" << "parse bad path error : " <<  jserr.what();
+			AVLOG_ERR <<  __FILE__ << " : " <<__LINE__ << " :" << "parse bad path error : " <<  jserr.what();
 		}
 		}
 

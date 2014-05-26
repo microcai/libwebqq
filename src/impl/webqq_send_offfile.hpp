@@ -1,7 +1,6 @@
 ﻿
 #pragma once
 
-#include <boost/log/trivial.hpp>
 #include <boost/function.hpp>
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>

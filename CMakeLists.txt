@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 project(libwebqq)
-find_package(Boost 1.54 REQUIRED COMPONENTS log_setup log system thread regex filesystem)
+find_package(Boost 1.54 REQUIRED COMPONENTS system thread regex filesystem)
 
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(../avhttp/include/)

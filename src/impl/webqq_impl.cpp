@@ -19,7 +19,6 @@
 #include <string>
 #include <iostream>
 
-#include <boost/log/trivial.hpp>
 #include <boost/random.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/bind.hpp>
@@ -217,7 +216,7 @@ public:
 		}
 		catch(const pt::ptree_error & badpath)
 		{
-			BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : " <<  "bad path" <<  badpath.what();
+			AVLOG_ERR <<  __FILE__ << " : " << __LINE__ << " : " <<  "bad path" <<  badpath.what();
 		}
 
 		_io_service.post( boost::asio::detail::bind_handler( handler, std::string( "" ) ) );
@@ -435,7 +434,7 @@ void WebQQ::cb_join_group( qqGroup_ptr group, const boost::system::error_code& e
 void WebQQ::join_group(qqGroup_ptr group, std::string vfcode, webqq::join_group_handler handler )
 {
 	std::string url = "http://s.web2.qq.com/api/apply_join_group2";
-	
+
 	std::string postdata =	boost::str(
 								boost::format(
 									"{\"gcode\":%s,"

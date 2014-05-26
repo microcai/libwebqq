@@ -1,4 +1,4 @@
-﻿ 
+﻿
 /*
  * Copyright (C) 2012 - 2013  微蔡 <microcai@fedoraproject.org>
  *
@@ -21,7 +21,6 @@
 
 #include <iostream>
 
-#include <boost/log/trivial.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
@@ -67,7 +66,7 @@ class update_group_list_op : boost::asio::coroutine
 		m_stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
 		m_buffer = boost::make_shared<boost::asio::streambuf>();
 
-		BOOST_LOG_TRIVIAL(debug) << "getting group list";
+		AVLOG_DBG << "getting group list";
 
 		/* Create post data: {"h":"hello","vfwebqq":"4354j53h45j34"} */
 		std::string postdata = create_post_data(m_webqq->m_vfwebqq);
@@ -124,7 +123,7 @@ public:
 					if(newgroup->gid[0] == '-')
 					{
 						retry = true;
-						BOOST_LOG_TRIVIAL(error) <<  "qqGroup get error" << std::endl;
+						AVLOG_ERR <<  "qqGroup get error" ;
 
 					}else{
 
@@ -139,7 +138,7 @@ public:
 
 						newlist.insert(std::make_pair(newgroup->gid, newgroup));
 						m_webqq->m_groups.insert(std::make_pair(newgroup->gid, newgroup));
-						BOOST_LOG_TRIVIAL(info) << literal_to_localstr("qq群 ") << utf8_to_local_encode(newgroup->gid) << " " <<  utf8_to_local_encode(newgroup->name);
+						AVLOG_INFO << literal_to_localstr("qq群 ") << utf8_to_local_encode(newgroup->gid) << " " <<  utf8_to_local_encode(newgroup->name);
 					}
 				}
 				if (replace_list){

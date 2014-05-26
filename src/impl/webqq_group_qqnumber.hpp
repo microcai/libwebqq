@@ -21,7 +21,6 @@
 
 #include <iostream>
 
-#include <boost/log/trivial.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
@@ -107,7 +106,7 @@ public:
 			//TODO, group members
 			if( jsonobj.get<int>( "retcode" ) == 0 ) {
 				m_this_group->qqnum = jsonobj.get<std::string>( "result.account" );
-				BOOST_LOG_TRIVIAL(debug) <<  "qq number of group "
+				AVLOG_DBG <<  "qq number of group "
 					<<  utf8_to_local_encode(m_this_group->name) << " is " <<  m_this_group->qqnum;
 
 				m_webqq->siggroupnumber(m_this_group);
@@ -116,7 +115,7 @@ public:
 
 				return ;
 			}else{
-				BOOST_LOG_TRIVIAL(error) << literal_to_localstr("获取群的QQ号码失败");
+				AVLOG_ERR << literal_to_localstr("获取群的QQ号码失败");
 				pt::json_parser::write_json(std::cerr, jsonobj);
 			}
 		} catch( const pt::ptree_error & jserr ) {

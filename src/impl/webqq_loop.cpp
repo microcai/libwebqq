@@ -1,6 +1,4 @@
 ﻿
-#include <boost/log/trivial.hpp>
-
 #include <boost/avloop.hpp>
 #include <boost/timedcall.hpp>
 
@@ -58,7 +56,7 @@ public:
 		{
 		if (firs_start==0)
 		{
-			BOOST_LOG_TRIVIAL(info) << "libwebqq: use cached cookie to avoid login...";
+			AVLOG_INFO << "libwebqq: use cached cookie to avoid login...";
 		}
 
 		for (;m_webqq->m_status!= LWQQ_STATUS_QUITTING;){
@@ -66,7 +64,7 @@ public:
 			m_counted_network_error = 0;
 
 
-			BOOST_LOG_TRIVIAL(info)
+			AVLOG_INFO
 				<< "start polling messages!";
 
 	  		// 首先进入 message 循环! 做到无登录享用!
@@ -80,7 +78,7 @@ public:
 
 				if (firs_start==0 && !ec)
 				{
-					BOOST_LOG_TRIVIAL(info)
+					AVLOG_INFO
 						<< "libwebqq: GOOD NEWS! The cached cookies accepted by TX!";
 				}
 
@@ -98,7 +96,7 @@ public:
 
 					if (firs_start==0)
 					{
-						BOOST_LOG_TRIVIAL(info)
+						AVLOG_INFO
 							<< "libwebqq: failed with last cookies, doing full login";
 					}
 				}
@@ -111,7 +109,7 @@ public:
 					{
 						m_webqq->m_status = LWQQ_STATUS_OFFLINE;
 
-						BOOST_LOG_TRIVIAL(info)
+						AVLOG_INFO
 							<< "libwebqq: too many network errors, try relogin later...";
 					}
 					// 等待等待就好了，等待 12s
@@ -127,7 +125,7 @@ public:
 					// TODO 使用更好的办法.
 					m_webqq->m_status = LWQQ_STATUS_OFFLINE;
 
-					BOOST_LOG_TRIVIAL(info)
+					AVLOG_INFO
 						<< "libwebqq: group uin changed, try relogin...";
 
 					// 等待等待就好了，等待 15s
@@ -145,7 +143,7 @@ public:
 				firs_start = 1;
 			}
 
-			BOOST_LOG_TRIVIAL(info)
+			AVLOG_INFO
 				<< "stoped polling messages!";
 
 			// clear the session cookie
@@ -168,7 +166,7 @@ public:
 					{
 						if (ec)
 						{
-							BOOST_LOG_TRIVIAL(error) << literal_to_localstr("发生错误: ")
+							AVLOG_ERR << literal_to_localstr("发生错误: ")
 								<< utf8_to_local_encode( ec.message()) <<  literal_to_localstr(" 重试中...");
 							BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
 								m_io_service, 300, boost::asio::detail::bind_handler(*this, ec, str));
@@ -185,7 +183,7 @@ public:
 			// then retrive vc, can be pushed by check_login or login_withvc
 			BOOST_ASIO_CORO_YIELD m_webqq->m_vc_queue.async_pop(*this);
 
-			BOOST_LOG_TRIVIAL(info) << "vc code is \"" << str << "\"" ;
+			AVLOG_INFO << "vc code is \"" << str << "\"" ;
 			// 回调会进入 async_pop 的下一行
 			BOOST_ASIO_CORO_YIELD async_login(m_webqq, str, boost::bind<void>(*this, _1, str));
 
@@ -196,7 +194,7 @@ public:
 				{
 					if (m_webqq->m_sigbadvc)
 					{
-						BOOST_LOG_TRIVIAL(info) << "reporting bad vc" ;
+						AVLOG_INFO << "reporting bad vc" ;
 						m_webqq->m_sigbadvc();
 					}
 				}
@@ -205,20 +203,20 @@ public:
 				if (ec == error::login_failed_wrong_passwd)
 				{
 					// 密码问题,  直接退出了.
-					BOOST_LOG_TRIVIAL(error) << utf8_to_local_encode(ec.message());
-					BOOST_LOG_TRIVIAL(error) << literal_to_localstr("停止登录, 请修改密码重启 avbot");
+					AVLOG_ERR << utf8_to_local_encode(ec.message());
+					AVLOG_ERR << literal_to_localstr("停止登录, 请修改密码重启 avbot");
 					m_webqq->m_status = LWQQ_STATUS_QUITTING;
 					return;
 				}
 				if (ec == error::login_failed_blocked_account)
 				{
-					BOOST_LOG_TRIVIAL(error) << literal_to_localstr("300s 后重试...");
+					AVLOG_ERR << literal_to_localstr("300s 后重试...");
 					// 帐号冻结, 多等些时间, 嘻嘻
 					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
 						m_io_service, 300, boost::asio::detail::bind_handler(*this, ec, str));
 				}
 
-				BOOST_LOG_TRIVIAL(error) << literal_to_localstr("30s 后重试...") << utf8_to_local_encode(ec.message());
+				AVLOG_ERR << literal_to_localstr("30s 后重试...") << utf8_to_local_encode(ec.message());
 
 				BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
 						m_io_service, 30, boost::asio::detail::bind_handler(*this,ec, str));

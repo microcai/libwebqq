@@ -22,7 +22,6 @@
 #include <string>
 #include <iostream>
 
-#include <boost/log/trivial.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/function.hpp>
 #include <boost/asio.hpp>
@@ -52,7 +51,7 @@ public:
 		stream = boost::make_shared<avhttp::http_stream>( boost::ref(m_webqq->get_ioservice()));
 		m_buffer = boost::make_shared<boost::asio::streambuf>();
 
-		BOOST_LOG_TRIVIAL(debug) << "go w.qq.com";
+		AVLOG_DBG << "go w.qq.com";
 
 		avhttp::async_read_body( *stream, "http://w.qq.com", * m_buffer,  *this );
 	}
@@ -76,7 +75,7 @@ public:
 	  		stream = boost::make_shared<avhttp::http_stream>( boost::ref(m_webqq->get_ioservice()));
 			m_buffer = boost::make_shared<boost::asio::streambuf>();
 
-	  		BOOST_LOG_TRIVIAL(debug) << "Get webqq version from " <<  LWQQ_URL_VERSION ;
+	  		AVLOG_DBG << "Get webqq version from " <<  LWQQ_URL_VERSION ;
 			BOOST_ASIO_CORO_YIELD avhttp::async_read_body(
 				*stream, LWQQ_URL_VERSION, *m_buffer, *this
 			);
@@ -88,7 +87,7 @@ public:
 				m_webqq->m_version = what[1];
 			}
 
-			BOOST_LOG_TRIVIAL(info) << "Get webqq version: " << m_webqq->m_version;
+			AVLOG_INFO << "Get webqq version: " << m_webqq->m_version;
 
 			// 接着获得验证码.
 			m_webqq->m_clientid.clear();
@@ -125,7 +124,7 @@ public:
 				m_webqq->m_login_sig = what[1];
 			}
 
-			BOOST_LOG_TRIVIAL(info) << "Get g_login_sig: " << m_webqq->m_login_sig;
+			AVLOG_INFO << "Get g_login_sig: " << m_webqq->m_login_sig;
 
 			//获取验证码.
 

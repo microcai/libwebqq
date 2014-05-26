@@ -21,7 +21,6 @@
 
 #include <iostream>
 
-#include <boost/log/trivial.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
@@ -106,7 +105,7 @@ public:
 		}
 		catch (const pt::ptree_error& jserr)
 		{
-			BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : "
+			AVLOG_ERR <<  __FILE__ << " : " << __LINE__ << " : "
 				<<  "parse json error : " <<  jserr.what();
 
 			m_webqq->get_ioservice().post(

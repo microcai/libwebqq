@@ -21,7 +21,6 @@
 
 #include <iostream>
 #include <boost/array.hpp>
-#include <boost/log/trivial.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>

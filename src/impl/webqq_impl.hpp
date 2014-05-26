@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright (C) 2012  微蔡 <microcai@fedoraproject.org>
+ * Copyright (C) 2012 - 2014  微蔡 <microcai@fedoraproject.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ namespace pt = boost::property_tree;
 #include <avhttp.hpp>
 #include <avhttp/async_read_body.hpp>
 typedef boost::shared_ptr<avhttp::http_stream> read_streamptr;
+#include "boost/logging.hpp"
 
 #include "libwebqq/webqq.hpp"
 #include "libwebqq/error_code.hpp"
@@ -106,7 +107,7 @@ public:
 	void start();
 	// called by webqq.hpp distructor
 	void stop();
-	
+
 	// change status. This is the last step of login process.
 	void change_status(LWQQ_STATUS status, boost::function<void (boost::system::error_code) > handler);
 
@@ -160,7 +161,7 @@ public:
 	void cb_newbee_group_join(qqGroup_ptr group, std::string uid);
 
 	void cb_search_group(std::string, const boost::system::error_code& ec, read_streamptr stream,  boost::shared_ptr<boost::asio::streambuf> buf, webqq::search_group_handler handler);
-	
+
 	void fetch_aid(std::string arg, boost::function<void(const boost::system::error_code&, std::string)> handler);
 	void cb_fetch_aid(const boost::system::error_code& ec, read_streamptr stream,  boost::shared_ptr<boost::asio::streambuf> buf, boost::function<void(const boost::system::error_code&, std::string)> handler);
 

@@ -21,7 +21,6 @@
 
 #include <iostream>
 #include <boost/array.hpp>
-#include <boost/log/trivial.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
@@ -79,7 +78,7 @@ class update_buddy_list_op : boost::asio::coroutine
 		m_stream = boost::make_shared<avhttp::http_stream>(boost::ref(m_webqq->get_ioservice()));
 		m_buffer = boost::make_shared<boost::asio::streambuf>();
 
-		BOOST_LOG_TRIVIAL(debug) << "getting buddy list";
+		AVLOG_DBG << "getting buddy list";
 
 		/* Create post data: {"h":"hello","vfwebqq":"4354j53h45j34"} */
 		std::string postdata = create_post_data(m_webqq->m_vfwebqq);

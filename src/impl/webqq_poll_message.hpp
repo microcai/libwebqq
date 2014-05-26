@@ -1,12 +1,6 @@
 ﻿
-/*
- *
- */
-
-
 #pragma once
 
-#include <boost/log/trivial.hpp>
 #include <boost/function.hpp>
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
@@ -134,7 +128,7 @@ public:
 		}
 		catch( const pt::ptree_error & badpath )
 		{
-			BOOST_LOG_TRIVIAL(error) <<  __FILE__ << " : " << __LINE__ << " : " <<  "bad path" <<  badpath.what();
+			AVLOG_ERR <<  __FILE__ << " : " << __LINE__ << " : " <<  "bad path" <<  badpath.what();
 			// 出现网络错误
 			m_webqq->get_ioservice().post(
 				boost::asio::detail::bind_handler(
