@@ -183,45 +183,50 @@ public:
 			// then retrive vc, can be pushed by check_login or login_withvc
 			BOOST_ASIO_CORO_YIELD m_webqq->m_vc_queue.async_pop(*this);
 
-			AVLOG_INFO << "vc code is \"" << str << "\"" ;
-			// 回调会进入 async_pop 的下一行
-			BOOST_ASIO_CORO_YIELD async_login(m_webqq, str, boost::bind<void>(*this, _1, str));
-
-			// 完成登录了. 检查登录结果
-			if (ec)
+			if (!str.empty())
 			{
-				if (ec == error::login_failed_wrong_vc)
+				// 空白验证码表示重新登录
+				AVLOG_INFO << "vc code is \"" << str << "\"";
+				// 回调会进入 async_pop 的下一行
+				BOOST_ASIO_CORO_YIELD async_login(m_webqq, str, boost::bind<void>(*this, _1, str));
+
+				// 完成登录了. 检查登录结果
+				if (ec)
 				{
-					if (m_webqq->m_sigbadvc)
+					if (ec == error::login_failed_wrong_vc)
 					{
-						AVLOG_INFO << "reporting bad vc" ;
-						m_webqq->m_sigbadvc();
+						if (m_webqq->m_sigbadvc)
+						{
+							AVLOG_INFO << "reporting bad vc";
+							m_webqq->m_sigbadvc();
+						}
 					}
-				}
 
-				// 查找问题， 报告问题啊！
-				if (ec == error::login_failed_wrong_passwd)
-				{
-					// 密码问题,  直接退出了.
-					AVLOG_ERR << utf8_to_local_encode(ec.message());
-					AVLOG_ERR << literal_to_localstr("停止登录, 请修改密码重启 avbot");
-					m_webqq->m_status = LWQQ_STATUS_QUITTING;
-					return;
-				}
-				if (ec == error::login_failed_blocked_account)
-				{
-					AVLOG_ERR << literal_to_localstr("300s 后重试...");
-					// 帐号冻结, 多等些时间, 嘻嘻
+					// 查找问题， 报告问题啊！
+					if (ec == error::login_failed_wrong_passwd)
+					{
+						// 密码问题,  直接退出了.
+						AVLOG_ERR << utf8_to_local_encode(ec.message());
+						AVLOG_ERR << literal_to_localstr("停止登录, 请修改密码重启 avbot");
+						m_webqq->m_status = LWQQ_STATUS_QUITTING;
+						return;
+					}
+					if (ec == error::login_failed_blocked_account)
+					{
+						AVLOG_ERR << literal_to_localstr("300s 后重试...");
+						// 帐号冻结, 多等些时间, 嘻嘻
+						BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
+							m_io_service, 300, boost::asio::detail::bind_handler(*this, ec, str));
+					}
+
+					AVLOG_ERR << literal_to_localstr("30s 后重试...") << utf8_to_local_encode(ec.message());
+
 					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
-						m_io_service, 300, boost::asio::detail::bind_handler(*this, ec, str));
+						m_io_service, 30, boost::asio::detail::bind_handler(*this, ec, str));
 				}
-
-				AVLOG_ERR << literal_to_localstr("30s 后重试...") << utf8_to_local_encode(ec.message());
-
-				BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
-						m_io_service, 30, boost::asio::detail::bind_handler(*this,ec, str));
-			}else {
-				m_webqq->siglogined();
+				else {
+					m_webqq->siglogined();
+				}
 			}
 
 			// 重新进入循环， for (;;) 嘛
