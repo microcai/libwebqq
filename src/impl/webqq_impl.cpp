@@ -42,7 +42,6 @@ namespace js = boost::property_tree::json_parser;
 #include "webqq_impl.hpp"
 #include "constant.hpp"
 
-#include "utf8.hpp"
 #include "webqq_status.hpp"
 #include "webqq_verify_image.hpp"
 #include "webqq_keepalive.hpp"

@@ -42,8 +42,6 @@ namespace js = boost::property_tree::json_parser;
 
 #include "constant.hpp"
 
-#include "utf8.hpp"
-
 namespace webqq{
 namespace qqimpl{
 namespace detail{
@@ -61,8 +59,8 @@ struct process_group_message_op : boost::asio::coroutine
 
 	void operator()(boost::system::error_code ec, std::string url)
 	{
-		std::string group_code = wide_utf8( m_jstree->get<std::wstring>( L"value.from_uin" ) );
-		std::string who = wide_utf8( m_jstree->get<std::wstring>( L"value.send_uin" ) );
+		std::string group_code = avhttp::detail::wide_utf8( m_jstree->get<std::wstring>( L"value.from_uin" ) );
+		std::string who = avhttp::detail::wide_utf8( m_jstree->get<std::wstring>( L"value.send_uin" ) );
 
 		//parse content
 
@@ -109,7 +107,7 @@ struct process_group_message_op : boost::asio::coroutine
 					if( content->second.begin()->second.data() == L"font" )
 					{
 						msg.type = qqMsg::LWQQ_MSG_FONT;
-						msg.font = wide_utf8( content->second.rbegin()->second.get<std::wstring> ( L"name" ) );
+						msg.font = avhttp::detail::wide_utf8( content->second.rbegin()->second.get<std::wstring> ( L"name" ) );
 						messagecontent.push_back( msg );
 					}
 					else if( content->second.begin()->second.data() == L"face" )
@@ -129,17 +127,17 @@ struct process_group_message_op : boost::asio::coroutine
 						msg.cface.uin = who;
 						msg.cface.gid = m_webqq->get_Group_by_gid( group_code )->code;
 
-						msg.cface.file_id = wide_utf8(
+						msg.cface.file_id = avhttp::detail::wide_utf8(
 							content->second.rbegin()->second.get<std::wstring>(L"file_id")
 						);
-						msg.cface.name = wide_utf8(
+						msg.cface.name = avhttp::detail::wide_utf8(
 							content->second.rbegin()->second.get<std::wstring>(L"name")
 						);
 						msg.cface.vfwebqq = m_webqq->m_vfwebqq;
-						msg.cface.key = wide_utf8(
+						msg.cface.key = avhttp::detail::wide_utf8(
 							content->second.rbegin()->second.get<std::wstring> (L"key")
 						);
-						msg.cface.server = wide_utf8(
+						msg.cface.server = avhttp::detail::wide_utf8(
 							content->second.rbegin()->second.get<std::wstring> (L"server")
 						);
 
@@ -160,7 +158,7 @@ struct process_group_message_op : boost::asio::coroutine
 				{
 					//聊天字符串就在这里.
 					msg.type = qqMsg::LWQQ_MSG_TEXT;
-					msg.text = wide_utf8(content->second.data());
+					msg.text = avhttp::detail::wide_utf8(content->second.data());
 					messagecontent.push_back( msg );
 				}
 			}

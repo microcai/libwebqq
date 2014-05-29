@@ -18,7 +18,6 @@ namespace js = boost::property_tree::json_parser;
 #include "webqq_impl.hpp"
 
 #include "constant.hpp"
-#include "utf8.hpp"
 
 #include "process_group_msg.hpp"
 
@@ -76,7 +75,7 @@ public:
 
 		m_jstree = boost::make_shared<pt::wptree>();
 
-		std::wstring response = utf8_wide(
+		std::wstring response = avhttp::detail::utf8_wide(
 			std::string(
 				boost::asio::buffer_cast<const char*>(m_buffer->data()) , m_buffer->size()
 			)
@@ -100,7 +99,7 @@ public:
 			if(retcode == 116)
 			{
 				// update ptwebqq
-				std::string ptwebqq = wide_utf8(m_jstree->get<std::wstring>( L"p"));
+				std::string ptwebqq = avhttp::detail::wide_utf8(m_jstree->get<std::wstring>( L"p"));
 				m_webqq->m_cookie_mgr.save_cookie("qq.com", "/", "ptwebqq", ptwebqq, "session");
 				ec =  boost::system::error_code();
 			}else if(retcode == 102)
@@ -166,7 +165,7 @@ public:
 			{
 				result = &(*m_iterator);
 
-				poll_type = wide_utf8( result->second.get<std::wstring>( L"poll_type" ) );
+				poll_type = avhttp::detail::wide_utf8( result->second.get<std::wstring>( L"poll_type" ) );
 
 				if (poll_type != "group_message")
 				{
@@ -187,11 +186,11 @@ public:
 						// 新人进来 !
 						// 检查一下新人.
 						// 这个是群号.
-						std::string groupnumber = wide_utf8(
+						std::string groupnumber = avhttp::detail::wide_utf8(
 							result->second.get<std::wstring>(L"value.t_gcode")
 						);
 
-						std::string newuseruid = wide_utf8(
+						std::string newuseruid = avhttp::detail::wide_utf8(
 							result->second.get<std::wstring>(L"value.new_member")
 						);
 
