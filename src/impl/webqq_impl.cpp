@@ -217,7 +217,7 @@ public:
 		{
 			AVLOG_ERR <<  __FILE__ << " : " << __LINE__ << " : " <<  "bad path" <<  badpath.what();
 		}
-
+		// 判断是否执行了太久，太久的话，先刷一次消息，来更新下vfwebqq这个cookie
 		_io_service.post( boost::asio::detail::bind_handler( handler, std::string( "" ) ) );
 	}
 private:
