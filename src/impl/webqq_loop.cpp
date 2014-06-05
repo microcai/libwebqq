@@ -334,7 +334,7 @@ public:
 					m_webqq->m_buddy_mgr.get_group_by_gid(gid),
 					boost::bind<void>(*this, _1, v)
 				);
-				AVLOG_DBG << "group_refresh_loop_op: updating group(" << gid <<") members end: " ec.message();
+				AVLOG_DBG << "group_refresh_loop_op: updating group(" << gid <<") members end: " <<  ec.message();
 
 				if (ec){
 					// 应该是群GID都变了，重新刷新
