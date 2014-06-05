@@ -266,7 +266,7 @@ public:
 						m_webqq->update_group_member(iter->second , boost::bind<void>(*this, _1, 0));
 
 					BOOST_ASIO_CORO_YIELD
-						boost::delayedcallms(m_webqq->get_ioservice(), 530, boost::bind<void>(*this, ec, 0));
+						boost::delayedcallms(m_webqq->get_ioservice(), 130, boost::bind<void>(*this, ec, 0));
 				}
 
 				AVLOG_INFO <<  "group numbers fetched";

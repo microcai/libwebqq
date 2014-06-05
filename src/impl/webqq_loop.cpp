@@ -253,6 +253,7 @@ public:
 	group_refresh_loop_op(boost::shared_ptr<WebQQ> _webqq)
 		:m_webqq(_webqq)
 	{
+		AVLOG_DBG << "group_refresh_loop_op started";
 		m_webqq->m_group_refresh_queue.async_pop(
 			boost::bind<void>(*this, _1, _2)
 		);
@@ -277,12 +278,15 @@ public:
 			// 先检查 type
 			gid = v.get<1>();
 
+			AVLOG_DBG << "group_refresh_loop_op: accept refresh command";
 
 			if (gid.empty()) // 更新全部.
 			{
+				AVLOG_DBG << "group_refresh_loop_op: doing full refresh for group " << gid;
 				// 需要最少休眠 30min 才能再次发起一次，否则会被 TX 拉黑
 				if (boost::posix_time::time_duration(curtime - m_last_sync).minutes() <= 30)
 				{
+					AVLOG_DBG << "group_refresh_loop_op: prvent rapid refresh, wait 30min";
 					BOOST_ASIO_CORO_YIELD boost::delayedcallsec(
 						m_webqq->get_ioservice(),
 						1800 - boost::posix_time::time_duration(curtime - m_last_sync).seconds(),
@@ -302,6 +306,7 @@ public:
 				}
 				else
 				{
+					AVLOG_ERR << "group_refresh_loop_op: unimplemented feature get called, report to microcai!";
 // 					// 检查是否刷新了群 GID, 如果是，就要刷新群列表！
 // 					if ( ! m_webqq->m_groups.empty() &&
 // 						! m_webqq->m_groups.begin()->second->memberlist.empty())
@@ -322,12 +327,14 @@ public:
 			}
 			else
 			{
+				AVLOG_DBG << "group_refresh_loop_op: updating group(" << gid <<") members start";
 				// 更新特定的 group 即可！
 				BOOST_ASIO_CORO_YIELD qqimpl::update_group_member(
 					m_webqq,
 					m_webqq->m_buddy_mgr.get_group_by_gid(gid),
 					boost::bind<void>(*this, _1, v)
 				);
+				AVLOG_DBG << "group_refresh_loop_op: updating group(" << gid <<") members end: " ec.message();
 
 				if (ec){
 					// 应该是群GID都变了，重新刷新
